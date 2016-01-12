@@ -1,3 +1,9 @@
 *.sdf
 *.suo
 *.filters
+*.VC.opendb
+*.tlog
+/CryptRelay/Debug/
+/CryptRelay/Release/
+/Debug/
+/Release/
