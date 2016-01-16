@@ -8,10 +8,10 @@ class ipaddress
 public:
 	ipaddress();
 	~ipaddress();
-	int get_target();
-	bool is_number_or_period(char character);
-	bool check_valid_format(std::string targetIPaddress, int protocol);
-	int check_protocol(std::string targetIPaddress);
+	std::string get_target();
+	bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress);
+	bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int end);
+	int ipaddress::find_next_period(std::string targetIPaddress, int start);	
 
 private:
 protected:

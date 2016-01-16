@@ -1,3 +1,10 @@
+//wrote this all 3 majorly different ways 3 different times as practice. (didn't use library functions that would make this extremely quick & easy)
+//what is written below is a bit ugly, and could be improved __a_lot__, but it currently works.
+//note to self: next time you know what to do just do it even if it means messing up your schedule (to a certain extent). Otherwise you will forget how it was to be written.
+//note to self: don't write notes for how to write the code next time. write the code instead, or perhaps try quick and dirty sudo code?.
+//
+//for the next project, lay it all out first. design it with loose terms, sudo code, w/e. typing away and hoping it all falls into place was pretty dumb, but admittedly I learned a lot during the 4 re-writes.
+
 #include "ipaddress.h"
 #include <string>
 #include <iostream>
@@ -11,150 +18,165 @@ ipaddress::~ipaddress()
 
 }
 
-int ipaddress::get_target()
+std::string ipaddress::get_target()
 {
 	//get target IP address from user
-	std::string targetIPstring = "";
-	std::cout << "Please input the target IP address: ";
-	std::getline(std::cin, targetIPstring);
 
-	//check for ipv4 or ipv6 formatting
-	int protocol = check_protocol(targetIPstring);
 
-	//if it isn't ipv4 or ipv6, then the bad input was received from the user.
-	if (protocol != 4 && protocol != 6)
+	/* begin test: attempting to do a check to understand interesting memory drops*/
+	/*
+	for (long long z = 0;true ; z++)
 	{
-		get_target();
+		size_t s = targetIPstring.length();
+		targetIPstring.append("a");
+		if (targetIPstring.length() <= s)
+			throw "billy!";
 	}
-	//if the IP is in a valid format xxx.xxx.xxx.xxx, then do stuff
-	if (check_valid_format(targetIPstring, protocol) == true)
-	{
+	*/
+	/* end test */
 
-	}
-	else
+
+
+
+	bool is_format_good = false;
+	while (is_format_good == false)
 	{
-		std::cout << "ERROR: Invalid IP format.\n";
-		get_target();
+		std::string targetIPstring = "";
+		std::cout << "Please input the target IP address: ";
+		std::getline(std::cin, targetIPstring);
+		//check if the formatting for the IP address is correct
+		is_format_good = is_ipv4_format_correct(targetIPstring);
+		//if the format is correct then go ahead and give main the target IP string so it can be used.
+		if (is_format_good == true)
+		{
+			return targetIPstring;
+		}
+		else
+		{
+			std::cout << "bad IP address format.\n\n";
+		}
 	}
-	return 0;
+	return "Error: This shouldn't be possible.\n";
 }
 
-bool ipaddress::is_number_or_period(char character)
+
+int ipaddress::find_next_period(std::string targetIPaddress, int start)
 {
-	const int comparison_array_size = 11;
-	const char comparison_array[comparison_array_size] = { '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '.' };
-
-	//for i char in targetIPaddress, iterate through the comparison_array checking to see if there is a match
-	for (int c = 0; c <= comparison_array_size; c++)
+	int size_of_ip_address = targetIPaddress.size();
+	int period_location = -1;
+	//if it isn't the starting subnet, then give it a +1 or else it will always find the next period where the last period was.
+	if (start > 0)
 	{
-		//if it is a period or a number return true
-		if (character == comparison_array[c])
+		start = start + 1;
+	}
+	//start iterating at the spot of the last period.
+	for (; start < size_of_ip_address; start++)
+	{
+		//not working yet.
+		if (targetIPaddress[start + 1] == '.' && targetIPaddress[start] == '.')
 		{
-			return true;
+			std::cout << "2 periods in a row detected.\n";
+			//return false
+			return -100;
+		}
+		if (start == size_of_ip_address - 1)
+		{
+			std::cout << "end of ip address string detected.\n";
+		}
+		//if it is a period, save the location. else, increment
+		if (targetIPaddress[start] == '.')
+		{
+			period_location = start;
+			std::cout << "found a period at location: " << period_location << ".\n";
+			if (period_location == 0)
+			{
+				return -100;
+			}
+			break;
 		}
 	}
-	//if it didn't find a period or number, return false
-	return false;
+	return period_location;
 }
 
-bool ipaddress::check_valid_format(std::string targetIPaddress, int protocol)
-{	
-	//if ipv4
-	if (protocol == 4)
+bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int end)
+{
+	int subnet_array_count = end - start;
+
+	//add protection for arrays going out of bounds, and check for invalid IP address at the same time
+	if (subnet_array_count > 3 || subnet_array_count < 1)
 	{
-		//if its above char size 15 it can't possibly be a valid ipv4 address.
-		if (targetIPaddress.size() > 15)
-		{
-			std::cout << "Bad Input. This is not a valid IP address.\n";
-			get_target();
-		}
-		int number_before_last_period_counter = 0;
-		int period_counter = 0;
-
-		//iterate through array targetIPaddress to check for numbers and periods
-		for (unsigned int i = 0; i < targetIPaddress.size(); i++)
-		{
-			//if i isn't a number or period, send user to input IP again
-			if (is_number_or_period(targetIPaddress[i]) == false)
-			{
-				std::cout << "ERROR: not a number or period\n";
-				get_target();
-			}
-			//if i is a period, +1 to period counter
-			if (targetIPaddress[i] == '.')
-			{
-				period_counter = period_counter + 1;
-				number_before_last_period_counter = 0;
-			}
-			//if it isn't a period, it is a number! +1 number since last period counter
-			else
-			{
-				number_before_last_period_counter = number_before_last_period_counter + 1;
-			}
-			//if theres more than 3 numbers in a subdomain, then it isn't an IP address. send user to input IP again.
-			if (number_before_last_period_counter > 3)
-			{
-				std::cout << "ERROR: too many numbers in the subdomain.\n";
-				get_target();
-			}
-
-		}
+		std::cout << "subnet out of range\n";
+		return false;
 	}
-	//if ipv6
-	else if (protocol == 6)
-	{
 
-	}
-	//shouldn't even go here
-	else
+	const int subnet_array_size = 3;
+	int subnet_array[subnet_array_size] = {};
+	
+	//ascii -> decimal.
+	int last_period = start;
+	for (int i = 0; i < subnet_array_count; i++, last_period++)
 	{
-		std::cout << "Unexpected else{} reached due to poor design. It isn't ipv4 or ipv6. How did I get here?\n";
+		subnet_array[i] = targetIPaddress[last_period] - 48;
+	}
+
+	//the subnet was broken apart into individual single digit numbers. now put them back together using multiplication.
+	int total = 0;
+	for (int i = 0; i < subnet_array_count; i++)
+	{
+		total = (total * 10) + subnet_array[i];
+	}				
+
+	//check for valid subnet range.
+	std::cout << "subnet addition total = " << total << "\n";
+	if (total > 255 || total < 0)
+	{
+		//total is being saved out of scope for some reason...........................................it has diff behavior if it failed once for my input, then on my next correct format input it will be odd output.
+		std::cout << "subnet out of range.\n";
+		return false;
 	}
 	return true;
 }
 
-//check for ipv4 or ipv6
-int ipaddress::check_protocol(std::string targetIPaddress)
-{
-	int answer = 999;
-	static const char digit_indices[9] = { '1', '2', '3', '4', '5', '6', '7', '8', '9'};//put single quotes around it to make it a character literal instead of int literal (not quotes)
-	static const size_t input_size = targetIPaddress.size();
 
-	for (unsigned int i = 0; i < input_size; i++)
+bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
+{	
+	int start = 0;
+	int end = 0;
+	for (unsigned int c = 0; c < targetIPaddress.size(); c++)
 	{
-		if (input_size >= 45)
+		//checking for ascii 0-9 and '.'   ... if it isn't any of those, then it sends the user to try again with different input.
+		//grouping together multiple OR statements or AND statements with parenthesis makes them group up into a single BOOL statement.
+		if ((targetIPaddress[c] < '0' || targetIPaddress[c] > '9') && targetIPaddress[c] != '.')
 		{
-			std::cout << "Error. That is not a valid IP address.\n";
-			answer = 999;
-			return answer;
-		}
-		/*for (int c = 0; c <= 9; c++)
-		{
-			if (targetIPaddress[i] == digit_indices[c])
-			{
-				std::cout << "woohoo targetIPaddress " << targetIPaddress[i] << " has matched digit_indices " << digit_indices[c] << "\n";
-				answer = 4;
-				return answer;
-			}
-		}*/
-		if (targetIPaddress[i] == '.')
-		{
-			std::cout << "ipv4 detected.\n";
-			answer = 4;
-			return answer;
-		}
-		if (targetIPaddress[i] == ':')
-		{
-			std::cout << "ipv6 detected.\n";
-			answer = 6;
-			return answer;
-		}
-		if (targetIPaddress[i] == '>' || targetIPaddress[i] == ',' || targetIPaddress[i] == ';')
-		{
-			std::cout << "Bad input. Not a valid IP address.\n";
-			answer = 999;
-			return answer;
+			std::cout << "Only numbers and periods allowed.\n";
+			return false;
 		}
 	}
-	return answer;
+	for (int i = 0; i < 4; i++)
+	{
+		end = find_next_period(targetIPaddress, start);
+		if (end == -100)
+		{
+			return false;
+		}
+
+		//
+		if (end == -1)
+		{
+			end = targetIPaddress.size();
+		}
+		if (check_subnet_range(targetIPaddress, start, end) == false)
+		{
+			return false;
+		}
+
+		//back to the future
+		start = end + 1;
+
+		if (end == targetIPaddress.size())
+		{
+			break;
+		}
+	}
+	return true;
 }
