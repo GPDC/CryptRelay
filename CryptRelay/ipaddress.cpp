@@ -4,6 +4,9 @@
 //note to self: don't write notes for how to write the code next time. write the code instead, or perhaps try quick and dirty sudo code?.
 //
 //for the next project, lay it all out first. design it with loose terms, sudo code, w/e. typing away and hoping it all falls into place was pretty dumb, but admittedly I learned a lot during the 4 re-writes.
+//this is all working, but it is missing safety checks for overflows. these saftey checks being missing for the moment are not 100% scary, I believe, since it is all done client side, and nobody through the internet
+//can interact with the variables that don't have safety checks. The attacker would have to have some access to this computer, and at that point, everything is compromised anyways.
+//Regardless, I would still like to create safety checks for this class. However I will do this after the connect class has been created and is working.
 
 #include "ipaddress.h"
 #include <string>
@@ -18,43 +21,26 @@ ipaddress::~ipaddress()
 
 }
 
-std::string ipaddress::get_target()
+std::string ipaddress::get_target(char* targetIPaddress)
 {
 	//get target IP address from user
-
-
-	/* begin test: attempting to do a check to understand interesting memory drops*/
-	/*
-	for (long long z = 0;true ; z++)
-	{
-		size_t s = targetIPstring.length();
-		targetIPstring.append("a");
-		if (targetIPstring.length() <= s)
-			throw "billy!";
-	}
-	*/
-	/* end test */
-
-
-
-
+	std::cout << "targetIPaddress = " << targetIPaddress << "\n";
 	bool is_format_good = false;
 	while (is_format_good == false)
 	{
-		std::string targetIPstring = "";
-		std::cout << "Please input the target IP address: ";
-		std::getline(std::cin, targetIPstring);
 		//check if the formatting for the IP address is correct
-		is_format_good = is_ipv4_format_correct(targetIPstring);
+		is_format_good = is_ipv4_format_correct(targetIPaddress);
+
 		//if the format is correct then go ahead and give main the target IP string so it can be used.
 		if (is_format_good == true)
-		{
-			return targetIPstring;
-		}
+			return targetIPaddress;
 		else
 		{
 			std::cout << "bad IP address format.\n\n";
+			targetIPaddress = "bad IP address format.";
+			return targetIPaddress;
 		}
+
 	}
 	return "Error: This shouldn't be possible.\n";
 }
@@ -66,9 +52,8 @@ int ipaddress::find_next_period(std::string targetIPaddress, int start)
 	int period_location = -1;
 	//if it isn't the starting subnet, then give it a +1 or else it will always find the next period where the last period was.
 	if (start > 0)
-	{
 		start = start + 1;
-	}
+
 	//start iterating at the spot of the last period.
 	for (; start < size_of_ip_address; start++)
 	{
@@ -79,19 +64,17 @@ int ipaddress::find_next_period(std::string targetIPaddress, int start)
 			//return false
 			return -100;
 		}
+
 		if (start == size_of_ip_address - 1)
-		{
 			std::cout << "end of ip address string detected.\n";
-		}
+
 		//if it is a period, save the location. else, increment
 		if (targetIPaddress[start] == '.')
 		{
 			period_location = start;
 			std::cout << "found a period at location: " << period_location << ".\n";
 			if (period_location == 0)
-			{
 				return -100;
-			}
 			break;
 		}
 	}
@@ -111,20 +94,18 @@ bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int e
 
 	const int subnet_array_size = 3;
 	int subnet_array[subnet_array_size] = {};
-	
+
 	//ascii -> decimal.
 	int last_period = start;
-	for (int i = 0; i < subnet_array_count; i++, last_period++)
-	{
+	for (int i = 0; i < subnet_array_count; i++, last_period++) {
 		subnet_array[i] = targetIPaddress[last_period] - 48;
 	}
 
 	//the subnet was broken apart into individual single digit numbers. now put them back together using multiplication.
 	int total = 0;
-	for (int i = 0; i < subnet_array_count; i++)
-	{
+	for (int i = 0; i < subnet_array_count; i++) {
 		total = (total * 10) + subnet_array[i];
-	}				
+	}
 
 	//check for valid subnet range.
 	std::cout << "subnet addition total = " << total << "\n";
@@ -139,7 +120,8 @@ bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int e
 
 
 bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
-{	
+{
+	int period_count = 0;
 	int start = 0;
 	int end = 0;
 	for (unsigned int c = 0; c < targetIPaddress.size(); c++)
@@ -156,27 +138,26 @@ bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
 	{
 		end = find_next_period(targetIPaddress, start);
 		if (end == -100)
-		{
 			return false;
-		}
 
 		//
+		if (end != -100 && end != -1)
+			period_count++;
+
 		if (end == -1)
-		{
 			end = targetIPaddress.size();
-		}
+
 		if (check_subnet_range(targetIPaddress, start, end) == false)
-		{
 			return false;
-		}
 
 		//back to the future
 		start = end + 1;
 
 		if (end == targetIPaddress.size())
-		{
 			break;
-		}
 	}
-	return true;
+	if (period_count != 3)
+		return false;
+	else
+		return true;
 }
