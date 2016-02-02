@@ -51,6 +51,12 @@ void client_thread(void* number)
 
 int main(int argc, char *argv[])
 {
+	if (argc <= 1)
+	{
+		std::cout << "Proper format is:   cryptrelay.exe 192.168.27.50 7172\n";
+		std::cout << "Proper format is:   filename   IP address  PORT\n";
+		return 1;
+	}
 	//connection connectionObj;
 	std::string targetIPaddress = "";
 	ipaddress ipaddress_get;
@@ -92,12 +98,18 @@ int main(int argc, char *argv[])
 	ghEvents[0] = (HANDLE)_beginthread(connection::serverCompetitionThread, 0, &serverObj);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[1] = (HANDLE)_beginthread(connection::clientCompetitionThread, 0, &clientObj);	//c style typecast    from: uintptr_t    to: HANDLE.
 
+	//if one of them succeeds, let the program continue while waiting for the other one to finish.
+	//this is mostly important for when the server wins, but the client is still hanging waiting for a response from the target.
+	//but a problem arises... if client succeeds also, after the server wins, then it needs to check the winner status FIRST
+	// and then destroy the socket it created.
+
+	//and if the client wins yet the server succeeded , it needs to close the server socket and only do client stuff.
 
 	WaitForMultipleObjects(
 		2,			//number of objects in array
 		ghEvents,	//array of objects
 		TRUE,		//wait for all objects
-		INFINITE);		//its going to wait this long, OR until all threads are finished, in order to continue.
+		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
 
 
 	if (serverObj.globalWinner == -8)
@@ -136,82 +148,15 @@ int main(int argc, char *argv[])
 		}
 	}
 	std::cout << "Waka waka waka\n";
-	
-	
-
 
 	/*
-	//START CHAT PROGRAM
-	connectionObj.setIpAndPort(targetIPaddress, userPort);
-	connectionObj.initializeWinsock();
-	connectionObj.setHints();
-	connectionObj.getAddressPort();//puts the local port info in the addrinfo structure
-	connectionObj.createSocket();//creates listening socket to listen on that local port
-	connectionObj.bindToListeningSocket();
-	connectionObj.connectToTarget();
 
-	//start client snd thread
-	//ghEvents[0] = (HANDLE)_beginthread(clientSendThread, 0, NULL);	//c style typecast    from: uintptr_t    to: HANDLE.
-
-	connectionObj.listenToListeningSocket();	//thread waits here until someone connects or it errors.
-	connectionObj.acceptClient();				//creates a new socket to communicate with the person on
-	connectionObj.closeTheListeningSocket();	// No longer need listening socket
-	connectionObj.receiveUntilShutdown();		//receive until either person exits.
-	connectionObj.shutdownConnection();		//shutting down everything
-	connectionObj.cleanup();
-
-
-
-	//start threads
-	ghEvents[0] = (HANDLE)_beginthread(server_thread, 0, NULL);	//c style typecast    from: uintptr_t    to: HANDLE.      threads must be passed a static function if it is in a class.
-	//ghEvents[0] = (HANDLE)_beginthread(client_thread, 0, NULL);	//c style typecast    from: uintptr_t    to: HANDLE.
-
-	*/
-
-	/*
 	//wait until all threads are finished
 	WaitForMultipleObjects(
 		1,			//number of objects in array
 		ghEvents,	//array of objects
 		TRUE,		//wait for all objects
 		INFINITE);		//its going to wait this long, OR until all threads are finished, in order to continue.
-		*/
+
+	*/
 }
-
-
-
-
-
-
-
-//create socket
-//bind socket to address
-//listen for clients
-//accept client
-//send and receive
-//shutdown, close socket for client
-//cleanup WSA
-
-
-
-
-//server start
-//wsa
-//create socket
-//bind socket
-//THREAD LISTEN
-	//if accept = true
-	//shutdown connect attempts
-	//stop listening
-//try to connect to given address
-//if connect failed, try again until user inputs a command
-//if succeeded, shutdown listening thread
-
-//2 competing threads, whichever one wins, pass socket to main thread, close both threads
-//now start the real program with the socket and
-//createa  a send thread
-//receive normally.
-
-
-//run as a server
-//START CHAT PROGRAM

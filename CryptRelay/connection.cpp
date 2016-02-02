@@ -25,6 +25,8 @@
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
 
+//???? is this necessary for GetConsoleScreenBufferInfo?
+//#pragma comment(lib, "Kernel32.lib")
 
 //these are out here because they are static(available to all instances of this class). 
 const std::string connection::DEFAULT_PORT = "7172"; //the c-style way is: #define DEFAULT_PORT "4242"
@@ -174,7 +176,7 @@ void connection::clientCompetitionThread(void* instance)
 			self->mySleep(1000);
 			continue;
 		}
-		else					   //connection is established, the client has won the competition.
+		else	//connection is established, the client has won the competition.
 			std::cout << "CTHREAD :: ";
 		std::cout << "setting global values.\n";
 			self->globalSocket = iFeedback;
@@ -206,7 +208,7 @@ void connection::ServerSetHints()
 	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;	
 	hints.ai_protocol = IPPROTO_TCP;
-	hints.ai_flags = AI_PASSIVE; //has the computer assign an ip to listen on for you.. local host 127.0.0.1
+	hints.ai_flags = AI_PASSIVE;
 }
 
 void connection::ClientSetHints()
@@ -228,7 +230,6 @@ bool connection::serverGetAddress()
 		return false;
 	}
 	return true;
-	//std::cout << "IP: " << hints.ai_addr << ". Port: " << hints.sockaddr->ai_addr\n";
 }
 
 bool connection::clientGetAddress()
@@ -428,7 +429,7 @@ bool connection::clientReceiveUntilShutdown()
 		inUseSocket = ConnectSocket;
 	}
 	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "empty_message: user had no input.";
+	std::string message_to_send = "First message sent from recv.\n";
 
 	//send this message once
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
@@ -443,14 +444,34 @@ bool connection::clientReceiveUntilShutdown()
 	printf("Message sent: %s\n", sendbuf);
 	printf("Bytes Sent: %ld\n", iResult);
 
-	std::cout << "Receive loop started...\n";
+	std::cout << "Recv loop started...\n";
 
 	// Receive until the peer shuts down the connection
 	do {
 		iResult = recv(inUseSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
 
-			printf("Message received: ");
+			/*
+			~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
+			HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+			CONSOLE_SCREEN_BUFFER_INFO csbiInfo;	//console screen buffer info
+			COORD CursorCoordinatesStruct;
+			ZeroMemory(&CursorCoordinatesStruct, sizeof(CursorCoordinatesStruct));
+
+			if (GetConsoleScreenBufferInfo(hStdout, &csbiInfo) == 0)	//0,0 is top left of console
+			{
+				std::cout << "GetConsoleScreenBufferInfo failed: " << WSAGetLastError() << "\n";
+			}
+
+			CursorCoordinatesStruct.X = csbiInfo.dwCursorPosition.X;
+			CursorCoordinatesStruct.Y = csbiInfo.dwCursorPosition.Y;
+			
+			//only 299 or 300 lines in the Y position?
+			SetConsoleCursorPosition(hStdout, CursorCoordinatesStruct);
+			~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+			*/
+			std::cout << "\n";
+			printf("Msg recvd: ");
 			for (int i = 0; i < iResult; i++)
 			{
 				std::cout << recvbuf[i];
@@ -458,7 +479,7 @@ bool connection::clientReceiveUntilShutdown()
 				if (i == iResult - 1)
 					std::cout << "\n";
 			}
-			printf("Bytes received: %d\n", iResult);						//this just prints out on the server's console the amount of bytes received.
+			printf("Bytes recvd: %d\n", iResult);						//this just prints out on the server's console the amount of bytes received.
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");
@@ -646,7 +667,7 @@ void connection::clientSendThread(void* instance)
 	connection* self = (connection*)instance;
 	int intResult;
 	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "empty_message: user had no input.";
+	std::string message_to_send = "First message from SendThread.";
 
 	if (self->AcceptedSocket != INVALID_SOCKET)
 	{
