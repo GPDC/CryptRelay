@@ -99,7 +99,7 @@ int main(int argc, char *argv[])
 	while (who_won == CLIENT_WON || who_won == SERVER_WON){
 		//if server won, then act as a server.
 		if (who_won == SERVER_WON){ 
-			std::cout << "Connection established.\n";
+			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &serverObj);	// c style typecast    from: uintptr_t    to: HANDLE.
 			if (serverObj.receiveUntilShutdown() == false) return 1;
@@ -110,7 +110,7 @@ int main(int argc, char *argv[])
 		}
 		//if client won, then act as a client
 		else if (who_won == CLIENT_WON){
-			std::cout << "Connection established.\n";
+			std::cout << "Connection established as the client.\n";
 			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &clientObj);
 			if (clientObj.receiveUntilShutdown() == false) return 1;
 
