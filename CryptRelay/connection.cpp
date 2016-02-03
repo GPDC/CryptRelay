@@ -1,8 +1,7 @@
 //could i use vectors instead of char arrays for messages?
-//need to listen over 1 tcp connection NOT 2.
 #undef UNICODE
 #ifdef __linux__
-#include <unistd.h>
+#include <unistd.h>//not finished
 #endif
 
 #ifdef _WIN32
@@ -11,12 +10,12 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <process.h>		//for multithreading _beginthread(,,,);, and _endthread();
+#include <process.h>
 #endif
 
 
 
-//NOTE/WARNING: printf is used here, unlike std::cout everywhere else.
+//NOTE/WARNING/CHANGE: printf is used here, unlike std::cout everywhere else. CHANGE this now that i'm used to using both
 
 //note from MSDN: The Iphlpapi.h header file is required if an application is using the IP Helper APIs. When the Iphlpapi.h header file is required, the #include line for the Winsock2.h header this file should be placed before the #include line for the Iphlpapi.h header file. 
 //winsock2.h automatically includes core elements from Windows.h
@@ -25,50 +24,44 @@
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
 
-//???? is this necessary for GetConsoleScreenBufferInfo?
-//#pragma comment(lib, "Kernel32.lib")
+//#pragma comment(lib, "Kernel32.lib")			//???? is this necessary for GetConsoleScreenBufferInfo?
 
-//these are out here because they are static(available to all instances of this class). 
-const std::string connection::DEFAULT_PORT = "7172"; //the c-style way is: #define DEFAULT_PORT "4242"
-const int connection::DEFAULT_BUFLEN = 512;
-const std::string connection::DEFAULT_IP = "192.168.1.116";	//currently, set this one to have the server listen on this IP
-int connection::recvbuflen = DEFAULT_BUFLEN;
-char connection::recvbuf[DEFAULT_BUFLEN];
-
-int connection::globalWinner = -30;
-SOCKET connection::globalSocket = INVALID_SOCKET;
-
-char globalvalue = 9;
+#define NOBODY_WON -30
 #define SERVER_WON -7
 #define CLIENT_WON -8
 
+//these are out here because they are static(available to all instances of this class). 
+const std::string connection::DEFAULT_PORT_TO_LISTEN = "7172";			//currently, set this one to have the server listen on this port
+const int connection::DEFAULT_BUFLEN = 512;
+const std::string connection::DEFAULT_IP_TO_LISTEN = "192.168.1.116";	//currently, set this one to have the server listen on this IP
+int connection::recvbuflen = DEFAULT_BUFLEN;
+char connection::recvbuf[DEFAULT_BUFLEN];
+
+int connection::globalWinner = NOBODY_WON;
+SOCKET connection::globalSocket = INVALID_SOCKET;
+
+char globalvalue = 9;
+
+
 connection::connection()
 {
-	ZeroMemory(&hints, sizeof(hints));//fill the addrinfo instance called 'hints' with 0's!
-	ZeroMemory(&clientSockaddr_in, sizeof(clientSockaddr_in));
-	ZeroMemory(&clientSockaddr, sizeof(clientSockaddr));
-	ZeroMemory(&serverAddrRetreive, sizeof(serverAddrRetreive));
-	ZeroMemory(&serverAcceptedAddr, sizeof(serverAcceptedAddr));
+	ZeroMemory(&incomingAddr, sizeof(incomingAddr));
+	ZeroMemory(&hints, sizeof(hints));
+
+	//struct pointers being assign nullptr
+	PclientSockaddr_in = nullptr;
+	result = nullptr;
+	ptr = nullptr;
+	
 	//SOCKET  (just a typedef. on a 32 bit windows it is an unsigned int. 64 bit windows it is an unsigned __int64 ...fun fact :D)
 	ListenSocket = INVALID_SOCKET;
 	ConnectSocket = INVALID_SOCKET;
 	AcceptedSocket = INVALID_SOCKET;
 	inUseSocket = INVALID_SOCKET;
 
-	//struct pointers for addrinfo
-	PserverAddrRetreive = &serverAddrRetreive;
-	PserverAcceptedAddr = &serverAcceptedAddr;
-	PclientSockaddr = nullptr;
-	PclientSockaddr_in = nullptr;
-
-	result = nullptr;
-	ptr = nullptr;
-
 	//string
 	targetIPaddr = "";
-	userPort = DEFAULT_PORT;
-	//strIpPtr = &targetIPaddr;
-	//strPortPtr = &userPort;
+	userPort = DEFAULT_PORT_TO_LISTEN;
 
 	//int
 	iResult = 0;
@@ -86,18 +79,15 @@ void connection::serverCompetitionThread(void* instance)
 		return;
 
 	connection *self = (connection*)instance;
-
+	int iFeedback;
 	fd_set fdSet,
 		*PfdSet = &fdSet;
-
-		  
-
 	timeval timeValue,
 			*PtimeValue;
 	PtimeValue = &timeValue;
 	ZeroMemory(&timeValue, sizeof(timeValue));
 	timeValue.tv_usec = 500000; // 1 million microseconds = 1 second
-	int iFeedback;
+
 	std::cout << "STHREAD >> ";
 	if (self->serverGetAddress() == false) return; //1;			//puts the local port info in the addrinfo structure
 	std::cout << "STHREAD >> ";
@@ -115,14 +105,14 @@ void connection::serverCompetitionThread(void* instance)
 	self->putSocketInFdSet();//put socket in fd_set 
 	std::cout << "STHREAD >> ";
 	if (self->listenToListeningSocket() == false) return; //1;	//thread waits here until someone connects or it errors.
+
 	while (1)
 	{
 		fdSet.fd_count = 1;
 		fdSet.fd_array[0] = self->ListenSocket;
 		iFeedback = select(NULL, PfdSet, NULL, NULL, PtimeValue);//select returns the number of handles that are ready and contained in the fd_set structures.
 		//std::cout << "STHREAD >> currently my value for the winner is: " << self->globalWinner << "\n";
-		if (iFeedback == SOCKET_ERROR)
-		{
+		if (iFeedback == SOCKET_ERROR){
 			std::cout << "STHREAD >> ";
 			std::cout << "ServerCompetitionThread select Error: " << WSAGetLastError() << "\n";
 			closesocket(self->ListenSocket);
@@ -130,15 +120,13 @@ void connection::serverCompetitionThread(void* instance)
 			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
 			_endthread();
 		}
-		else if (self->globalWinner == CLIENT_WON)
-		{
+		else if (self->globalWinner == CLIENT_WON){
 			closesocket(self->ListenSocket);
 			std::cout << "STHREAD >> ";
 			std::cout << "Closed listening socket, because the winner is: " << self->globalWinner << ". Ending Server thread.\n";
 			_endthread();
 		}
-		else if (iFeedback > 0)
-		{
+		else if (iFeedback > 0){
 			std::cout << "STHREAD >> ";
 			std::cout << "attempting to accept a client now that select() returned a readable socket\n";
 			//or should i exit this thread, then accept the connection in the main thread?
@@ -154,10 +142,6 @@ void connection::serverCompetitionThread(void* instance)
 				return;
 		}
 	}
-	//if ((iFeedback = self->acceptClient()) == false) return; //1;				//creates a new socket to communicate with the person on
-	//thesocket = iFeedback;
-	//globalvalue = SERVER_WON;
-	//return;
 }
 
 void connection::clientCompetitionThread(void* instance)
@@ -173,18 +157,36 @@ void connection::clientCompetitionThread(void* instance)
 		std::cout << "CTHREAD :: ";
 		if ((iFeedback = self->connectToTarget()) == false) return; //1;	//creates a socket then tries to connect to that socket. this func returns the socket id as an int									
 		else if (iFeedback == true) {//if it is just unable to connect, but doesn't error, then continue trying to connect.
+			if (self->globalWinner == SERVER_WON){
+				std::cout << "CTHREAD :: ";
+				std::cout << "Client established a connection, but the server won the race.\n"; 
+				std::cout << "CTHREAD :: ";
+				std::cout << "Closing connected socket.\n";
+				closesocket(iFeedback);
+				_endthread();
+				return;
+			}
 			self->mySleep(1000);
 			continue;
 		}
-		else	//connection is established, the client has won the competition.
-			std::cout << "CTHREAD :: ";
-		std::cout << "setting global values.\n";
-			self->globalSocket = iFeedback;
-			self->globalWinner = CLIENT_WON;
-			std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
-			std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
-			_endthread();
-			return;
+		else{	//connection is established, the client has won the competition.
+			if (self->globalWinner != SERVER_WON){	//make sure the server hasn't already won during the time it took to attempt a connection
+				std::cout << "CTHREAD :: ";
+				std::cout << "setting global values.\n";
+				self->globalSocket = iFeedback;
+				self->globalWinner = CLIENT_WON;
+				std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
+				std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
+				_endthread();
+				return;
+			}
+			else{	//server won the race already, close the socket that was created by connectToTarget();
+				std::cout << "Client established a connection, but the server won the race. Closing connected socket.\n";
+				closesocket(iFeedback);
+				_endthread();
+				return;
+			}
+		}
 		return;
 	}
 	_endthread();
@@ -222,9 +224,8 @@ bool connection::serverGetAddress()
 {
 	std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
-	errchk = getaddrinfo(DEFAULT_IP.c_str(), DEFAULT_PORT.c_str(), &hints, &result);
-	if (errchk != 0)
-	{
+	errchk = getaddrinfo(DEFAULT_IP_TO_LISTEN.c_str(), DEFAULT_PORT_TO_LISTEN.c_str(), &hints, &result);
+	if (errchk != 0){
 		printf("getaddrinfo failed with error: %d\n", errchk);
 		WSACleanup();	//terminate the use of WS2_32 DLL
 		return false;
@@ -237,8 +238,7 @@ bool connection::clientGetAddress()
 	std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
 	errchk = getaddrinfo(targetIPaddr.c_str(), userPort.c_str(), &hints, &result);
-	if (errchk != 0)
-	{
+	if (errchk != 0){
 		printf("getaddrinfo failed with error: %d\n", errchk);
 		WSACleanup();	//terminate the use of WS2_32 DLL
 		return false;
@@ -277,7 +277,8 @@ bool connection::bindToListeningSocket()//my local ip address and port
 	return true;
 }
 
-void connection::putSocketInFdSet()
+//STATUS: NOT USED, what was this for?
+void connection::putSocketInFdSet()//STATUS: NOT USED, what was this for?
 {
 	return;
 }
@@ -293,8 +294,7 @@ int connection::connectToTarget()
 	ConnectSocket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
 	
 	//catch any errors that may have occured while creating the socket / check for errors to make sure the socket is valid
-	if (ConnectSocket == INVALID_SOCKET)
-	{
+	if (ConnectSocket == INVALID_SOCKET){
 		printf("Error at socket(): %ld\n", WSAGetLastError());
 		freeaddrinfo(result);
 		WSACleanup();
@@ -308,13 +308,11 @@ int connection::connectToTarget()
 	std::cout << "CTHREAD :: Trying to connect to: " << ipstr << "\n";
 	//connect to server
 	errchk = connect(ConnectSocket, ptr->ai_addr, ptr->ai_addrlen);
-	if (errchk == SOCKET_ERROR)
-	{
+	if (errchk == SOCKET_ERROR){
 		closesocket(ConnectSocket);
 		ConnectSocket = INVALID_SOCKET;
 	}
-	//else
-		//std::cout << "Sucessfully connected to: " << (sockaddr)serverStoreAddr.sin_addr << ":";	
+	//std::cout << "Sucessfully connected to: " << (sockaddr)serverStoreAddr.sin_addr << ":";	
 
 	//freeaddrinfo(result);
 
@@ -323,8 +321,7 @@ int connection::connectToTarget()
 		closesocket(ConnectSocket);
 		return true;
 	}
-	else
-	{
+	else{
 		std::cout << "Connection established.\n";
 		std::cout << "Using socket ID: " << ConnectSocket << "\n";
 		return ConnectSocket;
@@ -344,13 +341,13 @@ bool connection::listenToListeningSocket()
 	return true;
 }
 
-//always listening... need to make it connect sometimes too? try connect first, if it can't conncet, just listen?
 int connection::acceptClient()
 {
 	char incoming_accepted_ipaddress[50];
 	addr_size = sizeof(incomingAddr);
 	std::cout << "Waiting for someone to connect.\n";
-	// Accept a client socket by listening on: ListenSocket. Storing accepted addr at: serverAcceptedAddr.
+
+	// Accept a client socket by listening on: ListenSocket.
 	AcceptedSocket = accept(ListenSocket, (sockaddr*)&incomingAddr, &addr_size);
 	if (AcceptedSocket == INVALID_SOCKET) {
 		printf("accept failed with error: %d\n", WSAGetLastError());
@@ -369,7 +366,8 @@ void connection::closeTheListeningSocket()
 	closesocket(ListenSocket);
 }
 
-bool connection::echoReceiveUntilShutdown()
+//STATUS: NOT USED
+bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 {
 	std::cout << "Echo receive loop started...\n";
 	// Receive until the peer shuts down the connection
@@ -418,24 +416,20 @@ bool connection::echoReceiveUntilShutdown()
 	std::cout << "Ending receive loop...\n";
 	return true;
 }
-bool connection::clientReceiveUntilShutdown()
+
+bool connection::receiveUntilShutdown()
 {
 	if (AcceptedSocket != INVALID_SOCKET)
-	{
 		inUseSocket = AcceptedSocket;
-	}
 	else
-	{
 		inUseSocket = ConnectSocket;
-	}
 	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "First message sent from recv.\n";
+	std::string message_to_send = "Automated message sent from recv func.\n";
 
 	//send this message once
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 	iResult = send(inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
-	if (iResult == SOCKET_ERROR)
-	{
+	if (iResult == SOCKET_ERROR){
 		printf("send failed: %d\n", WSAGetLastError());
 		closesocket(inUseSocket);
 		WSACleanup();
@@ -472,8 +466,7 @@ bool connection::clientReceiveUntilShutdown()
 			*/
 			std::cout << "\n";
 			printf("Msg recvd: ");
-			for (int i = 0; i < iResult; i++)
-			{
+			for (int i = 0; i < iResult; i++){
 				std::cout << recvbuf[i];
 				//goto a new line if at the end of the msg.
 				if (i == iResult - 1)
@@ -516,173 +509,36 @@ void connection::cleanup()
 	WSACleanup();
 }
 
-
-
-
-
-
-
-//make sure void* instance is of type connection. (the class)
-//void connection::clientReceiveThread(void* instance)
-//{
-//	while (clientReceive(instance)); //as long as it returns true
-//}
-
-void connection::clientReceive(void *instance)
-{
-	int iResult;
-	if (instance == NULL)
-		return;
-	
-
-	//class instance pointer called self is assigned the value of the thing pointed to by instance. instance is a structure/class pointer
-	connection* self = (connection*)instance;	//c style cast. now must use ->'s instead of * because self is a POINTER to a class(or struct)
-
-												//receive messages from the targetipaddress
-	if (self->AcceptedSocket != INVALID_SOCKET)
-	{
-		self->inUseSocket = self->AcceptedSocket;
-	}
-	else
-	{
-		self->inUseSocket = self->ConnectSocket;
-	}
-
-	std::cout << "inUseSocket is currently value: " << self->inUseSocket << "\n";
-	do {
-
-		iResult = recv(self->inUseSocket, recvbuf, recvbuflen, 0);
-		if (iResult > 0)
-		{
-			printf("Message received: ");
-			//printing the message that is received
-			for (int i = 0; i < iResult; i++)
-			{
-				std::cout << recvbuf[i];
-				//at the end of the message, go to a new line.
-				if (i == iResult - 1)
-				{
-					std::cout << "\n";
-				}
-			}
-			printf("Bytes received: %d\n", iResult);
-		}
-		else if (iResult == 0)
-			printf("Connection closed\n");
-		else
-			printf("recv failed: %d\n", WSAGetLastError());
-
-	} while (iResult > 0);
-	return;
-	//_endthread();
-}
-
-
-
-
-
-
-
-
-
-//make sure void* instance is of type connection. (the class)
-/*
-void connection::clientSendThread(void* instance)
-{
-	HANDLE ghEvents[1];
-	ghEvents[0] = (HANDLE)_beginthread(clientSend, 0, this);	//c style typecast    from: uintptr_t    to: HANDLE.
-	clientSend(instance);
-}
-
-void connection::clientSend(void* instance)
-{
-	int intResult;
-	if (instance == NULL)
-		return;
-	connection* self = (connection*)instance;	//c style cast. now must use ->'s instead of * because self is a pointer to a class(or struct)
-
-	//make it so client and server can use this function
-	if (self->AcceptedSocket != INVALID_SOCKET)
-	{
-		self->inUseSocket = self->AcceptedSocket;
-	}
-	else
-	{
-		self->inUseSocket = self->ConnectSocket;
-	}
-
-	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "empty_message: user had no input.";
-
-	//send this message once
-	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-	intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
-	if (intResult == SOCKET_ERROR)
-	{
-		printf("send failed: %d\n", WSAGetLastError());
-		closesocket(self->inUseSocket);
-		WSACleanup();
-		//return false;
-	}
-	printf("Message sent: %s\n", sendbuf);
-	printf("Bytes Sent: %ld\n", intResult);
-
-	//ask & send the user's input the rest of the time.
-	while (1)
-	{
-		std::getline(std::cin, message_to_send);
-		sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-		intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
-		if (intResult == SOCKET_ERROR)
-		{
-			printf("send failed: %d\n", WSAGetLastError());
-			closesocket(self->inUseSocket);
-			WSACleanup();
-			return;//return 1
-		}
-		printf("Message sent: %s\n", sendbuf);
-		printf("Bytes Sent: %ld\n", intResult);
-	}
-	//_endthread();
-}
-*/
-
-
-
 bool connection::setIpAndPort(std::string targetIPaddress, std::string port)
 {
 	//HANDLE ghEvents[2];
-
+	std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
+	std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
 	targetIPaddr = targetIPaddress;
-	std::cout << "DEFAULT_PORT: " << DEFAULT_PORT << "\n";
 	userPort = port;
-	std::cout << "USER_PORT: " << userPort << "\n";
-	//iUserPort = std::stoi(port);//convert string to int
+	std::cout << "User defined IP to connect to:   " << targetIPaddr << "\n";
+	std::cout << "User defined port to connect to: " << userPort << "\n";
+	//std::stoi(port);//convert string to int
 	return false;
 }
 
 
-void connection::clientSendThread(void* instance)
+void connection::sendThread(void* instance)
 {
 	connection* self = (connection*)instance;
 	int intResult;
 	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "First message from SendThread.";
+	std::string message_to_send = "Automated message from SendThread.";
 
 	if (self->AcceptedSocket != INVALID_SOCKET)
-	{
 		self->inUseSocket = self->AcceptedSocket;
-	}
 	else
-	{
 		self->inUseSocket = self->ConnectSocket;
-	}
 
 	//send this message once
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 	intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
-	if (intResult == SOCKET_ERROR)
-	{
+	if (intResult == SOCKET_ERROR){
 		printf("send failed: %d\n", WSAGetLastError());
 		closesocket(self->inUseSocket);
 		WSACleanup();
@@ -697,8 +553,7 @@ void connection::clientSendThread(void* instance)
 		std::getline(std::cin, message_to_send);
 		sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 		intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
-		if (intResult == SOCKET_ERROR)
-		{
+		if (intResult == SOCKET_ERROR){
 			printf("send failed: %d\n", WSAGetLastError());
 			closesocket(self->inUseSocket);
 			WSACleanup();
@@ -721,51 +576,6 @@ void connection::mySleep(int number_in_ms)
 #endif
 }
 
-
-
-
-
-
-
-
-
-
-
-//client source code
-/*
-bool connection::establish_connection_client(std::string targetIPaddress, std::string port)
-{
-	targetIPaddr = targetIPaddress;
-	userPort = port;
-
-	const char *sendbuf = "this is a test.";	//this is the msg sent.
-
-	// Initialize Winsock 
-	//MSDN: After initialization, a SOCKET object must be instantiated for use by the client.
-	//initiate use of WS2_32.dll
-	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);	//MSDN: The MAKEWORD(2,2) parameter of WSAStartup makes a request for version 2.2 of Winsock on the system, and sets the passed version as the highest version of Windows Sockets support that the caller can use.
-	if (iResult != 0)
-	{
-		printf("WSAStartup failed: %d\n", iResult);
-		return 1;
-	}
-	
-	ZeroMemory( &hints, sizeof(hints) );
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
-
-
-
-	//send an initial buffer
-//	_beginthread(clientSendThread, 0, this);
-	
-	//start listening / receiving thread. Passing the instance we are in to client_rcv_thread (aka: this)
-	_beginthread(clientReceiveThread, 0, this);//this    is a pointer to the instance we are in.
-
-
-
-
 	//have the buffer[0] be a flag, the rest a message.
 	//while loop
 	//checkfor msg
@@ -774,9 +584,3 @@ bool connection::establish_connection_client(std::string targetIPaddress, std::s
 	//multithreading or message loop. could message loop lock up for too long in a particular spot so to speak if given a big task on part of the loop?
 	//or what about, check for a carriage return or a enter key button press in the windows buffer or handler or whatever it is?, and when the windows handle receives a carriage return it sends the whole line before the carriage return into a getline(vectorhere)?
 	//is there need to sync threads?
-
-
-	return false;
-	
-}
-*/

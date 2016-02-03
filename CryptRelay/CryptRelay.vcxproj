@@ -146,11 +146,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="CommandLineInput.cpp" />
     <ClCompile Include="connection.cpp" />
     <ClCompile Include="ipaddress.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="CommandLineInput.h" />
     <ClInclude Include="connection.h" />
     <ClInclude Include="ipaddress.h" />
   </ItemGroup>

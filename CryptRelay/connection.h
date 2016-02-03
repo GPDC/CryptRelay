@@ -6,28 +6,20 @@
 
 class connection
 {
-public://anyone aware of the class connection will also be aware of these members
+public:	//anyone aware of the class connection will also be aware of these members
 	connection();
 	~connection();
-	//static void connection::srv_snd_thread(void* number);
-	struct sockaddr serverAddrRetreive,
-					*PserverAddrRetreive;
-	struct sockaddr_in serverAcceptedAddr,
-					   *PserverAcceptedAddr;
 
-	struct sockaddr clientSockaddr,//to put something in here, use the _in variation of the struct
-					*PclientSockaddr;
-	struct sockaddr_in clientSockaddr_in,//currently storing ip address and port in this
-				  	*PclientSockaddr_in;
-
-	struct sockaddr_storage incomingAddr,
-							*PincomingAddr;
-
+	struct sockaddr_in *PclientSockaddr_in;			//currently storing ip address and port in this
+	struct sockaddr_storage incomingAddr;
 	struct addrinfo hints,
 					*result,
 					*ptr;
+
+	bool setIpAndPort(std::string targetIPaddress, std::string port);
 	static void serverCompetitionThread(void* instance);
 	static void clientCompetitionThread(void* instance);
+	static void sendThread(void* instance);
 	bool initializeWinsock();
 	void ServerSetHints();
 	void ClientSetHints();
@@ -35,54 +27,40 @@ public://anyone aware of the class connection will also be aware of these member
 	bool serverGetAddress();
 	bool clientGetAddress();
 	bool bindToListeningSocket();
-	void putSocketInFdSet();
+	void putSocketInFdSet();						//STATUS: NOT USED, might have something somewhere I need to put into it
 	int connectToTarget();
 	bool listenToListeningSocket();
 	int acceptClient();
 	void closeTheListeningSocket();
-	bool echoReceiveUntilShutdown();
-	bool clientReceiveUntilShutdown();
+	bool echoReceiveUntilShutdown();				//STATUS: NOT USED
+	bool receiveUntilShutdown();
 	bool shutdownConnection();
 	void cleanup();
-
-	static void clientSendThread(void* instance);
-
 	void mySleep(int number_in_ms);
-
-
-	//static void clientReceiveThread(void* instance);
-	static void clientReceive(void *instance);
-	//void clientSendThread(void* instance);
-	//static void clientSend(void* instance);
-	//bool establish_connection_client(std::string targetIPaddress, std::string port);
-	bool setIpAndPort(std::string targetIPaddress, std::string port);
 
 	static SOCKET globalSocket;
 	static int globalWinner;
 
-protected://only the children and their children are aware of these members
+protected:	//only the children and their children are aware of these members
 
-private://no one but class connection is aware of these members
-	SOCKET ListenSocket;//since it is not static, every instance has its own ConnectSocket
-	SOCKET ConnectSocket;
+private:	//no one but class connection is aware of these members
+	SOCKET ListenSocket;	
+	SOCKET ConnectSocket;							//since it is not static, every instance has its own ConnectSocket
 	SOCKET AcceptedSocket;
 	SOCKET inUseSocket;
 	WSADATA wsaData;
 
 	std::string targetIPaddr;
 	std::string userPort;
-	//std::string *strIpPtr;
-	//std::string *strPortPtr;
-	static const std::string DEFAULT_PORT;
-	static const int DEFAULT_BUFLEN;	//static means shared by all instances. constant makes it not changeable by anything or anyone.
-	static const std::string DEFAULT_IP;
+	static const std::string DEFAULT_PORT_TO_LISTEN;
+	static const int DEFAULT_BUFLEN;				//static means shared by all instances.
+	static const std::string DEFAULT_IP_TO_LISTEN;
 	int iResult;
 	int errchk;
 	int iSendResult;
-	//int iUserPort;
-	int  addr_size;
+	int addr_size;
 	static int recvbuflen;
-	static char recvbuf[]; //has to be static or else intellisense says: incomplete type not allowed. also for recv to work.
+	static char recvbuf[];							//has to be static or else intellisense says: incomplete type not allowed. also for recv to work.
 
 
 };
