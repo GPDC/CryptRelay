@@ -6,6 +6,7 @@
 
 #ifdef _WIN32
 #include "connection.h"
+#include "GlobalTypeHeader.h"
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -41,7 +42,6 @@ int connection::globalWinner = NOBODY_WON;
 SOCKET connection::globalSocket = INVALID_SOCKET;
 
 char globalvalue = 9;
-
 
 connection::connection()
 {
@@ -88,22 +88,26 @@ void connection::serverCompetitionThread(void* instance)
 	ZeroMemory(&timeValue, sizeof(timeValue));
 	timeValue.tv_usec = 500000; // 1 million microseconds = 1 second
 
-	std::cout << "STHREAD >> ";
+	if (global_verbose == true)
+		std::cout << "STHREAD >> ";
 	if (self->serverGetAddress() == false) return; //1;			//puts the local port info in the addrinfo structure
-	std::cout << "STHREAD >> ";
+	if (global_verbose == true)
+		std::cout << "STHREAD >> ";
 	if (self->createSocket() == false) return; //1;				//creates listening socket to listen on that local port
 
 	fdSet.fd_count = 1;
 	fdSet.fd_array[0] = self->ListenSocket;
-	std::cout << "STHREAD >> ";
-	std::cout << "SOCKET in fd_array: " << fdSet.fd_array[0] << "\n";
-	std::cout << "STHREAD >> ";
-	std::cout << "SOCKET ListenSocket: " << self->ListenSocket << "\n";
-
-	std::cout << "STHREAD >> ";
+	if (global_verbose == true) {
+		std::cout << "STHREAD >> ";
+		std::cout << "SOCKET in fd_array: " << fdSet.fd_array[0] << "\n";
+		std::cout << "STHREAD >> ";
+		std::cout << "SOCKET ListenSocket: " << self->ListenSocket << "\n";
+		std::cout << "STHREAD >> ";
+	}
 	if (self->bindToListeningSocket() == false) return; //1;		//assigns a socket to an address
 	self->putSocketInFdSet();//put socket in fd_set 
-	std::cout << "STHREAD >> ";
+	if (global_verbose == true)
+		std::cout << "STHREAD >> ";
 	if (self->listenToListeningSocket() == false) return; //1;	//thread waits here until someone connects or it errors.
 
 	while (1)
@@ -122,24 +126,30 @@ void connection::serverCompetitionThread(void* instance)
 		}
 		else if (self->globalWinner == CLIENT_WON){
 			closesocket(self->ListenSocket);
-			std::cout << "STHREAD >> ";
-			std::cout << "Closed listening socket, because the winner is: " << self->globalWinner << ". Ending Server thread.\n";
+			if (global_verbose == true) {
+				std::cout << "STHREAD >> ";
+				std::cout << "Closed listening socket, because the winner is: " << self->globalWinner << ". Ending Server thread.\n";
+			}
 			_endthread();
 		}
 		else if (iFeedback > 0){
-			std::cout << "STHREAD >> ";
-			std::cout << "attempting to accept a client now that select() returned a readable socket\n";
-			//or should i exit this thread, then accept the connection in the main thread?
-			std::cout << "STHREAD >> ";
+			if (global_verbose == true) {
+				std::cout << "STHREAD >> ";
+				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
+				//or should i exit this thread, then accept the connection in the main thread?
+				std::cout << "STHREAD >> ";
+			}
 			if ((iFeedback = self->acceptClient()) == false) return; //1;				//creates a new socket to communicate with the person on
 			//else
-			std::cout << "STHREAD >> ";
-			std::cout << "accept must have been successful, setting globalwinner and globalsocket\n";
-				self->globalSocket = iFeedback;
-				self->globalWinner = SERVER_WON;
-				closesocket(self->ListenSocket);
-				_endthread();
-				return;
+			if (global_verbose == true) {
+				std::cout << "STHREAD >> ";
+				std::cout << "accept must have been successful, setting globalwinner and globalsocket\n";
+			}
+			self->globalSocket = iFeedback;
+			self->globalWinner = SERVER_WON;
+			closesocket(self->ListenSocket);
+			_endthread();
+			return;
 		}
 	}
 }
@@ -147,21 +157,24 @@ void connection::serverCompetitionThread(void* instance)
 void connection::clientCompetitionThread(void* instance)
 {
 	connection *self = (connection*)instance;
-	std::cout << "CTHREAD :: ";
+	if (global_verbose == true)
+		std::cout << "CTHREAD :: ";
 	if (self->clientGetAddress() == false) return; //1;		//puts the local port info in the addrinfo structure
 
 	while (self->globalWinner != SERVER_WON && self->globalWinner != CLIENT_WON) 
 	{
 		int iFeedback;
-		
-		std::cout << "CTHREAD :: ";
+		if (global_verbose == true)
+			std::cout << "CTHREAD :: ";
 		if ((iFeedback = self->connectToTarget()) == false) return; //1;	//creates a socket then tries to connect to that socket. this func returns the socket id as an int									
 		else if (iFeedback == true) {//if it is just unable to connect, but doesn't error, then continue trying to connect.
 			if (self->globalWinner == SERVER_WON){
-				std::cout << "CTHREAD :: ";
-				std::cout << "Client established a connection, but the server won the race.\n"; 
-				std::cout << "CTHREAD :: ";
-				std::cout << "Closing connected socket.\n";
+				if (global_verbose == true) {
+					std::cout << "CTHREAD :: ";
+					std::cout << "Client established a connection, but the server won the race.\n";
+					std::cout << "CTHREAD :: ";
+					std::cout << "Closing connected socket.\n";
+				}
 				closesocket(iFeedback);
 				_endthread();
 				return;
@@ -175,13 +188,16 @@ void connection::clientCompetitionThread(void* instance)
 				std::cout << "setting global values.\n";
 				self->globalSocket = iFeedback;
 				self->globalWinner = CLIENT_WON;
-				std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
-				std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
+				if (global_verbose == true) {
+					std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
+					std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
+				}
 				_endthread();
 				return;
 			}
 			else{	//server won the race already, close the socket that was created by connectToTarget();
-				std::cout << "Client established a connection, but the server won the race. Closing connected socket.\n";
+				if (global_verbose == true)
+					std::cout << "CTHREAD :: Client established a connection, but the server won the race. Closing connected socket.\n";
 				closesocket(iFeedback);
 				_endthread();
 				return;
@@ -195,7 +211,8 @@ void connection::clientCompetitionThread(void* instance)
 
 bool connection::initializeWinsock()
 {
-	std::cout << "Initializing Winsock...\n";
+	if (global_verbose == true)
+		std::cout << "Initializing Winsock...\n";
 	// Initialize Winsock
 	iResult = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (iResult != 0) {
@@ -222,7 +239,8 @@ void connection::ClientSetHints()
 
 bool connection::serverGetAddress()
 {
-	std::cout << "Retreiving info: IP address and port...\n";
+	if (global_verbose == true)
+		std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
 	errchk = getaddrinfo(DEFAULT_IP_TO_LISTEN.c_str(), DEFAULT_PORT_TO_LISTEN.c_str(), &hints, &result);
 	if (errchk != 0){
@@ -235,7 +253,8 @@ bool connection::serverGetAddress()
 
 bool connection::clientGetAddress()
 {
-	std::cout << "Retreiving info: IP address and port...\n";
+	if (global_verbose == true)
+		std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
 	errchk = getaddrinfo(targetIPaddr.c_str(), userPort.c_str(), &hints, &result);
 	if (errchk != 0){
@@ -249,7 +268,8 @@ bool connection::clientGetAddress()
 
 bool connection::createSocket()
 {
-	std::cout << "Creating Socket to listen on...\n";
+	if (global_verbose == true)
+		std::cout << "Creating Socket to listen on...\n";
 	// Create a SOCKET handle for connecting to server(no ip address here, that is with bind)
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
@@ -263,7 +283,8 @@ bool connection::createSocket()
 
 bool connection::bindToListeningSocket()//my local ip address and port
 {
-	std::cout << "Binding ... associating local address with the listen socket...\n";
+	if (global_verbose == true)
+		std::cout << "Binding ... associating local address with the listen socket...\n";
 	// Setup the TCP listening socket (putting ip address on the allocated socket)
 	errchk = bind(ListenSocket, result->ai_addr, result->ai_addrlen);
 	if (errchk == SOCKET_ERROR) {
@@ -285,8 +306,8 @@ void connection::putSocketInFdSet()//STATUS: NOT USED, what was this for?
 
 int connection::connectToTarget()
 {
-																	//test
-	std::cout << "Attempting to connect to someone...\n";					//test
+	if (global_verbose == true)
+		std::cout << "Attempting to connect to someone...\n";					//test
 	//attempt to connect to the first address returned by the call to getaddrinfo
 	ptr = result;
 
@@ -305,7 +326,8 @@ int connection::connectToTarget()
 	char ipstr[INET_ADDRSTRLEN];
 	voidAddr = &(PclientSockaddr_in->sin_addr);
 	InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
-	std::cout << "CTHREAD :: Trying to connect to: " << ipstr << "\n";
+	if (global_verbose == true)
+		std::cout << "CTHREAD :: Trying to connect to: " << ipstr << "\n";
 	//connect to server
 	errchk = connect(ConnectSocket, ptr->ai_addr, ptr->ai_addrlen);
 	if (errchk == SOCKET_ERROR){
@@ -322,15 +344,16 @@ int connection::connectToTarget()
 		return true;
 	}
 	else{
-		std::cout << "Connection established.\n";
-		std::cout << "Using socket ID: " << ConnectSocket << "\n";
+		std::cout << "Connection established.\n";	
+		if (global_verbose == true)
+			std::cout << "Using socket ID: " << ConnectSocket << "\n";
 		return ConnectSocket;
 	}
 }
 
 bool connection::listenToListeningSocket()
 {
-	std::cout << "Listening...\n";
+	std::cout << "Listening on IP: " << "IP HERE" << " PORT: " << "PORTHERE...\n";
 	errchk = listen(ListenSocket, SOMAXCONN);
 	if (errchk == SOCKET_ERROR) {
 		printf("listen failed with error: %d\n", WSAGetLastError());
@@ -343,7 +366,6 @@ bool connection::listenToListeningSocket()
 
 int connection::acceptClient()
 {
-	char incoming_accepted_ipaddress[50];
 	addr_size = sizeof(incomingAddr);
 	std::cout << "Waiting for someone to connect.\n";
 
@@ -355,14 +377,17 @@ int connection::acceptClient()
 		WSACleanup();
 		return false;
 	}
-	std::cout << "Connected to " << ":" << "\n";
-	std::cout << "Connected to someone on socket ID: " << AcceptedSocket << "\n";
+	if (global_verbose == true)
+		std::cout << "Connected to " << ":" << "\n";
+	if (global_verbose == true)
+		std::cout << "Connected to someone on socket ID: " << AcceptedSocket << "\n";
 	return AcceptedSocket;
 }
 
 void connection::closeTheListeningSocket()
 {
-	std::cout << "Closing the listening socket...\n";
+	if (global_verbose == true)
+		std::cout << "Closing the listening socket...\n";
 	closesocket(ListenSocket);
 }
 
@@ -436,9 +461,10 @@ bool connection::receiveUntilShutdown()
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
-	printf("Bytes Sent: %ld\n", iResult);
-
-	std::cout << "Recv loop started...\n";
+	if (global_verbose == true)
+		printf("Bytes Sent: %ld\n", iResult);
+	if (global_verbose == true)
+		std::cout << "Recv loop started...\n";
 
 	// Receive until the peer shuts down the connection
 	do {
@@ -472,7 +498,8 @@ bool connection::receiveUntilShutdown()
 				if (i == iResult - 1)
 					std::cout << "\n";
 			}
-			printf("Bytes recvd: %d\n", iResult);						//this just prints out on the server's console the amount of bytes received.
+			if (global_verbose == true)
+				printf("Bytes recvd: %d\n", iResult);						//this just prints out on the server's console the amount of bytes received.
 		}
 		else if (iResult == 0)
 			printf("Connection closing...\n");
@@ -503,7 +530,8 @@ bool connection::shutdownConnection()
 // cleanup
 void connection::cleanup()
 {
-	std::cout << "Cleaning up. Freeing addrinfo...\n";
+	if (global_verbose == true)
+		std::cout << "Cleaning up. Freeing addrinfo...\n";
 	freeaddrinfo(result);									//frees information gathered that the getaddrinfo() dynamically allocated into addrinfo structures
 	closesocket(AcceptedSocket);
 	WSACleanup();
@@ -512,12 +540,16 @@ void connection::cleanup()
 bool connection::setIpAndPort(std::string targetIPaddress, std::string port)
 {
 	//HANDLE ghEvents[2];
-	std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
-	std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
+	if (global_verbose == true) {
+		std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
+		std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
+	}
 	targetIPaddr = targetIPaddress;
 	userPort = port;
-	std::cout << "User defined IP to connect to:   " << targetIPaddr << "\n";
-	std::cout << "User defined port to connect to: " << userPort << "\n";
+	if (global_verbose == true) {
+		std::cout << "User defined IP to connect to:   " << targetIPaddr << "\n";
+		std::cout << "User defined port to connect to: " << userPort << "\n";
+	}
 	//std::stoi(port);//convert string to int
 	return false;
 }
@@ -545,7 +577,8 @@ void connection::sendThread(void* instance)
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
-	printf("Bytes Sent: %ld\n", intResult);
+	if (global_verbose == true)
+		printf("Bytes Sent: %ld\n", intResult);
 
 	//ask & send the user's input the rest of the time.
 	while (1)
@@ -560,7 +593,8 @@ void connection::sendThread(void* instance)
 			return;//return 1
 		}
 		printf("Message sent: %s\n", sendbuf);
-		printf("Bytes Sent: %ld\n", intResult);
+		if (global_verbose == true)
+			printf("Bytes Sent: %ld\n", intResult);
 	}
 	//_endthread();
 }

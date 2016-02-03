@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClInclude Include="CommandLineInput.h" />
     <ClInclude Include="connection.h" />
+    <ClInclude Include="GlobalTypeHeader.h" />
     <ClInclude Include="ipaddress.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

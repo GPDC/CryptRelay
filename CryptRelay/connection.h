@@ -1,8 +1,8 @@
 //connection.h
-#pragma once
+#ifndef connection_h__
+#define connection_h__
 #include <string>
 #include <WinSock2.h>
-
 
 class connection
 {
@@ -61,8 +61,6 @@ private:	//no one but class connection is aware of these members
 	int addr_size;
 	static int recvbuflen;
 	static char recvbuf[];							//has to be static or else intellisense says: incomplete type not allowed. also for recv to work.
-
-
 };
 
-
+#endif

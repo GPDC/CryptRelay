@@ -1,4 +1,5 @@
 #include "CommandLineInput.h"
+#include "GlobalTypeHeader.h"
 #include <string>
 #include <iostream>
 

@@ -9,6 +9,7 @@
 #include <string>
 #include "ipaddress.h"
 #include "connection.h"
+#include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include <Windows.h>
 #include <process.h>
@@ -16,12 +17,11 @@
 DWORD dwevent;
 HANDLE ghEvents[2];
 
-int verbose = false;
-
 #define NOBODY_WON -30
 #define SERVER_WON -7
 #define CLIENT_WON -8
 
+bool global_verbose = false;
 
 //multiple: make a continuous loop that checks for connection requests using the listen function. if a connection request occurs, call accept and pass the work to another thread to handle it.
 
@@ -54,15 +54,16 @@ int main(int argc, char *argv[])
 
 	//server startup sequence
 	connection serverObj;
-	if(verbose == true)
-		std::cout << "SERVER::";
+//	if(verbose == true)
+//		std::cout << "SERVER::";
 	serverObj.setIpAndPort(targetIPaddress, userPort);
 	if (serverObj.initializeWinsock() == false) return 1;
 	serverObj.ServerSetHints();
 
 	//client startup sequence
 	connection clientObj;
-	std::cout << "CLIENT::";
+	if (global_verbose == true)
+		std::cout << "CLIENT::";
 	clientObj.setIpAndPort(targetIPaddress, userPort);
 	if (clientObj.initializeWinsock() == false) return 1;
 	clientObj.ClientSetHints();
@@ -80,20 +81,23 @@ int main(int argc, char *argv[])
 		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
 
 	//display the winning thread
-	if (serverObj.globalWinner == -8)
-		std::cout << "MAIN && Client thread is the winner!\n";
-	else if (serverObj.globalWinner == -7)
-		std::cout << "MAIN && Server thread is the winner!\n";
-	else
-		std::cout << "MAIN && There is no winner.\n";
+	if (global_verbose == true){
+		if (serverObj.globalWinner == -8)
+			std::cout << "MAIN && Client thread is the winner!\n";
+		else if (serverObj.globalWinner == -7)
+			std::cout << "MAIN && Server thread is the winner!\n";
+		else
+			std::cout << "MAIN && There is no winner.\n";
+	}
+
+		
 
 	//continue running the program for the thread that returned and won.
 	int who_won = serverObj.globalWinner;
 	while (who_won == CLIENT_WON || who_won == SERVER_WON){
-		if (who_won == NOBODY_WON) return 1;
-
 		//if server won, then act as a server.
 		if (who_won == SERVER_WON){ 
+			std::cout << "Connection established.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &serverObj);	// c style typecast    from: uintptr_t    to: HANDLE.
 			if (serverObj.receiveUntilShutdown() == false) return 1;
@@ -102,14 +106,28 @@ int main(int argc, char *argv[])
 			if (serverObj.shutdownConnection() == false) return 1;
 			serverObj.cleanup();
 		}
-		if (who_won == CLIENT_WON)
-		{
+		//if client won, then act as a client
+		else if (who_won == CLIENT_WON){
+			std::cout << "Connection established.\n";
 			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &clientObj);
 			if (clientObj.receiveUntilShutdown() == false) return 1;
 
 			//shutdown
 			if (clientObj.shutdownConnection() == false) return 1;
 			clientObj.cleanup();
+		}
+		//if nobody won, quit
+		else if (who_won == NOBODY_WON) {
+			std::cout << "ERROR: Unexpected doomsday scenario.\n";
+			std::cout << "ERROR: Shutting down.\n";
+			clientObj.cleanup();
+			serverObj.cleanup();
+			return 1;
+		}
+		else {
+			std::cout << "ERROR: Shutting down. The impossible is possible.\n";
+			clientObj.cleanup();
+			serverObj.cleanup();
 		}
 	}
 	std::cout << "beep boop - beep boop\n";
