@@ -1,4 +1,6 @@
-//ipv4 format checking is complete.
+//main.cpp
+//Program name: CryptRelay
+
 //ipv6 not currently implemented.
 
 //maybe as a chat escape method, put in chat:    cryptrelay.sendfile filenamehere      ...and...       cryptrelay.exit

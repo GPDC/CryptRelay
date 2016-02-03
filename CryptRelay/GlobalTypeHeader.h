@@ -1,3 +1,4 @@
+//GlobalTypeHeader.h
 #ifndef GlobalTypeHeader_h__
 #define GlobalTypeHeader_h__
 

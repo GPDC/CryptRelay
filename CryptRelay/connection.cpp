@@ -1,3 +1,4 @@
+//connection.cpp
 //could i use vectors instead of char arrays for messages?
 #undef UNICODE
 #ifdef __linux__
