@@ -24,7 +24,7 @@ ipaddress::~ipaddress()
 
 }
 
-std::string ipaddress::get_target(char* targetIPaddress)
+bool ipaddress::get_target(char* targetIPaddress)
 {
 	//get target IP address from user
 	if (global_verbose == true)
@@ -36,15 +36,13 @@ std::string ipaddress::get_target(char* targetIPaddress)
 
 		//if the format is correct then go ahead and give main the target IP string so it can be used.
 		if (is_format_good == true)
-			return targetIPaddress;
+			return true;
 		else{
 			std::cout << "bad IP address format.\n\n";
-			targetIPaddress = "bad IP address format.";
-			return targetIPaddress;
+			return false;
 		}
-
 	}
-	return "Error: This shouldn't be possible.\n";
+	return false;
 }
 
 

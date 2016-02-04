@@ -28,9 +28,9 @@
 
 //#pragma comment(lib, "Kernel32.lib")			//???? is this necessary for GetConsoleScreenBufferInfo?
 
-#define NOBODY_WON -30
-#define SERVER_WON -7
-#define CLIENT_WON -8
+const int connection::NOBODY_WON = -30;
+const int connection::SERVER_WON = -7;
+const int connection::CLIENT_WON = -8;
 
 //these are out here because they are static(available to all instances of this class). 
 const std::string connection::DEFAULT_PORT_TO_LISTEN = "7172";			//currently, set this one to have the server listen on this port
@@ -167,8 +167,8 @@ void connection::clientCompetitionThread(void* instance)
 		int iFeedback;
 		if (global_verbose == true)
 			std::cout << "CTHREAD :: ";
-		if ((iFeedback = self->connectToTarget()) == false) return; //1;	//creates a socket then tries to connect to that socket. this func returns the socket id as an int									
-		else if (iFeedback == true) {//if it is just unable to connect, but doesn't error, then continue trying to connect.
+		if ((iFeedback = self->connectToTarget()) == 0) return; //1;	//creates a socket then tries to connect to that socket. this func returns the socket id as an int									
+		else if (iFeedback == 1) {//if it is just unable to connect, but doesn't error, then continue trying to connect.
 			if (self->globalWinner == SERVER_WON){
 				if (global_verbose == true) {
 					std::cout << "CTHREAD :: ";

@@ -10,6 +10,10 @@ public:	//anyone aware of the class connection will also be aware of these membe
 	connection();
 	~connection();
 
+	static const int NOBODY_WON;
+	static const int SERVER_WON;
+	static const int CLIENT_WON;
+
 	struct sockaddr_in *PclientSockaddr_in;			//currently storing ip address and port in this
 	struct sockaddr_storage incomingAddr;
 	struct addrinfo hints,

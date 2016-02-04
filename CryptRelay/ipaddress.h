@@ -7,7 +7,7 @@ class ipaddress
 public:
 	ipaddress();
 	~ipaddress();
-	std::string get_target(char* targetIPaddress);
+	bool get_target(char* targetIPaddress);
 	bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress);
 	bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int end);
 	int ipaddress::find_next_period(std::string targetIPaddress, int start);
