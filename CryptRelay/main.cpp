@@ -1,10 +1,25 @@
 //main.cpp
 //Program name: CryptRelay
+//Formatting guide: Located at the bottom of main.cpp
 
 //Ipv6 not currently implemented.
 
 //Maybe as a chat escape method, put in chat:    cryptrelay.sendfile filenamehere      ...and...       cryptrelay.exit
 //What about hitting escape first or another key, then typing a command.
+
+//TODO:
+//nat traversal
+//encryption
+//rename ipaddress.cpp to FormatCheck.cpp
+//add port checking in FormatCheck.cpp
+//rename CommandLineInput.cpp to ProgramInput.cpp
+//fill out style guide
+//clean up current style format to adhere to the guide
+//create a file in the same folder cryptrelay.exe is in and place whatever the user inputted for -m and -mp inside there.
+//	^this is so the user will not have to specify their IP and port to listen on _every_single_time.
+//when person specifies a port to listen on, maybe should check if that port is currently being used by some other program?
+//output what IP and port you are listening on
+//output the IP and port of the person you connected to.
 
 #include <iostream>
 #include <string>
@@ -19,27 +34,34 @@
 DWORD dwevent;
 HANDLE ghEvents[2];
 
-const int MAX_DIFF_INPUTS = 5;
-
+const int MAX_DIFF_INPUTS = 10; //max possible count of argc to bother reading from
 bool global_verbose = false;
 
 //Multiple: make a continuous loop that checks for connection requests using the listen function. if a connection request occurs, call accept and pass the work to another thread to handle it.
 
 int main(int argc, char *argv[])
 {
-	std::string targetIPaddress = "";
-	std::string userPort = "4545";
+	std::string target_ip_address = "";
+	std::string target_port = "";
+	std::string my_ip_address = connection::DEFAULT_IP_TO_LISTEN;
+	std::string my_port = connection::DEFAULT_PORT_TO_LISTEN;
 	int err_chk;
+	int arg_size;
+	std::vector<std::string> arg;
+	arg.reserve(MAX_DIFF_INPUTS);
+
 	CommandLineInput CommandLineInputObj;
 	ipaddress ipaddress_get;
 	
-	//Check to see what the user wants to do via command line input
-	std::vector<std::string> arg;
-	arg.reserve(MAX_DIFF_INPUTS);
+	//----------------------- Check to see what the user wants to do via program input -----------------------
+
+
 	//put all argv's into a vector so they can be compared to strings
 	for (int i = 0; i < argc; i++) {
 		arg.push_back(argv[i]);
 	}
+	arg_size = arg.size();
+
 	//if command line arguments supplied, show the ReadMe
 	if (argc <= 1) {
 		CommandLineInputObj.helpAndReadMe(argc);
@@ -47,29 +69,53 @@ int main(int argc, char *argv[])
 	}
 	//check all argv inputs to see what the user wants to do
 	if (argc >= 2) {
-		for (int i = 0; i < MAX_DIFF_INPUTS; ++i) {
+		for (int i = 1; i < argc; ++i) {
 
-			if (arg[i] == "-h" || arg[i] == "-H" || arg[i] == "-help" || arg[i] == "-Help" || arg[i] == "help" || arg[i] == "readme") {
+			if (arg[i] == "-h" 
+					|| arg[i] == "-H" 
+					|| arg[i] == "-help" 
+					|| arg[i] == "-Help" 
+					|| arg[i] == "help" 
+					|| arg[i] == "readme") {
 				CommandLineInputObj.helpAndReadMe(argc);
 				return 1;
 			}
-
-			//currently taking input from argv[1] and treating that as the target IP address
-			if (arg[i] == "-t") {
+			if (arg[i] == "-t" && i < arg_size -1) {
 				err_chk = ipaddress_get.get_target(argv[i + 1]);
 				if (err_chk == false)
 					return 1;
 				else
-					return 99;//create a pointer to the thing that has the ip address info!
+					target_ip_address = argv[i + 1];
 			}
-
-			//currently taking input from argv[2] and treating that as the target PORT
-			if (argc >= 3)
-				userPort = (argv[2]);
+			if (arg[i] == "-tp") {
+				//err_chk = ipaddress_get.port(argv[i + 1]);
+				//if (err_chk == false)
+				//	return 1;
+				//else
+					target_port = argv[i + 1];
+			}
+			if (arg[i] == "-m") {
+				err_chk = ipaddress_get.get_target(argv[i + 1]);
+				if (err_chk == false)
+					return 1;
+				else
+					my_ip_address = argv[i + 1];
+			}
+			if (arg[i] == "-mp") {
+				//err_chk = ipaddress_get.port(argv[i + 1]);
+				//if (err_chk == false)
+				//	return 1;
+				//else
+				target_port = argv[i + 1];
+			}
+			if (arg[i] == "-v") 
+				global_verbose = true;
+			if (arg[i] == "-f") {
+				std::cout << "-f hasn't been implemented yet.\n";
+				return 1;
+			}
 		}
 	}
-
-
 
 
 	//===================================== Starting Chat Program =====================================
@@ -80,7 +126,7 @@ int main(int argc, char *argv[])
 	connection serverObj;
 	if(global_verbose == true)
 		std::cout << "SERVER::";
-	serverObj.setIpAndPort(targetIPaddress, userPort);
+	serverObj.serverSetIpAndPort(my_ip_address, my_port);
 	if (serverObj.initializeWinsock() == false) return 1;
 	serverObj.ServerSetHints();
 
@@ -88,14 +134,14 @@ int main(int argc, char *argv[])
 	connection clientObj;
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
-	clientObj.setIpAndPort(targetIPaddress, userPort);
+	clientObj.clientSetIpAndPort(target_ip_address, target_port);
 	if (clientObj.initializeWinsock() == false) return 1;
 	clientObj.ClientSetHints();
 
 
 	//BEGIN SERVER COMPETITION THREADS
 	ghEvents[0] = (HANDLE)_beginthread(connection::serverCompetitionThread, 0, &serverObj);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEvents[1] = (HANDLE)_beginthread(connection::clientCompetitionThread, 0, &clientObj);	//c style typecast    from: uintptr_t    to: HANDLE.
+	ghEvents[1] = (HANDLE)_beginthread(connection::clientCompetitionThread, 0, &clientObj);
 
 
 	//Wait for any 1 thread to finish
@@ -118,9 +164,9 @@ int main(int argc, char *argv[])
 
 	//Continue running the program for the thread that returned and won.
 	int who_won = serverObj.globalWinner;
-	while (who_won == CLIENT_WON || who_won == SERVER_WON){
+	while (who_won == connection::CLIENT_WON || who_won == connection::SERVER_WON){
 		//if server won, then act as a server.
-		if (who_won == SERVER_WON){ 
+		if (who_won == connection::SERVER_WON){ 
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			//clientObj.cleanup();    here????????
@@ -132,7 +178,7 @@ int main(int argc, char *argv[])
 			serverObj.cleanup();
 		}
 		//If client won, then act as a client
-		else if (who_won == CLIENT_WON){
+		else if (who_won == connection::CLIENT_WON){
 			std::cout << "Connection established as the client.\n";
 			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &clientObj);
 			//serverObj.cleanup();    here??????????
@@ -143,7 +189,7 @@ int main(int argc, char *argv[])
 			clientObj.cleanup();
 		}
 		//If nobody won, quit
-		else if (who_won == NOBODY_WON) {
+		else if (who_won == connection::NOBODY_WON) {
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
 			std::cout << "ERROR: Shutting down.\n";
 			clientObj.cleanup();
@@ -180,3 +226,17 @@ int main(int argc, char *argv[])
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ End File Transfer Program ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 }
+
+
+
+/*
+
++++++++++++++++++++++++++++++++++++++ Formatting Guide +++++++++++++++++++++++++++++++++++++
+
+guide here!
+
+
+
+
+
+*/

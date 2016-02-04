@@ -13,6 +13,8 @@ public:	//anyone aware of the class connection will also be aware of these membe
 	static const int NOBODY_WON;
 	static const int SERVER_WON;
 	static const int CLIENT_WON;
+	static const std::string DEFAULT_PORT_TO_LISTEN;
+	static const std::string DEFAULT_IP_TO_LISTEN;
 
 	struct sockaddr_in *PclientSockaddr_in;			//currently storing ip address and port in this
 	struct sockaddr_storage incomingAddr;
@@ -20,7 +22,8 @@ public:	//anyone aware of the class connection will also be aware of these membe
 					*result,
 					*ptr;
 
-	bool setIpAndPort(std::string targetIPaddress, std::string port);
+	bool clientSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port);
+	bool serverSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port);
 	static void serverCompetitionThread(void* instance);
 	static void clientCompetitionThread(void* instance);
 	static void sendThread(void* instance);
@@ -54,11 +57,13 @@ private:	//no one but class connection is aware of these members
 	SOCKET inUseSocket;
 	WSADATA wsaData;
 
-	std::string targetIPaddr;
-	std::string userPort;
-	static const std::string DEFAULT_PORT_TO_LISTEN;
+	std::string target_ip_addr;
+	std::string target_port;
+	std::string my_ip_addr;
+	std::string my_port;
+
 	static const int DEFAULT_BUFLEN;				//static means shared by all instances.
-	static const std::string DEFAULT_IP_TO_LISTEN;
+
 	int iResult;
 	int errchk;
 	int iSendResult;

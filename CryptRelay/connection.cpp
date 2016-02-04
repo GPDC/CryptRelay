@@ -61,8 +61,10 @@ connection::connection()
 	inUseSocket = INVALID_SOCKET;
 
 	//string
-	targetIPaddr = "";
-	userPort = DEFAULT_PORT_TO_LISTEN;
+	target_ip_addr = "";
+	target_port = DEFAULT_PORT_TO_LISTEN;
+	my_ip_addr = DEFAULT_IP_TO_LISTEN;
+	my_port = DEFAULT_PORT_TO_LISTEN;
 
 	//int
 	iResult = 0;
@@ -243,8 +245,9 @@ bool connection::serverGetAddress()
 	if (global_verbose == true)
 		std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
-	errchk = getaddrinfo(DEFAULT_IP_TO_LISTEN.c_str(), DEFAULT_PORT_TO_LISTEN.c_str(), &hints, &result);
+	errchk = getaddrinfo(my_ip_addr.c_str(), my_port.c_str(), &hints, &result);
 	if (errchk != 0){
+		std::cout << "STHREAD >> ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
 		WSACleanup();	//terminate the use of WS2_32 DLL
 		return false;
@@ -257,8 +260,9 @@ bool connection::clientGetAddress()
 	if (global_verbose == true)
 		std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
-	errchk = getaddrinfo(targetIPaddr.c_str(), userPort.c_str(), &hints, &result);
+	errchk = getaddrinfo(target_ip_addr.c_str(), target_port.c_str(), &hints, &result);
 	if (errchk != 0){
+		std::cout << "CTHREAD :: ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
 		WSACleanup();	//terminate the use of WS2_32 DLL
 		return false;
@@ -538,18 +542,35 @@ void connection::cleanup()
 	WSACleanup();
 }
 
-bool connection::setIpAndPort(std::string targetIPaddress, std::string port)
+bool connection::clientSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port)
 {
 	//HANDLE ghEvents[2];
 	if (global_verbose == true) {
 		std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
 		std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
 	}
-	targetIPaddr = targetIPaddress;
-	userPort = port;
+	target_ip_addr = user_defined_ip_address;
+	target_port = user_defined_port;
 	if (global_verbose == true) {
-		std::cout << "User defined IP to connect to:   " << targetIPaddr << "\n";
-		std::cout << "User defined port to connect to: " << userPort << "\n";
+		std::cout << "User defined IP to connect to:   " << target_ip_addr << "\n";
+		std::cout << "User defined port to connect to: " << target_port << "\n";
+	}
+	//std::stoi(port);//convert string to int
+	return false;
+}
+
+bool connection::serverSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port)
+{
+	//HANDLE ghEvents[2];
+	if (global_verbose == true) {
+		std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
+		std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
+	}
+	my_ip_addr = user_defined_ip_address;
+	my_port = user_defined_port;
+	if (global_verbose == true) {
+		std::cout << "User defined IP to connect to:   " << target_ip_addr << "\n";
+		std::cout << "User defined port to connect to: " << target_port << "\n";
 	}
 	//std::stoi(port);//convert string to int
 	return false;
