@@ -2,17 +2,35 @@
 //could i use vectors instead of char arrays for messages?
 #undef UNICODE
 #ifdef __linux__
-#include <unistd.h>//not finished
+#include <iostream>
+#include <vector>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <stdio.h>
+//#include <errno.h>
+
+#include <arpa/inet.h>
+#include <signal.h>
+
+#include "connection.h"
+#include "GlobalTypeHeader.h"
 #endif
 
 #ifdef _WIN32
-#include "connection.h"
-#include "GlobalTypeHeader.h"
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include <process.h>
+
+#include "connection.h"
+#include "GlobalTypeHeader.h"
 #endif
 
 
@@ -212,6 +230,7 @@ void connection::clientCompetitionThread(void* instance)
 	return;
 }
 
+#ifdef _WIN32
 bool connection::initializeWinsock()
 {
 	if (global_verbose == true)
@@ -224,6 +243,7 @@ bool connection::initializeWinsock()
 	}
 	return true;
 }
+#endif
 
 void connection::ServerSetHints()
 {
@@ -539,7 +559,9 @@ void connection::cleanup()
 		std::cout << "Cleaning up. Freeing addrinfo...\n";
 	freeaddrinfo(result);									//frees information gathered that the getaddrinfo() dynamically allocated into addrinfo structures
 	closesocket(AcceptedSocket);
+#ifdef _WIN32
 	WSACleanup();
+#endif
 }
 
 bool connection::clientSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port)

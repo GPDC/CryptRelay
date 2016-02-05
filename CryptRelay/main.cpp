@@ -2,11 +2,6 @@
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
 
-//Ipv6 not currently implemented.
-
-//Maybe as a chat escape method, put in chat:    cryptrelay.sendfile filenamehere      ...and...       cryptrelay.exit
-//What about hitting escape first or another key, then typing a command.
-
 //TODO:
 //nat traversal
 //encryption
@@ -20,21 +15,47 @@
 //when person specifies a port to listen on, maybe should check if that port is currently being used by some other program?
 //output what IP and port you are listening on
 //output the IP and port of the person you connected to.
-
+//fix chat output issue when someone sends you a message while you are typing
+//ipv6
+#ifdef __linux__
 #include <iostream>
-#include <string>
+#include <vector>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <stdio.h>
+//#include <errno.h>
+
+#include <arpa/inet.h>
+#include <signal.h>
+
 #include "ipaddress.h"
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#endif
+
+#ifdef _WIN32
+#include <iostream>
+#include <string>
 #include <Windows.h>
 #include <process.h>
 #include <vector>
 
+#include "ipaddress.h"
+#include "connection.h"
+#include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
+#endif
 DWORD dwevent;
 HANDLE ghEvents[2];
 
-const int MAX_DIFF_INPUTS = 10; //max possible count of argc to bother reading from
+const int MAX_DIFF_INPUTS = 12; //max possible count of argc to bother reading from
 bool global_verbose = false;
 
 //Multiple: make a continuous loop that checks for connection requests using the listen function. if a connection request occurs, call accept and pass the work to another thread to handle it.
@@ -120,14 +141,16 @@ int main(int argc, char *argv[])
 
 	//===================================== Starting Chat Program =====================================
 
-	std::cout << "Welcome to the chat program.\n";
+	std::cout << "Welcome to the chat program. Version: 0.1.1\n";//somewhat arbitrary version number usage at the moment :)
 
 	//Server startup sequence
 	connection serverObj;
 	if(global_verbose == true)
 		std::cout << "SERVER::";
 	serverObj.serverSetIpAndPort(my_ip_address, my_port);
+#ifdef _WIN32
 	if (serverObj.initializeWinsock() == false) return 1;
+#endif
 	serverObj.ServerSetHints();
 
 	//Client startup sequence
@@ -135,14 +158,19 @@ int main(int argc, char *argv[])
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
 	clientObj.clientSetIpAndPort(target_ip_address, target_port);
+#ifdef _WIN32
 	if (clientObj.initializeWinsock() == false) return 1;
+#endif
 	clientObj.ClientSetHints();
 
-
+#ifdef _WIN32
 	//BEGIN SERVER COMPETITION THREADS
 	ghEvents[0] = (HANDLE)_beginthread(connection::serverCompetitionThread, 0, &serverObj);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[1] = (HANDLE)_beginthread(connection::clientCompetitionThread, 0, &clientObj);
-
+#endif
+#ifdef __linux__
+	//pthread
+#endif
 
 	//Wait for any 1 thread to finish
 	WaitForMultipleObjects(
@@ -219,6 +247,9 @@ int main(int argc, char *argv[])
 //===================================== End Chat Program =====================================
 
 
+
+
+
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Starting File Transfer Program ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	//if argv[1] == "-f"
@@ -238,5 +269,6 @@ guide here!
 
 
 
++++++++++++++++++++++++++++++++++++ End Formatting Guide +++++++++++++++++++++++++++++++++++
 
 */

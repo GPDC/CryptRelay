@@ -10,10 +10,30 @@
 //can interact with the variables that don't have safety checks. The attacker would have to have some access to this computer, and at that point, everything is compromised anyways.
 //Regardless, I would still like to create safety checks for this class. However I will do this after the connect class has been created and is working.
 
+#ifdef __linux__
+#include <iostream>
+#include <vector>
+
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <netdb.h>
+#include <string.h>
+#include <netinet/in.h>
+#include <stdlib.h>
+#include <stdio.h>
+//#include <errno.h>
+
+#include "ipaddress.h"
+#include "GlobalTypeHeader.h"
+#endif
+
+#ifdef _WIN32
 #include "ipaddress.h"
 #include "GlobalTypeHeader.h"
 #include <string>
 #include <iostream>
+#endif
 
 ipaddress::ipaddress()
 {
@@ -155,3 +175,5 @@ bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
 	else
 		return true;
 }
+
+//if (argv[2] > "0" && argv[2] < "65535")	//need to convert to decimal first ********************** stoi();

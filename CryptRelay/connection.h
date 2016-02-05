@@ -55,7 +55,10 @@ private:	//no one but class connection is aware of these members
 	SOCKET ConnectSocket;							//since it is not static, every instance has its own ConnectSocket
 	SOCKET AcceptedSocket;
 	SOCKET inUseSocket;
+
+#ifdef _WIN32
 	WSADATA wsaData;
+#endif
 
 	std::string target_ip_addr;
 	std::string target_port;
