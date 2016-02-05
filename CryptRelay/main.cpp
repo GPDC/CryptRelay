@@ -43,14 +43,13 @@
 #ifdef _WIN32
 #include <iostream>
 #include <string>
-#include <Windows.h>
-#include <process.h>
-#include <vector>
-
 #include "ipaddress.h"
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include <Windows.h>
+#include <process.h>
+#include <vector>
 #endif
 DWORD dwevent;
 HANDLE ghEvents[2];

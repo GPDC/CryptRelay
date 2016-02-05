@@ -23,14 +23,13 @@
 #endif
 
 #ifdef _WIN32
-#include <ws2tcpip.h>
+#include "connection.h"
+#include "GlobalTypeHeader.h"
+#include <ws2tcpip.h>//can only be included AFTER <Winsock2.h>    ... probably!
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include <process.h>
-
-#include "connection.h"
-#include "GlobalTypeHeader.h"
 #endif
 
 
