@@ -13,24 +13,25 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <errno.h>
+#include <cerrno>
+#include <pthread.h>
 
 #include <arpa/inet.h>
 #include <signal.h>
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
-#endif
+#endif//__linux__
 
 #ifdef _WIN32
 #include "connection.h"
 #include "GlobalTypeHeader.h"
-#include <ws2tcpip.h>//can only be included AFTER <Winsock2.h>    ... probably!
+#include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
 #include <process.h>
-#endif
+#endif//_WIN32
 
 
 
@@ -44,6 +45,26 @@
 #pragma comment(lib, "AdvApi32.lib")
 
 //#pragma comment(lib, "Kernel32.lib")			//???? is this necessary for GetConsoleScreenBufferInfo?
+
+#ifdef __linux__
+#define INVALID_SOCKET	((SOCKET)(~0))
+#define SOCKET_ERROR	(-1)
+#define SD_SEND         0x01
+#endif//__linux__
+
+
+
+#ifdef _WIN32
+HANDLE connection:: ghEvents[3]{};
+#endif//_WIN32
+
+#ifdef __linux__
+int connection::ret1 = 0;
+int connection::ret2 = 0;
+int connection::ret3 = 0;
+#endif//__linux__
+
+
 
 const int connection::NOBODY_WON = -30;
 const int connection::SERVER_WON = -7;
@@ -61,10 +82,14 @@ SOCKET connection::globalSocket = INVALID_SOCKET;
 
 char globalvalue = 9;
 
+
+
 connection::connection()
 {
-	ZeroMemory(&incomingAddr, sizeof(incomingAddr));
-	ZeroMemory(&hints, sizeof(hints));
+	memset(&incomingAddr, 0, sizeof(incomingAddr));
+	memset(&hints, 0, sizeof(hints));
+	//ZeroMemory(&incomingAddr, sizeof(incomingAddr));		//ZeroMemory sux, not linux compatible.
+	//ZeroMemory(&hints, sizeof(hints));
 
 	//struct pointers being assign nullptr
 	PclientSockaddr_in = nullptr;
@@ -87,11 +112,23 @@ connection::connection()
 	iResult = 0;
 	errchk = 0;
 	iSendResult = 0;
+#ifdef __linux__
+	pthread_t thread1, thread2, thread3;
+#endif//__linux__
 }
 connection::~connection()
 {
 
 }
+
+
+#ifdef __linux__
+void* connection::PosixThreadEntranceServerCompetitionThread(void* instance)
+{
+	serverCompetitionThread(instance);
+	pthread_exit(&ret1);
+}
+#endif//__linux__
 
 void connection::serverCompetitionThread(void* instance)
 {
@@ -100,12 +137,14 @@ void connection::serverCompetitionThread(void* instance)
 
 	connection *self = (connection*)instance;
 	int iFeedback;
-	fd_set fdSet,
-		*PfdSet = &fdSet;
+	fd_set fdSet;
+		//*PfdSet = &fdSet;			    //UNUSED
+	memset(&fdSet, 0, sizeof(fdSet));
 	timeval timeValue,
 			*PtimeValue;
 	PtimeValue = &timeValue;
-	ZeroMemory(&timeValue, sizeof(timeValue));
+	memset(&timeValue, 0, sizeof(timeValue));
+	//ZeroMemory(&timeValue, sizeof(timeValue));
 	timeValue.tv_usec = 500000; // 1 million microseconds = 1 second
 
 	if (global_verbose == true)
@@ -114,12 +153,12 @@ void connection::serverCompetitionThread(void* instance)
 	if (global_verbose == true)
 		std::cout << "STHREAD >> ";
 	if (self->createSocket() == false) return; //1;				//creates listening socket to listen on that local port
-
-	fdSet.fd_count = 1;
-	fdSet.fd_array[0] = self->ListenSocket;
+	FD_SET(self->ListenSocket, &fdSet);
+	//fdSet.fd_count = 1;					//not for linux!
+	//fdSet.fd_array[0] = self->ListenSocket;	//windows sux
 	if (global_verbose == true) {
 		std::cout << "STHREAD >> ";
-		std::cout << "SOCKET in fd_array: " << fdSet.fd_array[0] << "\n";
+		std::cout << "SOCKET in fd_array: " << "\n";
 		std::cout << "STHREAD >> ";
 		std::cout << "SOCKET ListenSocket: " << self->ListenSocket << "\n";
 		std::cout << "STHREAD >> ";
@@ -132,25 +171,27 @@ void connection::serverCompetitionThread(void* instance)
 
 	while (1)
 	{
-		fdSet.fd_count = 1;
-		fdSet.fd_array[0] = self->ListenSocket;
-		iFeedback = select(NULL, PfdSet, NULL, NULL, PtimeValue);//select returns the number of handles that are ready and contained in the fd_set structures.
+		FD_SET(self->ListenSocket, &fdSet);
+		//fdSet.fd_count = 1;
+		//fdSet.fd_array[0] = self->ListenSocket;
+		iFeedback = select(self->ListenSocket + 1, &fdSet, NULL, NULL, PtimeValue);//select returns the number of handles that are ready and contained in the fd_set structures.
 		//std::cout << "STHREAD >> currently my value for the winner is: " << self->globalWinner << "\n";
 		if (iFeedback == SOCKET_ERROR){
+			self->getError();
 			std::cout << "STHREAD >> ";
-			std::cout << "ServerCompetitionThread select Error: " << WSAGetLastError() << "\n";
-			closesocket(self->ListenSocket);
+			std::cout << "ServerCompetitionThread select Error.\n";
+			self->closeThisSocket(self->ListenSocket);
 			std::cout << "STHREAD >> ";
 			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
-			_endthread();
+			return;
 		}
 		else if (self->globalWinner == CLIENT_WON){
-			closesocket(self->ListenSocket);
+			self->closeThisSocket(self->ListenSocket);
 			if (global_verbose == true) {
 				std::cout << "STHREAD >> ";
 				std::cout << "Closed listening socket, because the winner is: " << self->globalWinner << ". Ending Server thread.\n";
 			}
-			_endthread();
+			return;
 		}
 		else if (iFeedback > 0){
 			if (global_verbose == true) {
@@ -167,12 +208,19 @@ void connection::serverCompetitionThread(void* instance)
 			}
 			self->globalSocket = iFeedback;
 			self->globalWinner = SERVER_WON;
-			closesocket(self->ListenSocket);
-			_endthread();
+			self->closeThisSocket(self->ListenSocket);
 			return;
 		}
 	}
 }
+
+#ifdef __linux__
+void* connection::PosixThreadEntranceClientCompetitionThread(void* instance)
+{
+	clientCompetitionThread(instance);
+	pthread_exit(&ret2);
+}
+#endif//__linux__
 
 void connection::clientCompetitionThread(void* instance)
 {
@@ -195,8 +243,7 @@ void connection::clientCompetitionThread(void* instance)
 					std::cout << "CTHREAD :: ";
 					std::cout << "Closing connected socket.\n";
 				}
-				closesocket(iFeedback);
-				_endthread();
+				self->closeThisSocket(iFeedback);
 				return;
 			}
 			self->mySleep(1000);
@@ -212,26 +259,24 @@ void connection::clientCompetitionThread(void* instance)
 					std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
 					std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
 				}
-				_endthread();
 				return;
 			}
 			else{	//server won the race already, close the socket that was created by connectToTarget();
 				if (global_verbose == true)
 					std::cout << "CTHREAD :: Client established a connection, but the server won the race. Closing connected socket.\n";
-				closesocket(iFeedback);
-				_endthread();
+				self->closeThisSocket(iFeedback);
 				return;
 			}
 		}
 		return;
 	}
-	_endthread();
 	return;
 }
 
-#ifdef _WIN32
+
 bool connection::initializeWinsock()
 {
+#ifdef _WIN32
 	if (global_verbose == true)
 		std::cout << "Initializing Winsock...\n";
 	// Initialize Winsock
@@ -240,9 +285,9 @@ bool connection::initializeWinsock()
 		printf("WSAStartup failed with error: %d\n", iResult);
 		return false;
 	}
+#endif//_WIN32
 	return true;
 }
-#endif
 
 void connection::ServerSetHints()
 {
@@ -268,7 +313,7 @@ bool connection::serverGetAddress()
 	if (errchk != 0){
 		std::cout << "STHREAD >> ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
-		WSACleanup();	//terminate the use of WS2_32 DLL
+		cleanup();
 		return false;
 	}
 	return true;
@@ -283,7 +328,7 @@ bool connection::clientGetAddress()
 	if (errchk != 0){
 		std::cout << "CTHREAD :: ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
-		WSACleanup();	//terminate the use of WS2_32 DLL
+		cleanup();
 		return false;
 	}
 	return true;
@@ -297,9 +342,11 @@ bool connection::createSocket()
 	// Create a SOCKET handle for connecting to server(no ip address here, that is with bind)
 	ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 	if (ListenSocket == INVALID_SOCKET) {
-		printf("socket failed with error: %ld\n", WSAGetLastError());
+		getError();
+		std::cout << "Socket failed.\n";
 		freeaddrinfo(result);
-		WSACleanup();
+		closeThisSocket(ListenSocket);
+		cleanup();
 		return false;
 	}
 	return true;
@@ -312,10 +359,11 @@ bool connection::bindToListeningSocket()//my local ip address and port
 	// Setup the TCP listening socket (putting ip address on the allocated socket)
 	errchk = bind(ListenSocket, result->ai_addr, result->ai_addrlen);
 	if (errchk == SOCKET_ERROR) {
-		printf("bind failed with error: %d\n", WSAGetLastError());
+		getError();
+		std::cout << "bind failed.\n";
 		freeaddrinfo(result);
-		closesocket(ListenSocket);
-		WSACleanup();
+		closeThisSocket(ListenSocket);
+		cleanup();
 		return false;
 	}
 	freeaddrinfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
@@ -340,22 +388,25 @@ int connection::connectToTarget()
 	
 	//catch any errors that may have occured while creating the socket / check for errors to make sure the socket is valid
 	if (ConnectSocket == INVALID_SOCKET){
-		printf("Error at socket(): %ld\n", WSAGetLastError());
+		getError();
+		std::cout << "Error at socket().\n";
 		freeaddrinfo(result);
-		WSACleanup();
+		closeThisSocket(ConnectSocket);
+		cleanup();
 		return false;
 	}
 	PclientSockaddr_in = (sockaddr_in *)ptr->ai_addr;
 	void *voidAddr;
 	char ipstr[INET_ADDRSTRLEN];
 	voidAddr = &(PclientSockaddr_in->sin_addr);
-	InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
+	inet_ntop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
+	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
 	if (global_verbose == true)
 		std::cout << "CTHREAD :: Trying to connect to: " << ipstr << "\n";
 	//connect to server
 	errchk = connect(ConnectSocket, ptr->ai_addr, ptr->ai_addrlen);
 	if (errchk == SOCKET_ERROR){
-		closesocket(ConnectSocket);
+		closeThisSocket(ConnectSocket);
 		ConnectSocket = INVALID_SOCKET;
 	}
 	//std::cout << "Sucessfully connected to: " << (sockaddr)serverStoreAddr.sin_addr << ":";	
@@ -364,7 +415,7 @@ int connection::connectToTarget()
 
 	if (ConnectSocket == INVALID_SOCKET) {
 		printf("CTHREAD :: Unable to connect to server!\n");
-		closesocket(ConnectSocket);
+		closeThisSocket(ConnectSocket);
 		return true;
 	}
 	else{
@@ -380,9 +431,10 @@ bool connection::listenToListeningSocket()
 	std::cout << "Listening on IP: " << "IP HERE" << " PORT: " << "PORTHERE...\n";
 	errchk = listen(ListenSocket, SOMAXCONN);
 	if (errchk == SOCKET_ERROR) {
-		printf("listen failed with error: %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
+		getError();
+		std::cout << "listen failed.\n";
+		closeThisSocket(ListenSocket);
+		cleanup();
 		return false;
 	}
 	return true;
@@ -390,15 +442,23 @@ bool connection::listenToListeningSocket()
 
 int connection::acceptClient()
 {
+
+#ifdef __linux__
+	socklen_t addr_size;
+#endif//__linux__
+#ifdef _WIN32
+	int addr_size;
+#endif//_WIN32
 	addr_size = sizeof(incomingAddr);
 	std::cout << "Waiting for someone to connect.\n";
 
 	// Accept a client socket by listening on: ListenSocket.
 	AcceptedSocket = accept(ListenSocket, (sockaddr*)&incomingAddr, &addr_size);
 	if (AcceptedSocket == INVALID_SOCKET) {
-		printf("accept failed with error: %d\n", WSAGetLastError());
-		closesocket(ListenSocket);
-		WSACleanup();
+		getError();
+		std::cout << "accept failed.\n";
+		closeThisSocket(ListenSocket);
+		cleanup();
 		return false;
 	}
 	if (global_verbose == true)
@@ -408,12 +468,24 @@ int connection::acceptClient()
 	return AcceptedSocket;
 }
 
-void connection::closeTheListeningSocket()
+void connection::closeTheListeningSocket()//get rid of this?
 {
 	if (global_verbose == true)
 		std::cout << "Closing the listening socket...\n";
-	closesocket(ListenSocket);
+	closeThisSocket(ListenSocket);
 }
+
+void connection::closeThisSocket(SOCKET fd)
+{
+#ifdef __linux__
+	close(fd);
+#endif//__linux__
+
+#ifdef _WIN32
+	closesocket(fd);
+#endif
+}
+
 
 //STATUS: NOT USED
 bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
@@ -445,9 +517,10 @@ bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 			}
 			iSendResult = send(AcceptedSocket, recvbuf, iResult, 0);	//this sends a message back to the client (b/c this is the server). in this case, it echos back the same msg it received.
 			if (iSendResult == SOCKET_ERROR) {
-				printf("send failed with error: %d\n", WSAGetLastError());
-				closesocket(AcceptedSocket);
-				WSACleanup();
+				getError();
+				std::cout << "send failed.\n";
+				closeThisSocket(AcceptedSocket);
+				cleanup();
 				return false;
 			}
 			printf("Bytes sent: %d\n", iSendResult);
@@ -455,9 +528,9 @@ bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 		else if (iResult == 0)
 			printf("Connection closing...\n");
 		else {
-			printf("recv failed with error: %d\n", WSAGetLastError());
-			closesocket(AcceptedSocket);
-			WSACleanup();
+			std::cout << "recv failed.\n";
+			closeThisSocket(AcceptedSocket);
+			cleanup();
 			return false;
 		}
 	} while (iResult > 0);
@@ -479,9 +552,10 @@ bool connection::receiveUntilShutdown()
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 	iResult = send(inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 	if (iResult == SOCKET_ERROR){
-		printf("send failed: %d\n", WSAGetLastError());
-		closesocket(inUseSocket);
-		WSACleanup();
+		getError();
+		std::cout << "send failed.\n";
+		closeThisSocket(inUseSocket);
+		cleanup();
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
@@ -504,7 +578,8 @@ bool connection::receiveUntilShutdown()
 
 			if (GetConsoleScreenBufferInfo(hStdout, &csbiInfo) == 0)	//0,0 is top left of console
 			{
-				std::cout << "GetConsoleScreenBufferInfo failed: " << WSAGetLastError() << "\n";
+				getError();
+				std::cout << "GetConsoleScreenBufferInfo failed.\n";
 			}
 
 			CursorCoordinatesStruct.X = csbiInfo.dwCursorPosition.X;
@@ -528,9 +603,10 @@ bool connection::receiveUntilShutdown()
 		else if (iResult == 0)
 			printf("Connection closing...\n");
 		else {
-			printf("recv failed with error: %d\n", WSAGetLastError());
-			closesocket(inUseSocket);
-			WSACleanup();
+			getError();
+			std::cout << "recv failed.\n";
+			closeThisSocket(inUseSocket);
+			cleanup();
 			return false;
 		}
 	} while (iResult > 0);
@@ -543,9 +619,9 @@ bool connection::shutdownConnection()
 	// shutdown the connection since we're done
 	errchk = shutdown(AcceptedSocket, SD_SEND);
 	if (errchk == SOCKET_ERROR) {
-		printf("shutdown failed with error: %d\n", WSAGetLastError());
-		closesocket(AcceptedSocket);
-		WSACleanup();
+		std::cout << "shutdown failed.\n";
+		closeThisSocket(AcceptedSocket);
+		cleanup();
 		return false;
 	}
 	return true;
@@ -557,10 +633,10 @@ void connection::cleanup()
 	if (global_verbose == true)
 		std::cout << "Cleaning up. Freeing addrinfo...\n";
 	freeaddrinfo(result);									//frees information gathered that the getaddrinfo() dynamically allocated into addrinfo structures
-	closesocket(AcceptedSocket);
+	//closeThisSocket(AcceptedSocket);
 #ifdef _WIN32
 	WSACleanup();
-#endif
+#endif//_WIN32
 }
 
 bool connection::clientSetIpAndPort(std::string user_defined_ip_address, std::string user_defined_port)
@@ -597,6 +673,84 @@ bool connection::serverSetIpAndPort(std::string user_defined_ip_address, std::st
 	return false;
 }
 
+void connection::createServerRaceThread(void* instance)
+{
+#ifdef __linux__
+	ret1 = pthread_create(&thread1, NULL, PosixThreadEntranceServerCompetitionThread, instance);
+	if (ret1)
+	{
+		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret1);
+		exit(EXIT_FAILURE);
+	}
+#endif//__linux__
+
+
+#ifdef _WIN32
+	ghEvents[0] = (HANDLE)_beginthread(serverCompetitionThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+#endif//__WIN32
+}
+
+void connection::createClientRaceThread(void* instance)
+{
+#ifdef __linux__
+	ret2 = pthread_create(&thread2, NULL, PosixThreadEntranceClientCompetitionThread, instance);
+	if (ret2)
+	{
+		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
+		exit(EXIT_FAILURE);
+	}
+#endif
+
+#ifdef _WIN32
+	ghEvents[1] = (HANDLE)_beginthread(clientCompetitionThread, 0, instance);//c style typecast    from: uintptr_t    to: HANDLE.
+#endif//_WIN32
+}
+
+#ifdef __linux__
+void* connection::PosixThreadSendThread(void* instance)
+{
+	sendThread(instance);
+	pthread_exit(&ret3);
+}
+#endif//__linux__
+
+void connection::serverCreateSendThread(void* instance)
+{
+#ifdef __linux__
+
+	ret3 = pthread_create(&thread3, NULL, PosixThreadSendThread, instance);
+	if (ret3)
+	{
+		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret3);
+		exit(EXIT_FAILURE);
+	}
+	sendThread(instance);
+	pthread_exit(&ret3);
+#endif
+
+#ifdef _WIN32
+	ghEvents[2] = (HANDLE)_beginthread(connection::sendThread, 0, instance);
+#endif//_WIN32
+}
+
+void connection::clientCreateSendThread(void* instance)
+{
+#ifdef __linux__
+
+	ret3 = pthread_create(&thread3, NULL, PosixThreadSendThread, instance);
+	if (ret3)
+	{
+		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret3);
+		exit(EXIT_FAILURE);
+	}
+		sendThread(instance);
+		pthread_exit(&ret3);
+#endif//__linux__
+
+#ifdef _WIN32
+		ghEvents[2] = (HANDLE)_beginthread(sendThread, 0, instance);
+#endif//_WIN32
+}
 
 void connection::sendThread(void* instance)
 {
@@ -614,9 +768,10 @@ void connection::sendThread(void* instance)
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 	intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 	if (intResult == SOCKET_ERROR){
-		printf("send failed: %d\n", WSAGetLastError());
-		closesocket(self->inUseSocket);
-		WSACleanup();
+		self->getError();
+		std::cout << "send failed.\n";
+		self->closeThisSocket(self->inUseSocket);
+		self->cleanup();
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
@@ -630,16 +785,31 @@ void connection::sendThread(void* instance)
 		sendbuf = message_to_send.c_str();	//c_str converts from string to char *
 		intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 		if (intResult == SOCKET_ERROR){
-			printf("send failed: %d\n", WSAGetLastError());
-			closesocket(self->inUseSocket);
-			WSACleanup();
+			self->getError();
+			std::cout << "send failed.\n";
+			self->closeThisSocket(self->inUseSocket);
+			self->cleanup();
 			return;//return 1
 		}
 		printf("Message sent: %s\n", sendbuf);
 		if (global_verbose == true)
 			printf("Bytes Sent: %ld\n", intResult);
 	}
-	//_endthread();
+}
+
+void connection::getError()
+{
+#ifdef __linux__
+	int errsv = errno;
+	std::cout << "ERROR " << errsv << " :" << strerror(errsv);
+	return;
+#endif
+#ifdef _WIN32
+	int errsv = WSAGetLastError();
+	std::cout << "ERROR: " << errsv << " ";
+	return;
+	//returns int
+#endif
 }
 
 //milliseconds only. xplatform windows & linux
@@ -647,10 +817,10 @@ void connection::mySleep(int number_in_ms)
 {
 #ifdef __linux___
 	usleep(number_in_ms * 1000);		// normally 1 millionth of a sec, times it by 1000 to make it ms
-#endif
-#ifdef _WIN32MySleep
+#endif//__linux__
+#ifdef _WIN32
 	Sleep(number_in_ms);				//in milliseconds
-#endif
+#endif//_WIN32
 }
 
 	//have the buffer[0] be a flag, the rest a message.

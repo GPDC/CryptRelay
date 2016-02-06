@@ -17,7 +17,12 @@
 //output the IP and port of the person you connected to.
 //fix chat output issue when someone sends you a message while you are typing
 //ipv6
-#ifdef __linux__
+#ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
+#include "ipaddress.h"
+#include "connection.h"
+#include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
+
 #include <iostream>
 #include <vector>
 
@@ -29,16 +34,15 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <errno.h>
+#include <cerrno>
 
 #include <arpa/inet.h>
 #include <signal.h>
 
-#include "ipaddress.h"
-#include "connection.h"
-#include "GlobalTypeHeader.h"
-#include "CommandLineInput.h"
-#endif
+#include <pthread.h>
+
+
+#endif//__linux__
 
 #ifdef _WIN32
 #include <iostream>
@@ -47,13 +51,19 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include <Windows.h>
-#include <process.h>
+#include <process.h>//<pthread.h>
 #include <vector>
-#endif
-DWORD dwevent;
-HANDLE ghEvents[2];
+#endif//_WIN32
+/*
+#ifdef _WIN32
+HANDLE ghEvents[3];
+#endif//_WIN32
 
+#ifdef __linux__
+pthread_t thread1, thread2, thread3;
+int ret1, ret2, ret3;
+#endif//__linux__
+*/
 const int MAX_DIFF_INPUTS = 12; //max possible count of argc to bother reading from
 bool global_verbose = false;
 
@@ -147,9 +157,7 @@ int main(int argc, char *argv[])
 	if(global_verbose == true)
 		std::cout << "SERVER::";
 	serverObj.serverSetIpAndPort(my_ip_address, my_port);
-#ifdef _WIN32
 	if (serverObj.initializeWinsock() == false) return 1;
-#endif
 	serverObj.ServerSetHints();
 
 	//Client startup sequence
@@ -157,26 +165,33 @@ int main(int argc, char *argv[])
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
 	clientObj.clientSetIpAndPort(target_ip_address, target_port);
-#ifdef _WIN32
 	if (clientObj.initializeWinsock() == false) return 1;
-#endif
 	clientObj.ClientSetHints();
 
-#ifdef _WIN32
-	//BEGIN SERVER COMPETITION THREADS
-	ghEvents[0] = (HANDLE)_beginthread(connection::serverCompetitionThread, 0, &serverObj);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEvents[1] = (HANDLE)_beginthread(connection::clientCompetitionThread, 0, &clientObj);
-#endif
-#ifdef __linux__
-	//pthread
-#endif
+	//BEGIN THREAD RACE
+	serverObj.createServerRaceThread(&serverObj);			//<-----------------
+	clientObj.createClientRaceThread(&clientObj);			//<----------------
 
+#ifdef __linux__
+	//Wait for threads to finish
+	pthread_join(connection::thread1, NULL);
+	pthread_join(connection::thread2, NULL);
+	if (1)	//WAAAAAAAAAAAKKKKKAAAAAAAAAAAAAAAWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW put error check on this
+		std::cout << "guess posix thread wait worked.\n";
+	else
+		std::cout << "What happened?!?!! posix thread wait errored?\n";
+
+#endif//__linux__
+
+#ifdef _WIN32
 	//Wait for any 1 thread to finish
 	WaitForMultipleObjects(
 		2,			//number of objects in array
-		ghEvents,	//array of objects
+		connection::ghEvents,	//array of objects
 		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
 		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+
+#endif//_WIN32
 
 	//Display the winning thread
 	if (global_verbose == true){
@@ -197,7 +212,7 @@ int main(int argc, char *argv[])
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			//clientObj.cleanup();    here????????
-			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &serverObj);	// c style typecast    from: uintptr_t    to: HANDLE.
+			serverObj.serverCreateSendThread(&serverObj);		//<--------------------
 			if (serverObj.receiveUntilShutdown() == false) return 1;
 
 			//shutdown
@@ -207,7 +222,7 @@ int main(int argc, char *argv[])
 		//If client won, then act as a client
 		else if (who_won == connection::CLIENT_WON){
 			std::cout << "Connection established as the client.\n";
-			ghEvents[0] = (HANDLE)_beginthread(connection::sendThread, 0, &clientObj);
+			clientObj.clientCreateSendThread(&clientObj);			//<---------------------
 			//serverObj.cleanup();    here??????????
 			if (clientObj.receiveUntilShutdown() == false) return 1;
 
