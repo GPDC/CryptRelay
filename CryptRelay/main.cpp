@@ -5,6 +5,7 @@
 //TODO:
 //nat traversal
 //encryption
+//if bind fails, goes into cleanup(), freeaddrinfo(); causes an unkown error. (linux only?)
 //rename ipaddress.cpp to FormatCheck.cpp
 //add port checking in FormatCheck.cpp
 //rename CommandLineInput.cpp to ProgramInput.cpp
@@ -265,6 +266,7 @@ int main(int argc, char *argv[])
 	//bleep bloop
 
 //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ End File Transfer Program ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 }
 
 

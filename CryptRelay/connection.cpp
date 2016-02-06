@@ -59,9 +59,9 @@ HANDLE connection:: ghEvents[3]{};
 #endif//_WIN32
 
 #ifdef __linux__
-int connection::ret1 = 0;
-int connection::ret2 = 0;
-int connection::ret3 = 0;
+int connection::ret1 = 0;//server race thread
+int connection::ret2 = 0;//client race thread
+int connection::ret3 = 0;//send thread
 #endif//__linux__
 
 
@@ -724,8 +724,6 @@ void connection::serverCreateSendThread(void* instance)
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret3);
 		exit(EXIT_FAILURE);
 	}
-	sendThread(instance);
-	pthread_exit(&ret3);
 #endif
 
 #ifdef _WIN32

@@ -150,14 +150,12 @@
   <ItemGroup>
     <ClCompile Include="CommandLineInput.cpp" />
     <ClCompile Include="connection.cpp" />
-    <ClCompile Include="freemyaddrinfo.cpp" />
     <ClCompile Include="ipaddress.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandLineInput.h" />
     <ClInclude Include="connection.h" />
-    <ClInclude Include="freemyaddrinfo.h" />
     <ClInclude Include="GlobalTypeHeader.h" />
     <ClInclude Include="ipaddress.h" />
   </ItemGroup>
