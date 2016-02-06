@@ -174,13 +174,8 @@ int main(int argc, char *argv[])
 
 #ifdef __linux__
 	//Wait for threads to finish
-	pthread_join(connection::thread1, NULL);
-	pthread_join(connection::thread2, NULL);
-	if (1)	//WAAAAAAAAAAAKKKKKAAAAAAAAAAAAAAAWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWWW put error check on this
-		std::cout << "guess posix thread wait worked.\n";
-	else
-		std::cout << "What happened?!?!! posix thread wait errored?\n";
-
+	pthread_join(connection::thread1, NULL);						//currently, on the linux side, the program is practically stuck on connect. idk y.
+	//pthread_join(connection::thread2, NULL);						//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
 #endif//__linux__
 
 #ifdef _WIN32

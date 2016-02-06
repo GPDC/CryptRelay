@@ -406,7 +406,7 @@ int connection::connectToTarget()
 	//connect to server
 	errchk = connect(ConnectSocket, ptr->ai_addr, ptr->ai_addrlen);
 	if (errchk == SOCKET_ERROR){
-		closeThisSocket(ConnectSocket);
+		//closeThisSocket(ConnectSocket);
 		ConnectSocket = INVALID_SOCKET;
 	}
 	//std::cout << "Sucessfully connected to: " << (sockaddr)serverStoreAddr.sin_addr << ":";	
@@ -628,7 +628,7 @@ bool connection::shutdownConnection()
 }
 
 // cleanup
-void connection::cleanup()
+void connection::cleanup()//WHEN BIND FAILS, and it tries to call freeaddrinfo in here, unkown error occurs.
 {
 	if (global_verbose == true)
 		std::cout << "Cleaning up. Freeing addrinfo...\n";
