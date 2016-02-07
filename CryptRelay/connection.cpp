@@ -47,7 +47,7 @@
 //#pragma comment(lib, "Kernel32.lib")			//???? is this necessary for GetConsoleScreenBufferInfo?
 
 #ifdef __linux__
-#define INVALID_SOCKET	((SOCKET)(~0))
+#define INVALID_SOCKET	((SOCKET)(~0))			//~0 is kinda like -1, but for usage with unsigned ints?
 #define SOCKET_ERROR	(-1)
 #define SD_SEND         0x01
 #endif//__linux__
@@ -62,8 +62,11 @@ HANDLE connection:: ghEvents[3]{};
 int connection::ret1 = 0;//server race thread
 int connection::ret2 = 0;//client race thread
 int connection::ret3 = 0;//send thread
-#endif//__linux__
 
+pthread_t connection::thread1;//server
+pthread_t connection::thread2;//client
+pthread_t connection::thread3;//send
+#endif//__linux__
 
 
 const int connection::NOBODY_WON = -30;
@@ -100,7 +103,6 @@ connection::connection()
 	ListenSocket = INVALID_SOCKET;
 	ConnectSocket = INVALID_SOCKET;
 	AcceptedSocket = INVALID_SOCKET;
-	inUseSocket = INVALID_SOCKET;
 
 	//string
 	target_ip_addr = "";
@@ -112,9 +114,6 @@ connection::connection()
 	iResult = 0;
 	errchk = 0;
 	iSendResult = 0;
-#ifdef __linux__
-	pthread_t thread1, thread2, thread3;
-#endif//__linux__
 }
 connection::~connection()
 {
@@ -229,14 +228,15 @@ void connection::clientCompetitionThread(void* instance)
 		std::cout << "CTHREAD :: ";
 	if (self->clientGetAddress() == false) return; //1;		//puts the local port info in the addrinfo structure
 
-	while (self->globalWinner != SERVER_WON && self->globalWinner != CLIENT_WON) 
+	while (globalWinner != SERVER_WON && globalWinner != CLIENT_WON) 
 	{
 		int iFeedback;
 		if (global_verbose == true)
 			std::cout << "CTHREAD :: ";
-		if ((iFeedback = self->connectToTarget()) == 0) return; //1;	//creates a socket then tries to connect to that socket. this func returns the socket id as an int									
+		//create a socket then try to connect to that socket.
+		if ((iFeedback = self->connectToTarget()) == 0) return; //1;to change timeout options check out setsockopt: http://www.freebsd.org/cgi/man.cgi?query=setsockopt&sektion=2								
 		else if (iFeedback == 1) {//if it is just unable to connect, but doesn't error, then continue trying to connect.
-			if (self->globalWinner == SERVER_WON){
+			if (globalWinner == SERVER_WON){
 				if (global_verbose == true) {
 					std::cout << "CTHREAD :: ";
 					std::cout << "Client established a connection, but the server won the race.\n";
@@ -250,14 +250,14 @@ void connection::clientCompetitionThread(void* instance)
 			continue;
 		}
 		else{	//connection is established, the client has won the competition.
-			if (self->globalWinner != SERVER_WON){	//make sure the server hasn't already won during the time it took to attempt a connection
+			if (globalWinner != SERVER_WON){	//make sure the server hasn't already won during the time it took to attempt a connection
 				std::cout << "CTHREAD :: ";
 				std::cout << "setting global values.\n";
-				self->globalSocket = iFeedback;
-				self->globalWinner = CLIENT_WON;
+				globalSocket = iFeedback;
+				globalWinner = CLIENT_WON;
 				if (global_verbose == true) {
-					std::cout << "CTHREAD :: " << self->globalWinner << " is the winner.\n";
-					std::cout << "CTHREAD :: " << self->globalSocket << " is the socket now.\n";
+					std::cout << "CTHREAD :: " << globalWinner << " is the winner.\n";
+					std::cout << "CTHREAD :: " << globalSocket << " is the socket now.\n";
 				}
 				return;
 			}
@@ -344,7 +344,7 @@ bool connection::createSocket()
 	if (ListenSocket == INVALID_SOCKET) {
 		getError();
 		std::cout << "Socket failed.\n";
-		freeaddrinfo(result);
+		//freeaddrinfo(result);
 		closeThisSocket(ListenSocket);
 		cleanup();
 		return false;
@@ -361,7 +361,7 @@ bool connection::bindToListeningSocket()//my local ip address and port
 	if (errchk == SOCKET_ERROR) {
 		getError();
 		std::cout << "bind failed.\n";
-		freeaddrinfo(result);
+		//freeaddrinfo(result);
 		closeThisSocket(ListenSocket);
 		cleanup();
 		return false;
@@ -390,11 +390,12 @@ int connection::connectToTarget()
 	if (ConnectSocket == INVALID_SOCKET){
 		getError();
 		std::cout << "Error at socket().\n";
-		freeaddrinfo(result);
+		//freeaddrinfo(result);
 		closeThisSocket(ConnectSocket);
 		cleanup();
 		return false;
 	}
+
 	PclientSockaddr_in = (sockaddr_in *)ptr->ai_addr;
 	void *voidAddr;
 	char ipstr[INET_ADDRSTRLEN];
@@ -462,7 +463,7 @@ int connection::acceptClient()
 		return false;
 	}
 	if (global_verbose == true)
-		std::cout << "Connected to " << ":" << "\n";
+		std::cout << "Connected to " << ":" << "ip here\n";
 	if (global_verbose == true)
 		std::cout << "Connected to someone on socket ID: " << AcceptedSocket << "\n";
 	return AcceptedSocket;
@@ -541,20 +542,16 @@ bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 
 bool connection::receiveUntilShutdown()
 {
-	if (AcceptedSocket != INVALID_SOCKET)
-		inUseSocket = AcceptedSocket;
-	else
-		inUseSocket = ConnectSocket;
 	const char* sendbuf = "First message sent.";
 	std::string message_to_send = "Automated message sent from recv func.\n";
 
 	//send this message once
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-	iResult = send(inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	iResult = send(globalSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 	if (iResult == SOCKET_ERROR){
 		getError();
 		std::cout << "send failed.\n";
-		closeThisSocket(inUseSocket);
+		closeThisSocket(globalSocket);
 		cleanup();
 		//return false;
 	}
@@ -566,7 +563,7 @@ bool connection::receiveUntilShutdown()
 
 	// Receive until the peer shuts down the connection
 	do {
-		iResult = recv(inUseSocket, recvbuf, recvbuflen, 0);
+		iResult = recv(globalSocket, recvbuf, recvbuflen, 0);
 		if (iResult > 0) {
 
 			/*
@@ -605,7 +602,7 @@ bool connection::receiveUntilShutdown()
 		else {
 			getError();
 			std::cout << "recv failed.\n";
-			closeThisSocket(inUseSocket);
+			closeThisSocket(globalSocket);
 			cleanup();
 			return false;
 		}
@@ -617,10 +614,10 @@ bool connection::shutdownConnection()
 {
 	std::cout << "Shutting down the connection...\n";
 	// shutdown the connection since we're done
-	errchk = shutdown(AcceptedSocket, SD_SEND);
+	errchk = shutdown(globalSocket, SD_SEND);
 	if (errchk == SOCKET_ERROR) {
 		std::cout << "shutdown failed.\n";
-		closeThisSocket(AcceptedSocket);
+		closeThisSocket(globalSocket);
 		cleanup();
 		return false;
 	}
@@ -666,8 +663,8 @@ bool connection::serverSetIpAndPort(std::string user_defined_ip_address, std::st
 	my_ip_addr = user_defined_ip_address;
 	my_port = user_defined_port;
 	if (global_verbose == true) {
-		std::cout << "User defined IP to connect to:   " << target_ip_addr << "\n";
-		std::cout << "User defined port to connect to: " << target_port << "\n";
+		std::cout << "User defined IP to listen on:   " << my_ip_addr << "\n";
+		std::cout << "User defined port to listen on: " << my_port << "\n";
 	}
 	//std::stoi(port);//convert string to int
 	return false;
@@ -741,8 +738,6 @@ void connection::clientCreateSendThread(void* instance)
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret3);
 		exit(EXIT_FAILURE);
 	}
-		sendThread(instance);
-		pthread_exit(&ret3);
 #endif//__linux__
 
 #ifdef _WIN32
@@ -754,21 +749,16 @@ void connection::sendThread(void* instance)
 {
 	connection* self = (connection*)instance;
 	int intResult;
-	const char* sendbuf = "First message sent.";
+	const char* sendbuf = "";
 	std::string message_to_send = "Automated message from SendThread.";
-
-	if (self->AcceptedSocket != INVALID_SOCKET)
-		self->inUseSocket = self->AcceptedSocket;
-	else
-		self->inUseSocket = self->ConnectSocket;
 
 	//send this message once
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-	intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	intResult = send(self->globalSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 	if (intResult == SOCKET_ERROR){
 		self->getError();
 		std::cout << "send failed.\n";
-		self->closeThisSocket(self->inUseSocket);
+		self->closeThisSocket(self->globalSocket);
 		self->cleanup();
 		//return false;
 	}
@@ -781,11 +771,11 @@ void connection::sendThread(void* instance)
 	{
 		std::getline(std::cin, message_to_send);
 		sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-		intResult = send(self->inUseSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+		intResult = send(self->globalSocket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
 		if (intResult == SOCKET_ERROR){
 			self->getError();
 			std::cout << "send failed.\n";
-			self->closeThisSocket(self->inUseSocket);
+			self->closeThisSocket(self->globalSocket);
 			self->cleanup();
 			return;//return 1
 		}
