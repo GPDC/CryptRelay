@@ -2,6 +2,30 @@
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
 
+
+
+
+
+
+
+
+//get the external ip and port somehow from the NAT by asking it?
+//or by brute forcing it while both sides listen?/ set sockopt to have no time to live or something so connection doesn't get clogged waiting for return connections?
+//listen for udp connection on a port
+//spam eachother's ports with udp packets
+//if received a msg, write down the external ip & port of the incoming msg
+//quickly attempt to connect via tcp to the given ext ip & port
+//profit
+
+
+
+
+
+
+
+
+
+
 //put addrinfo structs into a seperate file
 //put it in the constructor of the class
 //and deconstructor
@@ -10,7 +34,6 @@
 //TODO:
 //nat traversal
 //encryption
-//move most of the stuff out of main
 //rename ipaddress.cpp to FormatCheck.cpp
 //add port checking in FormatCheck.cpp
 //rename CommandLineInput.cpp to ProgramInput.cpp
@@ -70,82 +93,9 @@ bool global_verbose = false;
 
 int main(int argc, char *argv[])
 {
-	std::string target_ip_address = "";
-	std::string target_port = "";
-	std::string my_ip_address = connection::DEFAULT_IP_TO_LISTEN;
-	std::string my_port = connection::DEFAULT_PORT_TO_LISTEN;
-	int err_chk;
-	int arg_size;
-	std::vector<std::string> arg;
-	arg.reserve(MAX_DIFF_INPUTS);
-
-	CommandLineInput CommandLineInputObj;
-	ipaddress ipaddress_get;
-	
-	//----------------------- Check to see what the user wants to do via program input -----------------------
-
-
-	//put all argv's into a vector so they can be compared to strings
-	for (int i = 0; i < argc; i++) {
-		arg.push_back(argv[i]);
-	}
-	arg_size = arg.size();
-
-	//if command line arguments supplied, show the ReadMe
-	if (argc <= 1) {
-		CommandLineInputObj.helpAndReadMe(argc);
-		return 1;
-	}
-	//check all argv inputs to see what the user wants to do
-	if (argc >= 2) {
-		for (int i = 1; i < argc; ++i) {
-
-			if (arg[i] == "-h" 
-					|| arg[i] == "-H" 
-					|| arg[i] == "-help" 
-					|| arg[i] == "-Help" 
-					|| arg[i] == "help" 
-					|| arg[i] == "readme") {
-				CommandLineInputObj.helpAndReadMe(argc);
-				return 1;
-			}
-			if (arg[i] == "-t" && i < arg_size -1) {
-				err_chk = ipaddress_get.get_target(argv[i + 1]);
-				if (err_chk == false)
-					return 1;
-				else
-					target_ip_address = argv[i + 1];
-			}
-			if (arg[i] == "-tp") {
-				//err_chk = ipaddress_get.port(argv[i + 1]);
-				//if (err_chk == false)
-				//	return 1;
-				//else
-					target_port = argv[i + 1];
-			}
-			if (arg[i] == "-m") {
-				err_chk = ipaddress_get.get_target(argv[i + 1]);
-				if (err_chk == false)
-					return 1;
-				else
-					my_ip_address = argv[i + 1];
-			}
-			if (arg[i] == "-mp") {
-				//err_chk = ipaddress_get.port(argv[i + 1]);
-				//if (err_chk == false)
-				//	return 1;
-				//else
-				my_port = argv[i + 1];
-			}
-			if (arg[i] == "-v") 
-				global_verbose = true;
-			if (arg[i] == "-f") {
-				std::cout << "-f hasn't been implemented yet.\n";
-				return 1;
-			}
-		}
-	}
-
+	// Check what the user wants to do via command line input
+	CommandLineInput CLI;
+	CLI.getCommandLineInput(argc, argv);
 
 	//===================================== Starting Chat Program =====================================
 
@@ -155,7 +105,7 @@ int main(int argc, char *argv[])
 	connection serverObj;
 	if(global_verbose == true)
 		std::cout << "SERVER::";
-	serverObj.serverSetIpAndPort(my_ip_address, my_port);
+	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_port);
 	if (serverObj.initializeWinsock() == false) return 1;
 	serverObj.ServerSetHints();
 
@@ -163,7 +113,7 @@ int main(int argc, char *argv[])
 	connection clientObj;
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
-	clientObj.clientSetIpAndPort(target_ip_address, target_port);
+	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
 	if (clientObj.initializeWinsock() == false) return 1;
 	clientObj.ClientSetHints();
 

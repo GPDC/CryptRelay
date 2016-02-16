@@ -33,7 +33,15 @@
 #include <process.h>
 #endif//_WIN32
 
+//NAT WIKI: Many NAT implementations follow the port preservation design for TCP: for a given outgoing TCP communication, they use the same values as internal and external port numbers.NAT port preservation for outgoing TCP connections is crucial for TCP NAT traversal, because as TCP requires that one port can only be used for one communication at a time, programs bind distinct TCP sockets to ephemeral ports for each TCP communication, rendering NAT port prediction impossible for TCP.[2]
+//NAT WIKI: On the other hand, for UDP, NATs do not need to have port preservation.Indeed, multiple UDP communications(each with a distinct endpoint) can occur on the same source port, and applications usually reuse the same UDP socket to send packets to distinct hosts.This makes port prediction straightforward, as it is the same source port for each packet.
 
+//send the target a packet like a trace-route would?
+
+//from reading up on NATs, it -seems- like i should be able to connect just fine... unless it is a symmetric NAT i'm dealing with.
+//maybe i could send a packet to every single port on someone's computer(NAT) in order to open a connection with them for a short amount of time?
+//or should i do something with UDP? ambiguous
+//what about upnp/upnpc?
 
 //NOTE/WARNING/CHANGE: printf is used here, unlike std::cout everywhere else. CHANGE this now that i'm used to using both
 
@@ -136,14 +144,15 @@ void connection::serverCompetitionThread(void* instance)
 
 	connection *self = (connection*)instance;
 	int iFeedback;
-	fd_set fdSet;
-		//*PfdSet = &fdSet;			    //UNUSED
+
+	fd_set	fdSet;
 	memset(&fdSet, 0, sizeof(fdSet));
+
 	timeval timeValue,
 			*PtimeValue;
-	PtimeValue = &timeValue;
+			PtimeValue = &timeValue;
 	memset(&timeValue, 0, sizeof(timeValue));
-	//ZeroMemory(&timeValue, sizeof(timeValue));
+
 	timeValue.tv_usec = 500000; // 1 million microseconds = 1 second
 
 	if (global_verbose == true)
@@ -400,8 +409,8 @@ int connection::connectToTarget()
 	void *voidAddr;
 	char ipstr[INET_ADDRSTRLEN];
 	voidAddr = &(PclientSockaddr_in->sin_addr);
-	inet_ntop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
-	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
+	//inet_ntop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
+	InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
 	if (global_verbose == true)
 		std::cout << "CTHREAD :: Trying to connect to: " << ipstr << "\n";
 	//connect to server
@@ -804,7 +813,7 @@ void connection::getError()
 void connection::mySleep(int number_in_ms)
 {
 #ifdef __linux___
-	usleep(number_in_ms * 1000);		// normally 1 millionth of a sec, times it by 1000 to make it ms
+	usleep(number_in_ms * 1000);		// takes input in microseconds; times it by 1000 to turn it into ms.
 #endif//__linux__
 #ifdef _WIN32
 	Sleep(number_in_ms);				//in milliseconds
