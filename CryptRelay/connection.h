@@ -126,6 +126,7 @@ public:
 	Raw();
 	~Raw();
 
+	bool isLittleEndian();
 	bool initializeWinsock();
 	SOCKET createSocket(int, int, int);
 	bool craftFixedICMPEchoRequestPacket();
@@ -135,12 +136,11 @@ public:
 	bool shutdownConnection(SOCKET socket);
 	void cleanup();
 	void getError();
-//	sockaddr wombo;
-//	sockaddr_in combo;
+
 	//addrinfo Hints;
 	//addrinfo *PResult;
 	//addrinfo *PPtr;
-	sockaddr_storage StorageHints;			// Use this instead of sockaddr b/c it can hold ipv6. cast to sockaddr_in to put stuff in it.
+//	sockaddr_storage StorageHints;			// Use this instead of sockaddr b/c it can hold ipv6. cast to sockaddr_in to put stuff in it.
 	sockaddr_in SockIn;
 	sockaddr_in *PResultSockIn;
 protected:
@@ -151,7 +151,6 @@ private:
 #endif
 
 #ifdef _WIN32
-	// Same thing that linux has, but have to make it here since Windows has no struct for this already made?
 	// IP header information stored here
 
 	// Type 11 is time exceeded ICMP, 8 is echo request
@@ -171,6 +170,7 @@ private:
 		*/
 
 		// Mine are below			// https://en.wikipedia.org/wiki/IPv4#Header
+		// Warning: little endian ihl comes first, ver comes second. big endian the ver comes first, ihl comes second.
 		u_char ihl : 4;				// Internet Header Length. The second field (4 bits) is the number of 32-bit words in the header. Since an IPv4 header may contain a variable number of options, this field specifies the size of the header (this also coincides with the offset to the data). The minimum value for this field is 5 (RFC 791), which is a length of 5×32 = 160 bits = 20 bytes. Being a 4-bit value, the maximum length is 15 words (15×32 bits) or 480 bits = 60 bytes.
 		u_char ver : 4;				// The first header field in an IP packet is the four-bit version field. For IPv4, this has a value of 4 (hence the name IPv4).
 		u_char dscp : 6;			// differentiated_services_code_point. Originally called Type of Service (ToS) field. 
@@ -178,7 +178,7 @@ private:
 		u_short total_len;			// This 16-bit field defines the entire packet size, including header and data, in bytes. The minimum-length packet is 20 bytes (20-byte header + 0 bytes data) and the maximum is 65,535 bytes — the maximum value of a 16-bit word. All hosts are required to be able to reassemble datagrams of size up to 576 bytes, but most modern hosts handle much larger packets. Sometimes subnetworks impose further restrictions on the packet size, in which case datagrams must be fragmented. Fragmentation is handled in either the host or router in IPv4.
 		u_short id;					// Identification. Used for uniquely identifying the group of fragments of a single IP datagram
 		u_short flags : 3;			// Used to control or identify fragments. bit 0: reserved, must be 0. bit 1: don't fragment. bit 2: more fragments.
-		u_short frag_offset : 13;		// The fragment offset field, measured in units of eight-byte blocks (64 bits), is 13 bits long and specifies the offset of a particular fragment relative to the beginning of the original unfragmented IP datagram. The first fragment has an offset of zero. This allows a maximum offset of (213 – 1) × 8 = 65,528 bytes, which would exceed the maximum IP packet length of 65,535 bytes with the header length included (65,528 + 20 = 65,548 bytes).
+		u_short frag_offset : 13;	// The fragment offset field, measured in units of eight-byte blocks (64 bits), is 13 bits long and specifies the offset of a particular fragment relative to the beginning of the original unfragmented IP datagram. The first fragment has an offset of zero. This allows a maximum offset of (213 – 1) × 8 = 65,528 bytes, which would exceed the maximum IP packet length of 65,535 bytes with the header length included (65,528 + 20 = 65,548 bytes).
 		u_char ttl;					// time to live in seconds... orrrrr when it reaches a router it decrements the value by 1. if 0, time exceeded msg is sent back.
 		u_char protocol;			// ??
 		u_short chksum;				// ipv4 Header checksum. The checksum field is the 16-bit one's complement of the one's complement sum of all 16-bit words in the header. For purposes of computing the checksum, the value of the checksum field is zero.

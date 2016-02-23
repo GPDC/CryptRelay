@@ -914,13 +914,48 @@ Raw::Raw()
 
 	// Gotta make those structs don't have random values in them!
 	//memset(&Hints, 0, sizeof(Hints));				// addrinfo
-	memset(&StorageHints, 0, sizeof(StorageHints));	// SOCKADDR_STORAGE
+	//memset(&StorageHints, 0, sizeof(StorageHints));	// SOCKADDR_STORAGE
 	memset(&IPV4Header, 0, sizeof(IPV4Header));		// iphdr
 	memset(&ICMPHeader, 0, sizeof(ICMPHeader));		// iphdr
 	memset(&SockIn, 0, sizeof(SockIn));				// SOCKADDR_IN
 }
 Raw::~Raw()
 {
+}
+
+bool Raw::isLittleEndian()
+{
+	// A union is only big enough to hold the largest data member that it contains.
+	// Don't read from something unless it was just written; it probably won't give back the value you are thinking it will.
+	union
+	{
+		std::uint32_t i;
+		std::uint8_t b[4];	// Please treat as a 8 bit int. (if you wish to cout this number, cast it to (int) )
+	}iEndians;
+	iEndians.i = 0x01020304;// If the machine is little endian, then iEndians.i will show up as:
+							//		0x//  01 02 03 04
+							//		dec// 16,909,060
+							//		0b//  0000 0001 0000 0010 0000 0011 0000 0100
+							//	So what we're checking for is, as a decimal number, b[0] == 4. If true, then it's == little endian.
+							
+							// If the machine is big endian, then iEndians.i will show up as:
+							//		0x//  04 03 02 01
+							//		dec// 1,086,341,248
+							//		0b//  0010 0000 1100 0000 0100 0000 1000 0000.
+							//	So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
+	if (iEndians.b[0] == 4) {
+		if (global_verbose == true)
+			std::cout << "Machine is detected as little endian. " << "b[0] == " << (int)iEndians.b[0] << "\n";
+		return true;  // Little endian
+	}
+	else if (iEndians.b[0] == 1) {
+		if (global_verbose == true)
+			std::cout << "Machine is detected as big endian. " << "b[0] == " << (int)iEndians.b[0] << "\n";
+		return false; // Must be big endian, and b[0] == 1
+	}
+	else
+		std::cout << "Major catastrophical problem determining byte order. Exiting.\n";
+		exit(1);	// Shouldn't ever happen.
 }
 
 bool Raw::initializeWinsock()
@@ -1036,12 +1071,14 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 	sendbuf_len += sizeof(ICMPHeader);
 
 	// Output buffer to screen in hex
-	for (int i = 0; i < sendbufMAXLENGTH; i++)
-	{
-		std::cout << " 0x" << std::setfill('0') << std::setw(2) << std::hex <<  (int)(u_char)sendbuf[i];
+	if (global_verbose == true) {
+		std::cout << "Buffer contents:\n";
+		for (int i = 0; i < sendbufMAXLENGTH; i++)
+		{
+			std::cout << " 0x" << std::setfill('0') << std::setw(2) << std::hex << (int)(u_char)sendbuf[i];
+		}
+		std::cout << std::dec;	// Gotta set the stream back to decimal or else it will forever output in hex
 	}
-	std::cout << std::dec;	// Gotta set the stream back to decimal or else it will forever output in hex
-
 
 #endif//_WIN32
 	return true;

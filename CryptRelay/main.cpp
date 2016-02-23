@@ -2,17 +2,11 @@
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
 
-//put addrinfo structs into a separate file
-//put it in the constructor of the class
-//and deconstructor
-//so there can be no mistakes with trying to freeaddrinfo();
-
 //TODO:
 //nat traversal
 //encryption
 //rename ipaddress.cpp to FormatCheck.cpp
 //add port checking in FormatCheck.cpp
-//fill out style guide
 //clean up current style format to adhere to the guide
 //create a file in the same folder cryptrelay.exe is in and place whatever the user inputted for -m and -mp inside there.
 //	^this is so the user will not have to specify their IP and port to listen on _every_single_time.
@@ -43,7 +37,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#include <pthread.h>//<process.h>
+#include <pthread.h>	//<process.h>
 #endif//__linux__
 
 #ifdef _WIN32
@@ -56,13 +50,15 @@
 #include <vector>
 #include <WS2tcpip.h>
 
-#include <process.h>//<pthread.h>
+#include <process.h>	//<pthread.h>
 #endif//_WIN32
 
 
-const int MAX_DIFF_INPUTS = 12; //max possible count of argc to bother reading from
+const int MAX_DIFF_INPUTS = 12; // Max possible count of argc to bother reading from
+								// though i think if i put the stuff i'm checking into a struct i could get the size of the struct
+								// and have that value be here...
 bool global_verbose = false;
-//bool no_3rd_party = false;	// if true, don't use a 3rd party server to initiate the peer-to-peer connection
+//bool no_3rd_party = false;	// If true, don't use a 3rd party server to initiate the peer-to-peer connection
 
 int main(int argc, char *argv[])
 {
@@ -73,7 +69,7 @@ int main(int argc, char *argv[])
 
 	//===================================== Starting Chat Program =====================================
 
-	std::cout << "Welcome to the chat program. Version: 0.5.0\n";//somewhat arbitrary version number usage at the moment :)
+	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 	
 	Raw RawObj;
 	RawObj.initializeWinsock();
@@ -249,6 +245,37 @@ Variables:		this_is_an_example;		# No capitalization. Underscores to separate wo
 Globals:								# Put the word global in front of it like so:
 	ex variable:	global_this_is_an_example;
 	ex function:	globalThisIsAnExample;
+
+
+Not really necessary, but I've been using {}'s in this way:
+Classes:
+
+	class myclass
+	{
+		public:
+	}
+
+Functions:
+
+	void myfunction()
+	{
+		return;
+	}
+
+Everything else (for example, if statements, loops, structs)
+
+	if (this == that) {
+		int wombo += 1;
+		int combo == 1;
+		combo += wombo;
+	}
+
+A small reason for using {}'s in this manner:
+I'm not 100% positive on the reasoning, but I am treating the classes and functions as a potentially big things,
+and the {}'s being in that way emphasises that for me, and is slightly easier to follow the {}'s over long vertical
+distances. But again, it really doesn't matter which way to use.
+
+
 
 +++++++++++++++++++++++++++++++++++ End Formatting Guide +++++++++++++++++++++++++++++++++++
 
