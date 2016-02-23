@@ -1,5 +1,6 @@
 //connection.cpp
 //could i use vectors instead of char arrays for messages?
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
 #undef UNICODE
 #ifdef __linux__
 #include <iostream>
@@ -15,6 +16,7 @@
 #include <stdio.h>
 #include <cerrno>
 #include <pthread.h>
+#include <iomanip>	// std::setw(2) && std::setfill('0')
 
 #include <arpa/inet.h>
 #include <signal.h>
@@ -31,6 +33,7 @@
 #include <stdio.h>
 #include <iostream>
 #include <process.h>
+#include <iomanip>	// std::setw(2) && std::setfill('0')
 #endif//_WIN32
 
 //NAT WIKI: Many NAT implementations follow the port preservation design for TCP: for a given outgoing TCP communication, they use the same values as internal and external port numbers.NAT port preservation for outgoing TCP connections is crucial for TCP NAT traversal, because as TCP requires that one port can only be used for one communication at a time, programs bind distinct TCP sockets to ephemeral ports for each TCP communication, rendering NAT port prediction impossible for TCP.[2]
@@ -97,6 +100,7 @@ char globalvalue = 9;
 
 connection::connection()
 {
+	memset(&UDPSockaddr_in, 0, sizeof(UDPSockaddr_in));
 	memset(&incomingAddr, 0, sizeof(incomingAddr));
 	memset(&hints, 0, sizeof(hints));
 	//ZeroMemory(&incomingAddr, sizeof(incomingAddr));		//ZeroMemory sux, not linux compatible.
@@ -111,6 +115,7 @@ connection::connection()
 	ListenSocket = INVALID_SOCKET;
 	ConnectSocket = INVALID_SOCKET;
 	AcceptedSocket = INVALID_SOCKET;
+	UDPSpamSocket = INVALID_SOCKET;
 
 	//string
 	target_ip_addr = "";
@@ -205,7 +210,6 @@ void connection::serverCompetitionThread(void* instance)
 			if (global_verbose == true) {
 				std::cout << "STHREAD >> ";
 				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
-				//or should i exit this thread, then accept the connection in the main thread?
 				std::cout << "STHREAD >> ";
 			}
 			if ((iFeedback = self->acceptClient()) == false) return; //1;				//creates a new socket to communicate with the person on
@@ -820,11 +824,291 @@ void connection::mySleep(int number_in_ms)
 #endif//_WIN32
 }
 
-	//have the buffer[0] be a flag, the rest a message.
-	//while loop
-	//checkfor msg
-	//send msg if one has been put into the buffer
-	//how do i continue a while loop for receiving information when the client is waiting for user input (effectively stopping the while loop b/c of getline)?
-	//multithreading or message loop. could message loop lock up for too long in a particular spot so to speak if given a big task on part of the loop?
-	//or what about, check for a carriage return or a enter key button press in the windows buffer or handler or whatever it is?, and when the windows handle receives a carriage return it sends the whole line before the carriage return into a getline(vectorhere)?
-	//is there need to sync threads?
+
+/************************************ UDP Section **************************************/
+/* BEGIN UDP COMMENT OUT
+
+void connection::UDPSpamSetHints()
+{
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_DGRAM;
+	hints.ai_protocol = IPPROTO_UDP;
+}
+
+int connection::UDPSpamCreateSocket() {
+	if (global_verbose == true)
+		std::cout << "SPAM :: Creating Socket to listen on...\n";
+	// Create UDP socket
+	UDPSpamSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP);
+	if (UDPSpamSocket == INVALID_SOCKET) {
+		getError();
+		std::cout << "SPAM :: Socket failed.\n";
+		//freeaddrinfo(result);
+		closeThisSocket(ListenSocket);
+		cleanup();
+		return false;
+	}
+	return true;
+	
+	//ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+}
+
+bool connection::UDPSpamPortsWithSendTo()
+{
+
+	int intResult;
+	const char* sendbuf = "";
+	std::string message_to_send = "Autobot Hi\n";
+	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
+	size_t sendbuf_len = strlen(sendbuf);
+
+	UDPSockaddr_in.sin_family = AF_INET;
+	UDPSockaddr_in.sin_port = htons(5050);
+	//InetPton(UDPSockaddr_in.sin_family, target_ip_addr.c_str(), &UDPSockaddr_in.sin_addr.S_un.S_addr);
+	UDPSockaddr_in.sin_addr.s_addr = inet_addr( target_ip_addr.c_str() );
+
+//	iResult = sendto(UDPSpamSocket, sendbuf, sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
+//	if (iResult == SOCKET_ERROR) {
+//		getError();
+//		std::cout << "sendto failed.\n";
+//		closeThisSocket(UDPSpamSocket);
+//		cleanup();
+//		return 0;
+//	}
+
+	// Send a packet to every single one of the target's ports
+	std::cout << "Spamming target's ports...\n";
+	for (int i = 1; i <= 65535; i++) {
+		UDPSockaddr_in.sin_port = htons(i);
+		iResult = sendto(UDPSpamSocket,	sendbuf, sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
+		if (iResult == SOCKET_ERROR) {
+			printf("SPAM :: sendto failed with error: %d\n", WSAGetLastError());
+			closesocket(UDPSpamSocket);
+			WSACleanup();
+			return false;
+		}
+		std::cout << "a\n" << "b\n";
+	}
+	std::cout << "Portspam complete.\n";
+	return true;
+}
+
+END UDP COMMENT OUT *********/
+
+
+
+/******************** Raw class ************************/
+// Reminder: Carefully read every. single. word. inside documentation for berkley sockets (this applies to everything).
+//		Otherwise you might skip the 2 most important words in the gigantic document.
+
+Raw::Raw()
+{
+	created_socket = INVALID_SOCKET;
+
+
+
+	iResult = 0;
+	errchk = 0;
+
+	sendbuf_len = 0;
+
+	// Gotta make those structs don't have random values in them!
+	//memset(&Hints, 0, sizeof(Hints));				// addrinfo
+	memset(&StorageHints, 0, sizeof(StorageHints));	// SOCKADDR_STORAGE
+	memset(&IPV4Header, 0, sizeof(IPV4Header));		// iphdr
+	memset(&ICMPHeader, 0, sizeof(ICMPHeader));		// iphdr
+	memset(&SockIn, 0, sizeof(SockIn));				// SOCKADDR_IN
+}
+Raw::~Raw()
+{
+}
+
+bool Raw::initializeWinsock()
+{
+#ifdef _WIN32
+	if (global_verbose == true)
+		std::cout << "Initializing Winsock...\n";
+	// Initialize Winsock
+	errchk = WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errchk != 0) {
+		printf("WSAStartup failed with error: %d\n", iResult);
+		return false;
+	}
+#endif//_WIN32
+	return true;
+}
+
+
+bool Raw::GetAddress(std::string ip, std::string port)
+{
+	if (global_verbose == true)
+		std::cout << "Retreiving info: IP address and port...\n";
+	// Resolve the LOCAL server address and port.
+
+	SockIn.sin_family = AF_INET;
+#ifdef _WIN32
+	SockIn.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
+#endif//_WIN32
+#ifdef __linux__
+	SockIn.sin_addr.S_addr = inet_addr(ip.c_str());
+#endif//__linux__
+	SockIn.sin_port = htons(atoi( port.c_str() ));
+
+	/*errchk = getaddrinfo(ip.c_str(), port.c_str(), &Hints, &PResult);
+	if (errchk != 0) {
+		std::cout << "STHREAD >> ";
+		printf("getaddrinfo failed with error: %d\n", errchk);
+		cleanup();
+		return false;
+	}*/
+
+
+
+	return true;
+}
+
+SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optional return value.
+{
+	if (global_verbose == true)
+		std::cout << "Creating RAW Socket...\n";
+	// Create a SOCKET handle for connecting to server(no ip address here, that is with bind)
+	created_socket = socket(family, socktype, protocol);	// Must be admin / root / SUID 0  in order to open a RAW socket
+	if (created_socket == INVALID_SOCKET) {
+		getError();
+		std::cout << "Socket failed.\n";
+		//freeaddrinfo(PResult);
+		closeThisSocket(created_socket);
+		cleanup();
+		return false;
+	}
+	//freeaddrinfo(result);		Can't just do that here since we may want to bind() something.
+	//							After bind(), then we can freeaddrinfo()
+	//							or after all references of the addrinfo structure have passed by
+	return created_socket;
+}
+
+bool Raw::craftFixedICMPEchoRequestPacket()
+{
+#ifdef _WIN32
+
+
+	//const char on = 1;
+	//int on_len = sizeof(int);
+
+	// tell kernel that we are doing our own IP structures
+	errchk = setsockopt(created_socket, IPPROTO_IP, IP_HDRINCL, (char*)&on, on_len);
+	if (errchk == SOCKET_ERROR) {
+		getError();
+		std::cout << "setsockopt failed\n";
+		closeThisSocket(created_socket);
+		cleanup();
+		return false;
+	}
+	//int spongebob = sizeof(IPV4Header);
+	//assert(spongebob == 20);
+	//ipv4 Header
+	IPV4Header.ihl = sizeof(IPV4Header) >> 2;				// 15 is max value, 5 is min. sizeof(IPV4Header) >> 2 is just dividing it by 4 (shifting to the right 2x);
+	IPV4Header.ver = 4;										// 4 == ipv4
+	IPV4Header.dscp = 0;									// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
+	IPV4Header.ecn = 0;										// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
+	IPV4Header.total_len = sizeof(IPV4Header) + sizeof(ICMPHeader)/* + payload*/;
+	IPV4Header.id = htons(12345);							//?
+	IPV4Header.flags = 0;
+	IPV4Header.frag_offset = htons(0);
+	IPV4Header.ttl = 64;
+	IPV4Header.protocol = 1;								// 1 == ICMP
+	IPV4Header.chksum = /*datchecksum*/ 0;					// need a checksum
+	IPV4Header.src_ip = /*datip*/inet_addr("192.168.1.116");
+	IPV4Header.dst_ip = /*datip*/inet_addr("68.4.206.140");
+
+	// ICMP header			//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
+	ICMPHeader.type = ICMP_ECHO;
+	ICMPHeader.code = ICMP_ECHO_CODE_ZERO;
+	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));
+	//ICMPHeader.id = htons(12345);
+	//ICMPHeader.seq = 1;
+
+	// Copying IPV4Header into the sendbuffer
+	memcpy_s(sendbuf, sendbufMAXLENGTH, &IPV4Header, sizeof(IPV4Header));
+	sendbuf_len = sizeof(IPV4Header);
+	// Copying the ICMPHeader into the sendbuffer by adding it onto the
+	memcpy_s(sendbuf + sendbuf_len, sendbufMAXLENGTH - sendbuf_len, &ICMPHeader, sizeof(ICMPHeader));
+	sendbuf_len += sizeof(ICMPHeader);
+
+	// Output buffer to screen in hex
+	for (int i = 0; i < sendbufMAXLENGTH; i++)
+	{
+		std::cout << " 0x" << std::setfill('0') << std::setw(2) << std::hex <<  (int)(u_char)sendbuf[i];
+	}
+	std::cout << std::dec;	// Gotta set the stream back to decimal or else it will forever output in hex
+
+
+#endif//_WIN32
+	return true;
+}
+
+bool Raw::sendTheThing()
+{
+	std::cout << "Sizeof iphdr: " << sizeof(IPV4Header) << " \n";
+	std::cout << "sizeof icmphdr: " << sizeof(ICMPHeader) << " \n";
+	std::cout << "sendbuf_len: " << sendbuf_len << "\n";
+	errchk = sendto(created_socket, sendbuf, sendbuf_len, 0, (sockaddr*)&SockIn, sizeof(SockIn));
+	if (errchk == SOCKET_ERROR){
+		getError();
+		std::cout << "Sendto failed.\n";
+		closeThisSocket(created_socket);
+		cleanup();
+		return false;
+	}
+	return true;
+}
+
+void Raw::closeThisSocket(SOCKET fd)
+{
+#ifdef __linux__
+	close(fd);
+#endif//__linux__
+
+#ifdef _WIN32
+	closesocket(fd);
+#endif
+}
+
+bool Raw::shutdownConnection(SOCKET socket)
+{
+	std::cout << "Shutting down the connection...\n";
+	// shutdown the connection since we're done
+	errchk = shutdown(socket, SD_SEND);
+	if (errchk == SOCKET_ERROR) {
+		std::cout << "shutdown failed.\n";
+		closeThisSocket(socket);
+		cleanup();
+		return false;
+}
+	return true;
+}
+
+// cleanup
+void Raw::cleanup()
+{
+#ifdef _WIN32
+	if (global_verbose == true)
+		std::cout << "Performing WSACleanup...\n";
+	WSACleanup();
+#endif//_WIN32
+}
+
+void Raw::getError()
+{
+#ifdef __linux__
+	int errsv = errno;
+	std::cout << "ERROR " << errsv << " :" << strerror(errsv);
+	return;
+#endif
+#ifdef _WIN32
+	int errsv = WSAGetLastError();
+	std::cout << "ERROR: " << errsv << ". ";
+	return;
+	//returns int
+#endif
+}

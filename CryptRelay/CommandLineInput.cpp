@@ -33,6 +33,8 @@ void CommandLineInput::helpAndReadMe(int argc)
 
 int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
+	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
+	// but for now this is simple and easy to read/understand, so its nice.
 	const int MAX_DIFF_INPUTS = 12; //max possible count of argc to bother reading from
 	int err_chk;
 	int arg_size;
@@ -107,4 +109,5 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 		}
 	}
+	return 0; //shouldn't be possible to get here
 }
