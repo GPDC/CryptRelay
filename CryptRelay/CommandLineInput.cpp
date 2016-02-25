@@ -50,51 +50,59 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 	ipaddress ipaddress_get;
 
 	//put all argv's into a vector so they can be compared to strings
-	for (int i = 0; i < argc; i++) {
+	for (int i = 0; i < argc; i++)
+	{
 		arg.push_back(argv[i]);
 	}
 	arg_size = arg.size();
 
 	//if command line arguments supplied, show the ReadMe
-	if (argc <= 1) {
+	if (argc <= 1)
+	{
 		helpAndReadMe(argc);
 		return 1;
 	}
 	//check all argv inputs to see what the user wants to do
-	if (argc >= 2) {
-		for (int i = 1; i < argc; ++i) {
-
+	if (argc >= 2)
+	{
+		for (int i = 1; i < argc; ++i)
+		{
 			if (arg[i] == "-h"
 				|| arg[i] == "-H"
 				|| arg[i] == "-help"
 				|| arg[i] == "-Help"
 				|| arg[i] == "help"
-				|| arg[i] == "readme") {
+				|| arg[i] == "readme")
+			{
 				helpAndReadMe(argc);
 				return 1;
 			}
-			if (arg[i] == "-t" && i < arg_size - 1) {
+			if (arg[i] == "-t" && i < arg_size - 1)
+			{
 				err_chk = ipaddress_get.get_target(argv[i + 1]);
 				if (err_chk == false)
 					return 1;
 				else
 					target_ip_address = argv[i + 1];
 			}
-			if (arg[i] == "-tp") {
+			if (arg[i] == "-tp")
+			{
 				//err_chk = ipaddress_get.port(argv[i + 1]);
 				//if (err_chk == false)
 				//	return 1;
 				//else
 				target_port = argv[i + 1];
 			}
-			if (arg[i] == "-m") {
+			if (arg[i] == "-m")
+			{
 				err_chk = ipaddress_get.get_target(argv[i + 1]);
 				if (err_chk == false)
 					return 1;
 				else
 					my_ip_address = argv[i + 1];
 			}
-			if (arg[i] == "-mp") {
+			if (arg[i] == "-mp")
+			{
 				//err_chk = ipaddress_get.port(argv[i + 1]);
 				//if (err_chk == false)
 				//	return 1;
@@ -103,7 +111,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-v")
 				global_verbose = true;
-			if (arg[i] == "-f") {
+			if (arg[i] == "-f")
+			{
 				std::cout << "-f hasn't been implemented yet.\n";
 				return 1;
 			}

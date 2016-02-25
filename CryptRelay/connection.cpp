@@ -328,7 +328,7 @@ bool connection::serverGetAddress()
 	if (errchk != 0){
 		std::cout << "STHREAD >> ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -343,7 +343,7 @@ bool connection::clientGetAddress()
 	if (errchk != 0){
 		std::cout << "CTHREAD :: ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -361,7 +361,7 @@ bool connection::createSocket()
 		std::cout << "Socket failed.\n";
 		//freeaddrinfo(result);
 		closeThisSocket(ListenSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -378,7 +378,7 @@ bool connection::bindToListeningSocket()//my local ip address and port
 		std::cout << "bind failed.\n";
 		//freeaddrinfo(result);
 		closeThisSocket(ListenSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	freeaddrinfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
@@ -407,7 +407,7 @@ int connection::connectToTarget()
 		std::cout << "Error at socket().\n";
 		//freeaddrinfo(result);
 		closeThisSocket(ConnectSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 
@@ -450,7 +450,7 @@ bool connection::listenToListeningSocket()
 		getError();
 		std::cout << "listen failed.\n";
 		closeThisSocket(ListenSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -474,7 +474,7 @@ int connection::acceptClient()
 		getError();
 		std::cout << "accept failed.\n";
 		closeThisSocket(ListenSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	if (global_verbose == true)
@@ -536,7 +536,7 @@ bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 				getError();
 				std::cout << "send failed.\n";
 				closeThisSocket(AcceptedSocket);
-				cleanup();
+				myWSACleanup();
 				return false;
 			}
 			printf("Bytes sent: %d\n", iSendResult);
@@ -546,7 +546,7 @@ bool connection::echoReceiveUntilShutdown()	//STATUS: NOT USED
 		else {
 			std::cout << "recv failed.\n";
 			closeThisSocket(AcceptedSocket);
-			cleanup();
+			myWSACleanup();
 			return false;
 		}
 	} while (iResult > 0);
@@ -567,7 +567,7 @@ bool connection::receiveUntilShutdown()
 		getError();
 		std::cout << "send failed.\n";
 		closeThisSocket(globalSocket);
-		cleanup();
+		myWSACleanup();
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
@@ -618,7 +618,7 @@ bool connection::receiveUntilShutdown()
 			getError();
 			std::cout << "recv failed.\n";
 			closeThisSocket(globalSocket);
-			cleanup();
+			myWSACleanup();
 			return false;
 		}
 	} while (iResult > 0);
@@ -633,14 +633,14 @@ bool connection::shutdownConnection()
 	if (errchk == SOCKET_ERROR) {
 		std::cout << "shutdown failed.\n";
 		closeThisSocket(globalSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
 }
 
-// cleanup
-void connection::cleanup()//WHEN BIND FAILS, and it tries to call freeaddrinfo in here, unkown error occurs.
+// myWSACleanup
+void connection::myWSACleanup()//WHEN BIND FAILS, and it tries to call freeaddrinfo in here, unkown error occurs.
 {
 	if (global_verbose == true)
 		std::cout << "Cleaning up. Freeing addrinfo...\n";
@@ -774,7 +774,7 @@ void connection::sendThread(void* instance)
 		self->getError();
 		std::cout << "send failed.\n";
 		self->closeThisSocket(self->globalSocket);
-		self->cleanup();
+		self->myWSACleanup();
 		//return false;
 	}
 	printf("Message sent: %s\n", sendbuf);
@@ -791,7 +791,7 @@ void connection::sendThread(void* instance)
 			self->getError();
 			std::cout << "send failed.\n";
 			self->closeThisSocket(self->globalSocket);
-			self->cleanup();
+			self->myWSACleanup();
 			return;//return 1
 		}
 		printf("Message sent: %s\n", sendbuf);
@@ -847,7 +847,7 @@ int connection::UDPSpamCreateSocket() {
 		std::cout << "SPAM :: Socket failed.\n";
 		//freeaddrinfo(result);
 		closeThisSocket(ListenSocket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -874,7 +874,7 @@ bool connection::UDPSpamPortsWithSendTo()
 //		getError();
 //		std::cout << "sendto failed.\n";
 //		closeThisSocket(UDPSpamSocket);
-//		cleanup();
+//		myWSACleanup();
 //		return 0;
 //	}
 
@@ -947,19 +947,28 @@ bool Raw::isLittleEndian()	// Figuring out where to store this since i'm not usi
 							//		dec// 1,086,341,248
 							//		0b//  0010 0000 1100 0000 0100 0000 1000 0000.
 							// So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
-	if (iEndians.b[0] == 4) {
+
+	if (iEndians.b[0] == 4)			// Little endian
+	{
 		if (global_verbose == true)
+		{
 			std::cout << "Machine is detected as little endian. " << "b[0] == " << (int)iEndians.b[0] << "\n";
-		return true;  // Little endian
+		}
+		return true;
 	}
-	else if (iEndians.b[0] == 1) {
+	else if (iEndians.b[0] == 1)	// Must be big endian, and b[0] == 1
+	{
 		if (global_verbose == true)
+		{
 			std::cout << "Machine is detected as big endian. " << "b[0] == " << (int)iEndians.b[0] << "\n";
-		return false; // Must be big endian, and b[0] == 1
+		}
+		return false;	
 	}
-	else
+	else							// Shouldn't ever happen.
+	{
 		std::cout << "Major catastrophical problem determining byte order. Exiting.\n";
-		exit(1);	// Shouldn't ever happen.
+		exit(0);	
+	}
 
 
 }
@@ -1028,32 +1037,7 @@ std::uint16_t Raw::setFlagsAndFragOffset(uint16_t flags, uint16_t frag_offset)
 	// I COULD instead do either:
 	// A. Look through all the compiler specific stuff and things for all the compilers ever... OR
 	// B. Create 2 structures. One is for little endian. The other is for big endian.
-	//		Next, create the function commented out below.
-	//		After that, if (isLittleEndian() == true), then use the struct made for little endians.
-	//
-	//	bool isLittleEndian()	
-	//	{
-	//	union
-	//	{
-	//		std::uint32_t i;
-	//		std::uint8_t b[4];
-	//	}iEndians;
-	//	iEndians.i = 0x01020304;	// If the machine is little endian, then iEndians.i will show up as:
-	//								//		\0x  01 02 03 04
-	//								//		\0b  0000'0001 / 0000'0010 / 0000'0011 / 0000'0100
-	//								// So what we're checking for is, as a decimal number, b[0] == 4. If true, then it's == little endian.
-	//
-	//								// When looking at it from a big endian machine, then iEndians.i will show up as:
-	//								//		\0x  04 03 02 01
-	//								//		\0b  0000'0100 / 0000'0011 / 0000'0010 / 0000'0001
-	//								// The bit order hasn't changed, just the bytes.
-	//								// So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
-	//	if (iEndians.b[0] == 4)
-	//		return true;			// Little endian
-	//	else if (iEndians.b[0] == 1)
-	//		return false;			// Must be big endian
-	//	else
-	//		exit(1);				// Shouldn't ever happen.
+	//		Create function for determining endianness.
 }
 
 uint16_t Raw::roL(uint16_t unsigned_number_to_shift, uint16_t unsigned_shift_count)
@@ -1063,19 +1047,19 @@ uint16_t Raw::roL(uint16_t unsigned_number_to_shift, uint16_t unsigned_shift_cou
 																					// multiply by 8 to get the bit count. Then -1 so we don't shift it off into space.
 	uint16_t least_significant_bitmask = 1;	// the least_significant_bitmask			
 
-	for ( ; unsigned_shift_count > 0; unsigned_shift_count--) {
-																	
-
-		if (unsigned_number_to_shift & most_significant_bitmask) {			// Checking to see if the most significant bit is set ... bool checks for nonzero. if it is nonzero, true, else if it is 0, it is false.		
+	for ( ; unsigned_shift_count > 0; unsigned_shift_count--)
+	{														
+		if (unsigned_number_to_shift & most_significant_bitmask)
+		{																	// Checking to see if the most significant bit is set ... bool checks for nonzero. if it is nonzero, true, else if it is 0, it is false.		
 			unsigned_number_to_shift <<= 1;									// If it is set, then shift left 1, and set the least significant bit
 			unsigned_number_to_shift |= least_significant_bitmask;			// to 1 (b/c they come in as a 0) by bitwise ORing the number to
 		}
-		else {
+		else
+		{
 			unsigned_number_to_shift <<= 1;
 		}
 	}
 	return unsigned_number_to_shift;
-
 
 
 	//in regards to rotating right on signed int's:
@@ -1083,23 +1067,26 @@ uint16_t Raw::roL(uint16_t unsigned_number_to_shift, uint16_t unsigned_shift_cou
 	// this could be unexpected since a 0 should be there. so this needs to be accounted for.
 }
 
-/*
-uint16_t Raw::rolVersionTwo(uint16_t number, uint16_t shift_count) {
-	if ((shift_count &= 31) == 0)
-		return number;
-	return (number << shift_count) | (number >> (32 - shift_count));
-	// This is Bertrand Marron's code from stack overflow. It is much more concise and maybe even faster?
-}
-*/
+
+//uint16_t Raw::rolVersionTwo(uint16_t number, uint16_t shift_count)
+//{
+//	if ((shift_count &= 31) == 0)
+//		return number;
+//	return (number << shift_count) | (number >> (32 - shift_count));
+//	// This is Bertrand Marron's code from stack overflow. It is much more concise and maybe even faster?
+//}
+
 
 bool Raw::initializeWinsock()
 {
 #ifdef _WIN32
 	if (global_verbose == true)
+	{
 		std::cout << "Initializing Winsock...\n";
-	// Initialize Winsock
+	}
 	errchk = WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (errchk != 0) {
+	if (errchk != 0)
+	{
 		printf("WSAStartup failed with error: %d\n", iResult);
 		return false;
 	}
@@ -1111,22 +1098,16 @@ bool Raw::initializeWinsock()
 bool Raw::setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_host_port)
 {
 	if (global_verbose == true)
+	{
 		std::cout << "Setting info: IP address and port...\n";
-	// Resolve the LOCAL server address and port.
+	}
 
+	// Retrieving all the info that was gathered by CommandLineInput and checked by ipaddress.cpp
 	TargetSockAddrIn.sin_family = AF_INET;
 	TargetSockAddrIn.sin_addr.s_addr = inet_addr(target_ip.c_str());
 	TargetSockAddrIn.sin_port = htons(atoi( target_port.c_str() ));
 	my_host_ip_addr = my_ip;
 	my_host_port = my_host_port;
-
-	/*errchk = getaddrinfo(ip.c_str(), port.c_str(), &Hints, &PResult);
-	if (errchk != 0) {
-		std::cout << "STHREAD >> ";
-		printf("getaddrinfo failed with error: %d\n", errchk);
-		cleanup();
-		return false;
-	}*/
 
 	return true;
 }
@@ -1134,22 +1115,23 @@ bool Raw::setAddress(std::string target_ip, std::string target_port, std::string
 SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optional return value.
 {
 	if (global_verbose == true)
+	{
 		std::cout << "Creating RAW Socket...\n";
+	}
 	// Create a SOCKET handle for connecting to server(no ip address here, that is with bind)
 	created_socket = socket(family, socktype, protocol);	// Must be admin / root / SUID 0  in order to open a RAW socket
-	if (created_socket == INVALID_SOCKET) {
+	if (created_socket == INVALID_SOCKET)
+	{
 		getError();
 		std::cout << "Socket failed.\n";
-		//freeaddrinfo(PResult);
 		closeThisSocket(created_socket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
-	//freeaddrinfo(result);		Can't just do that here since we may want to bind() something.
-	//							After bind(), then we can freeaddrinfo()
-	//							or after all references of the addrinfo structure have passed by
 	return created_socket;
 }
+
+
 
 // This echo request is going to a dead end IP address at 3.3.3.3
 bool Raw::craftFixedICMPEchoRequestPacket()
@@ -1159,24 +1141,59 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 
 	// Tell kernel that we are doing our own IP structures
 	errchk = setsockopt(created_socket, IPPROTO_IP, IP_HDRINCL, (char*)&on, on_len);
-	if (errchk == SOCKET_ERROR) {
+	if (errchk == SOCKET_ERROR)
+	{
 		getError();
 		std::cout << "setsockopt failed\n";
 		closeThisSocket(created_socket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
+
+	std::string package_for_payload = "OneTwoSkyTree";
+	size_t package_for_payload_size = strlen(package_for_payload.c_str());
+	size_t ipv4header_size = sizeof(IPV4Header);
+	size_t icmpheader_size = sizeof(ICMPHeader);
+
+	// Putting stuff in the payload
+	if ((package_for_payload_size <= payload_max_length) && package_for_payload_size > 0)
+	{
+		memcpy(payload, package_for_payload.c_str(), package_for_payload_size);
+	}
+	// Copying IPV4Header into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
+	memcpy_s(
+		sendbuf, sendbuf_max_length,
+		&IPV4Header,
+		ipv4header_size
+	);
+	current_sendbuf_len = ipv4header_size;
+
+	// Copying the ICMPHeader into the sendbuffer starting at sendbuf[current_sendbuf_len]
+	memcpy_s(
+		sendbuf + current_sendbuf_len,
+		sendbuf_max_length - current_sendbuf_len,
+		&ICMPHeader,
+		icmpheader_size
+	);
+	current_sendbuf_len += icmpheader_size;
+
+	// Copying payload into the sendbuffer
+	memcpy_s(
+		sendbuf + current_sendbuf_len,
+		sendbuf_max_length - current_sendbuf_len,
+		payload,
+		package_for_payload_size
+	);
+	current_sendbuf_len += package_for_payload_size;
 
 	// ipv4 Header
 	std::string dead_end_ip_addr = "3.3.3.3";
 
-	IPV4Header.ver = 4;													// 4 == ipv4
 	IPV4Header.ihl = sizeof(IPV4Header) >> 2;							// ihl min value == 5, max == 15; sizeof(IPV4Header) >> 2 is just dividing it by 4 (shifting to the right 2x);
-	//IPV4Header.ihl_and_ver = setIHLAndVer(sizeof(IPV4Header) >> 2, 4);// this isn't necessary b/c they are unsigned chars.
-	//IPV4Header.dscp_and_ecn = setDSCPAndECN(0, 0);					// this isn't necessary b/c it is unsigned char.
+	IPV4Header.ver = 4;													// 4 == ipv4
 	IPV4Header.dscp = 0;												// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
 	IPV4Header.ecn = 0;													// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
-	IPV4Header.total_len = sizeof(IPV4Header) + sizeof(ICMPHeader) + sizeof(payload);
+	IPV4Header.total_len = ipv4header_size + icmpheader_size + payload_max_length;
 	IPV4Header.id = htons(55155);										//?
 	//IPV4Header.flags_and_frag_offset = setFlagsAndFragOffset((uint16_t)0, (uint16_t)0);	// POSSIBLY BROKEN. leave it set to 0.
 	IPV4Header.flags = 0;
@@ -1185,44 +1202,32 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 	IPV4Header.protocol = 1;											// 1 == ICMP
 	IPV4Header.chksum = /*datchecksum*/ 0;								// need a checksum
 	IPV4Header.src_ip.s_addr = inet_addr( my_host_ip_addr.c_str() );	// needs conversion to big endian
-	IPV4Header.dst_ip.s_addr = inet_addr( dead_end_ip_addr.c_str() );		// do not convert to big endian if assigning it something located inside a sockaddr_in structure
-	//	IPV4Header.dst_ip.s_addr = TargetSockAddrIn.sin_addr.s_addr;		// this is one that is set to the target instead of a dead end
+	IPV4Header.dst_ip.s_addr = inet_addr( dead_end_ip_addr.c_str() );	// do not convert to big endian if assigning it something located inside a sockaddr_in structure
+																		// TargetSockAddrIn.sin_addr.s_addr;	// this is one that is set to the target instead of a dead end
 
 
-	// ICMP header				//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
+	// ICMP header														//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeader.type = ICMP_ECHO;
 	ICMPHeader.code = ICMP_ECHO_CODE_ZERO;
-	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));	// This trick only works with the most basic icmpheader. do not use.
+	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));						// This trick only works with the most basic icmpheader, and no payload to boot. do not use.
 	//ICMPHeader.id = htons(12345);
 	//ICMPHeader.seq = 1;
 
-	std::string package_for_payload = "OneTwoSkyTree";
-	size_t package_for_payload_size = strlen(package_for_payload.c_str() );
-	size_t ipv4header_size = sizeof(IPV4Header);
-	size_t icmpheader_size = sizeof(ICMPHeader);
-
-	// Putting stuff in the payload
-	if ( (package_for_payload_size < sizeof(payload)) && package_for_payload_size > 0 )
-		memcpy(payload, package_for_payload.c_str(), package_for_payload_size);
-
-	// Copying IPV4Header into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
-	memcpy_s(sendbuf, sendbufMAXLENGTH, &IPV4Header, ipv4header_size);
-	current_sendbuf_len = ipv4header_size;
-	// Copying the ICMPHeader into the sendbuffer starting at sendbuf[current_sendbuf_len]
-	memcpy_s(sendbuf + current_sendbuf_len, sendbufMAXLENGTH - current_sendbuf_len, &ICMPHeader, icmpheader_size);
-	current_sendbuf_len += icmpheader_size;
-	// Copying payload into the sendbuffer
-	memcpy_s(sendbuf + current_sendbuf_len, sendbufMAXLENGTH - current_sendbuf_len, payload, package_for_payload_size);
-	current_sendbuf_len += package_for_payload_size;
 
 	// Output buffer to screen in hex
-	if (global_verbose == true) {
+	if (global_verbose == true)
+	{
 		std::cout << "Buffer contents:\n";
-		for (int i = 0; i < sendbufMAXLENGTH; i++)
+		for (int i = 0; i < sendbuf_max_length; i++)
 		{
-			std::cout << " 0x" << std::setfill('0') << std::setw(2) << std::hex << (int)(u_char)sendbuf[i];
+			std::cout 
+				<< " 0x" 
+				<< std::setfill('0') 
+				<< std::setw(2) 
+				<< std::hex 
+				<< (int)(u_char)sendbuf[i];
 		}
-		std::cout << std::dec;	// Gotta set the stream back to decimal or else it will forever output in hex
+		std::cout << std::dec;					// Gotta set the stream back to decimal or else it will forever output in hex
 	}
 	return true;
 }
@@ -1232,12 +1237,20 @@ bool Raw::sendTheThing()
 	std::cout << "Sizeof iphdr: " << sizeof(IPV4Header) << " \n";
 	std::cout << "sizeof icmphdr: " << sizeof(ICMPHeader) << " \n";
 	std::cout << "current_sendbuf_len: " << current_sendbuf_len << "\n";
-	errchk = sendto(created_socket, sendbuf, current_sendbuf_len, 0, (sockaddr*)&TargetSockAddrIn, sizeof(TargetSockAddrIn));
-	if (errchk == SOCKET_ERROR){
+	errchk = sendto(
+		created_socket,
+		sendbuf,
+		current_sendbuf_len,
+		0,
+		(sockaddr*)&TargetSockAddrIn,
+		sizeof(TargetSockAddrIn)
+	);
+	if (errchk == SOCKET_ERROR)
+	{
 		getError();
 		std::cout << "Sendto failed.\n";
 		closeThisSocket(created_socket);
-		cleanup();
+		myWSACleanup();
 		return false;
 	}
 	return true;
@@ -1259,21 +1272,23 @@ bool Raw::shutdownConnection(SOCKET socket)
 	std::cout << "Shutting down the connection...\n";
 	// shutdown the connection since we're done
 	errchk = shutdown(socket, SD_SEND);
-	if (errchk == SOCKET_ERROR) {
+	if (errchk == SOCKET_ERROR)
+	{
 		std::cout << "shutdown failed.\n";
 		closeThisSocket(socket);
-		cleanup();
+		myWSACleanup();
 		return false;
-}
+	}
 	return true;
 }
 
-// cleanup
-void Raw::cleanup()
+void Raw::myWSACleanup()
 {
 #ifdef _WIN32
 	if (global_verbose == true)
+	{
 		std::cout << "Performing WSACleanup...\n";
+	}
 	WSACleanup();
 #endif//_WIN32
 }
@@ -1284,11 +1299,11 @@ void Raw::getError()
 	int errsv = errno;
 	std::cout << "ERROR " << errsv << " :" << strerror(errsv);
 	return;
-#endif
+#endif//__linux__
+
 #ifdef _WIN32
 	int errsv = WSAGetLastError();
 	std::cout << "ERROR: " << errsv << ". ";
 	return;
-	//returns int
-#endif
+#endif//_WIN32
 }

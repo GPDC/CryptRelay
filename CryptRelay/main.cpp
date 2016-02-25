@@ -58,29 +58,25 @@ const int MAX_DIFF_INPUTS = 12; // Max possible count of argc to bother reading 
 								// though i think if i put the stuff i'm checking into a struct i could get the size of the struct
 								// and have that value be here...
 bool global_verbose = false;
-//bool no_3rd_party = false;	// If true, don't use a 3rd party server to initiate the peer-to-peer connection
 
 int main(int argc, char *argv[])
 {
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	CLI.getCommandLineInput(argc, argv);
-	// Ip address and port info is stored in CLI.
+	CLI.getCommandLineInput(argc, argv);	// Ip address and port info will be stored in CLI.
+
 
 	//===================================== Starting Chat Program =====================================
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
-	Raw RawObj;
-	RawObj.initializeWinsock();
-
-	// Set 'hints' aka information that is needed when creating a socket or binding.
-
-	RawObj.setAddress(CLI.target_ip_address, CLI.target_port, CLI.my_ip_address, CLI.my_host_port);
-	RawObj.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);		// RAW sockets require admin / root privileges.
-//	freeaddrinfo(RawObj.PResult);				// In this case, we aren't using the addrinfo struct anymore; free it.
-	RawObj.craftFixedICMPEchoRequestPacket();
-	RawObj.sendTheThing();
+	Raw RawEchoReq;
+	RawEchoReq.initializeWinsock();
+	RawEchoReq.setAddress(CLI.target_ip_address, CLI.target_port,
+						  CLI.my_ip_address, CLI.my_host_port);
+	RawEchoReq.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);		// RAW sockets require admin / root privileges.
+	RawEchoReq.craftFixedICMPEchoRequestPacket();
+	RawEchoReq.sendTheThing();
 
 	std::cout << "PAUSE...";
 	std::string pause = "";
@@ -116,8 +112,10 @@ int main(int argc, char *argv[])
 
 	//Server startup sequence
 	connection serverObj;
-	if(global_verbose == true)
+	if (global_verbose == true)
+	{
 		std::cout << "SERVER::";
+	}
 	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_host_port);
 	if (serverObj.initializeWinsock() == false) return 1;
 	serverObj.ServerSetHints();
@@ -125,7 +123,9 @@ int main(int argc, char *argv[])
 	//Client startup sequence
 	connection clientObj;
 	if (global_verbose == true)
+	{
 		std::cout << "CLIENT::";
+	}
 	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
 	if (clientObj.initializeWinsock() == false) return 1;
 	clientObj.ClientSetHints();
@@ -148,7 +148,8 @@ int main(int argc, char *argv[])
 #endif//_WIN32
 
 	//Display the winning thread
-	if (global_verbose == true){
+	if (global_verbose == true)
+	{
 		if (connection::globalWinner == -8)
 			std::cout << "MAIN && Client thread is the winner!\n";
 		else if (connection::globalWinner == -7)
@@ -158,7 +159,8 @@ int main(int argc, char *argv[])
 	}
 
 	int who_won = connection::globalWinner;
-	if (who_won == connection::NOBODY_WON) {
+	if (who_won == connection::NOBODY_WON) 
+	{
 		std::cout << "Error: Unexpected race result. Exiting\n";
 		return 1;
 	}
@@ -166,7 +168,8 @@ int main(int argc, char *argv[])
 	//Continue running the program for the thread that returned and won.
 	while (who_won == connection::CLIENT_WON || who_won == connection::SERVER_WON){
 		//if server won, then act as a server.
-		if (who_won == connection::SERVER_WON){ 
+		if (who_won == connection::SERVER_WON)
+		{ 
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			serverObj.serverCreateSendThread(&serverObj);
@@ -177,7 +180,8 @@ int main(int argc, char *argv[])
 			break;
 		}
 		//If client won, then act as a client
-		else if (who_won == connection::CLIENT_WON){
+		else if (who_won == connection::CLIENT_WON)
+		{
 			std::cout << "Connection established as the client.\n";
 			clientObj.clientCreateSendThread(&clientObj);
 			if (clientObj.receiveUntilShutdown() == false) return 1;
@@ -187,17 +191,19 @@ int main(int argc, char *argv[])
 			break;
 		}
 		//If nobody won, quit
-		else if (who_won == connection::NOBODY_WON) {
+		else if (who_won == connection::NOBODY_WON) 
+		{
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
 			std::cout << "ERROR: Shutting down.\n";
-			clientObj.cleanup();
-			serverObj.cleanup();
+			clientObj.myWSACleanup();
+			serverObj.myWSACleanup();
 			return 1;
 		}
-		else {
+		else 
+		{
 			std::cout << "ERROR: Shutting down. The impossible is possible.\n";
-			clientObj.cleanup();
-			serverObj.cleanup();
+			clientObj.myWSACleanup();
+			serverObj.myWSACleanup();
 			return 1;
 		}
 	}
@@ -246,36 +252,18 @@ Globals:								# Put the word global in front of it like so:
 	ex variable:	global_this_is_an_example;
 	ex function:	globalThisIsAnExample;
 
-
-Not really necessary, but I've been using {}'s in this way:
-Classes:
-
-	class myclass
-	{
-		public:
-	}
-
-Functions:
-
-	void myfunction()
-	{
-		return;
-	}
-
-Everything else (for example, if statements, loops, structs)
-
-	if (this == that) {
-		int wombo += 1;
-		int combo == 1;
-		combo += wombo;
-	}
-
-A small reason for using {}'s in this manner:
-I'm not 100% positive on the reasoning, but I am treating the classes and functions as a potentially big things,
-and the {}'s being in that way emphasises that for me, and is slightly easier to follow the {}'s over long vertical
-distances. But again, it really doesn't matter which way to use.
-
-
+Curly braces:	bool thisIsAnExample()
+				{
+					int i = 5;
+					if (i == 70)
+					{
+						return true;
+					}
+					else
+					{
+						return false;
+					}
+				}
 
 +++++++++++++++++++++++++++++++++++ End Formatting Guide +++++++++++++++++++++++++++++++++++
 
