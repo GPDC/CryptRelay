@@ -70,14 +70,14 @@ int main(int argc, char *argv[])
 	//===================================== Starting Chat Program =====================================
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
-	
+
 	Raw RawObj;
 	RawObj.initializeWinsock();
 
 	// Set 'hints' aka information that is needed when creating a socket or binding.
 
-	RawObj.GetAddress(CLI.target_ip_address, CLI.target_port);
-	RawObj.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);
+	RawObj.setAddress(CLI.target_ip_address, CLI.target_port, CLI.my_ip_address, CLI.my_host_port);
+	RawObj.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);		// RAW sockets require admin / root privileges.
 //	freeaddrinfo(RawObj.PResult);				// In this case, we aren't using the addrinfo struct anymore; free it.
 	RawObj.craftFixedICMPEchoRequestPacket();
 	RawObj.sendTheThing();
@@ -118,7 +118,7 @@ int main(int argc, char *argv[])
 	connection serverObj;
 	if(global_verbose == true)
 		std::cout << "SERVER::";
-	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_port);
+	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_host_port);
 	if (serverObj.initializeWinsock() == false) return 1;
 	serverObj.ServerSetHints();
 

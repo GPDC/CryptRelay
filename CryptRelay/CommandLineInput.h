@@ -16,7 +16,7 @@ public:
 	std::string target_ip_address;
 	std::string target_port;
 	std::string my_ip_address;
-	std::string my_port;
+	std::string my_host_port;
 
 protected:
 private:

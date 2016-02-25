@@ -23,11 +23,13 @@
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
 #endif//__linux__
 
 #ifdef _WIN32
 #include "connection.h"
 #include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -120,8 +122,8 @@ connection::connection()
 	//string
 	target_ip_addr = "";
 	target_port = DEFAULT_PORT_TO_LISTEN;
-	my_ip_addr = DEFAULT_IP_TO_LISTEN;
-	my_port = DEFAULT_PORT_TO_LISTEN;
+	my_host_ip_addr = DEFAULT_IP_TO_LISTEN;
+	my_host_port = DEFAULT_PORT_TO_LISTEN;
 
 	//int
 	iResult = 0;
@@ -322,7 +324,7 @@ bool connection::serverGetAddress()
 	if (global_verbose == true)
 		std::cout << "Retreiving info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
-	errchk = getaddrinfo(my_ip_addr.c_str(), my_port.c_str(), &hints, &result);
+	errchk = getaddrinfo(my_host_ip_addr.c_str(), my_host_port.c_str(), &hints, &result);
 	if (errchk != 0){
 		std::cout << "STHREAD >> ";
 		printf("getaddrinfo failed with error: %d\n", errchk);
@@ -673,11 +675,11 @@ bool connection::serverSetIpAndPort(std::string user_defined_ip_address, std::st
 		std::cout << "DEFAULT_IP:   " << DEFAULT_IP_TO_LISTEN << "\n";
 		std::cout << "DEFAULT_PORT: " << DEFAULT_PORT_TO_LISTEN << "\n";
 	}
-	my_ip_addr = user_defined_ip_address;
-	my_port = user_defined_port;
+	my_host_ip_addr = user_defined_ip_address;
+	my_host_port = user_defined_port;
 	if (global_verbose == true) {
-		std::cout << "User defined IP to listen on:   " << my_ip_addr << "\n";
-		std::cout << "User defined port to listen on: " << my_port << "\n";
+		std::cout << "User defined IP to listen on:   " << my_host_ip_addr << "\n";
+		std::cout << "User defined port to listen on: " << my_host_port << "\n";
 	}
 	//std::stoi(port);//convert string to int
 	return false;
@@ -817,10 +819,10 @@ void connection::getError()
 void connection::mySleep(int number_in_ms)
 {
 #ifdef __linux___
-	usleep(number_in_ms * 1000);		// takes input in microseconds; times it by 1000 to turn it into ms.
+	usleep(number_in_ms * 1000);		// Takes input in microseconds; times it by 1000 to turn it into ms.
 #endif//__linux__
 #ifdef _WIN32
-	Sleep(number_in_ms);				//in milliseconds
+	Sleep(number_in_ms);				// In milliseconds
 #endif//_WIN32
 }
 
@@ -860,14 +862,14 @@ bool connection::UDPSpamPortsWithSendTo()
 	const char* sendbuf = "";
 	std::string message_to_send = "Autobot Hi\n";
 	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-	size_t sendbuf_len = strlen(sendbuf);
+	size_t current_sendbuf_len = strlen(sendbuf);
 
 	UDPSockaddr_in.sin_family = AF_INET;
 	UDPSockaddr_in.sin_port = htons(5050);
 	//InetPton(UDPSockaddr_in.sin_family, target_ip_addr.c_str(), &UDPSockaddr_in.sin_addr.S_un.S_addr);
 	UDPSockaddr_in.sin_addr.s_addr = inet_addr( target_ip_addr.c_str() );
 
-//	iResult = sendto(UDPSpamSocket, sendbuf, sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
+//	iResult = sendto(UDPSpamSocket, sendbuf, current_sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
 //	if (iResult == SOCKET_ERROR) {
 //		getError();
 //		std::cout << "sendto failed.\n";
@@ -880,7 +882,7 @@ bool connection::UDPSpamPortsWithSendTo()
 	std::cout << "Spamming target's ports...\n";
 	for (int i = 1; i <= 65535; i++) {
 		UDPSockaddr_in.sin_port = htons(i);
-		iResult = sendto(UDPSpamSocket,	sendbuf, sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
+		iResult = sendto(UDPSpamSocket,	sendbuf, current_sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
 		if (iResult == SOCKET_ERROR) {
 			printf("SPAM :: sendto failed with error: %d\n", WSAGetLastError());
 			closesocket(UDPSpamSocket);
@@ -903,27 +905,29 @@ END UDP COMMENT OUT *********/
 
 Raw::Raw()
 {
+	// SOCKET
 	created_socket = INVALID_SOCKET;
 
-
-
+	// int
 	iResult = 0;
 	errchk = 0;
 
-	sendbuf_len = 0;
+	// size_t
+	current_sendbuf_len = 0;
 
 	// Gotta make those structs don't have random values in them!
-	//memset(&Hints, 0, sizeof(Hints));				// addrinfo
+	//memset(&Hints, 0, sizeof(Hints));					// addrinfo
 	//memset(&StorageHints, 0, sizeof(StorageHints));	// SOCKADDR_STORAGE
-	memset(&IPV4Header, 0, sizeof(IPV4Header));		// iphdr
-	memset(&ICMPHeader, 0, sizeof(ICMPHeader));		// iphdr
-	memset(&SockIn, 0, sizeof(SockIn));				// SOCKADDR_IN
+	memset(&IPV4Header, 0, sizeof(IPV4Header));			// iphdr, and the 2 structs inside iphd
+	memset(&ICMPHeader, 0, sizeof(ICMPHeader));			// icmpheader_echorequest;
+	memset(&TargetSockAddrIn, 0, sizeof(TargetSockAddrIn));					// SOCKADDR_IN
 }
 Raw::~Raw()
 {
 }
 
-bool Raw::isLittleEndian()
+// Decided not to use this. In reality, not necessary for this program. Could use boost library, or look up every compiler's info myself.
+bool Raw::isLittleEndian()	// Figuring out where to store this since i'm not using it, but its cool.
 {
 	// A union is only big enough to hold the largest data member that it contains.
 	// Don't read from something unless it was just written; it probably won't give back the value you are thinking it will.
@@ -936,13 +940,13 @@ bool Raw::isLittleEndian()
 							//		0x//  01 02 03 04
 							//		dec// 16,909,060
 							//		0b//  0000 0001 0000 0010 0000 0011 0000 0100
-							//	So what we're checking for is, as a decimal number, b[0] == 4. If true, then it's == little endian.
+							// So what we're checking for is, as a decimal number, b[0] == 4. If true, then it's == little endian.
 							
 							// If the machine is big endian, then iEndians.i will show up as:
 							//		0x//  04 03 02 01
 							//		dec// 1,086,341,248
 							//		0b//  0010 0000 1100 0000 0100 0000 1000 0000.
-							//	So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
+							// So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
 	if (iEndians.b[0] == 4) {
 		if (global_verbose == true)
 			std::cout << "Machine is detected as little endian. " << "b[0] == " << (int)iEndians.b[0] << "\n";
@@ -956,7 +960,137 @@ bool Raw::isLittleEndian()
 	else
 		std::cout << "Major catastrophical problem determining byte order. Exiting.\n";
 		exit(1);	// Shouldn't ever happen.
+
+
 }
+
+// ihl min is 5, max is 15;
+std::uint8_t Raw::setIHLAndVer(u_int ihl, u_int ver)
+{
+	return (ver << 4) | ihl;
+}		
+std::uint8_t Raw::setDSCPAndECN(u_int dscp, u_int ecn)
+{
+	return (dscp << 2) | ecn;	//dscp takes up 6 bits, ecn 2.
+
+
+	// For example if dscp = 4 and ecn = 1
+	//00010000	dscp |		//after having been shifted already
+	//00000001 ecn  =
+	//---------
+	//00010001
+}
+
+// Unsure if this is working correctly or if wireshark is displaying it incorrectly?
+std::uint16_t Raw::setFlagsAndFragOffset(uint16_t flags, uint16_t frag_offset)
+{
+	return  (flags << 5) | htons(frag_offset);
+
+	// This means max frag_offset is 65,528, and theoretical flags max is 7 (but not really, see next line below)
+	// bit 0 is reserved. bit 1 == don't fragment. bit 2 == more fragments. This concludes the flags available to be set.
+	
+	//573 = 0000'0010   0011'1101
+	//1   = 0000'0000   0010'0000
+
+
+//htons573 = 0011'1101   0000'0010
+	 //1   = 0000'0000   0010'0000			//has already been shifted
+//			----------------------
+//			 0011'1101   0010'0010
+//htons	   = 0010'0010   0011'1101
+
+
+
+		  // 0000'1111   1110'0001
+
+
+	//		 0000'1111   0011'1100   1111'0000
+	//htons  1111'0000   0011'1100   0000'1111
+
+
+	//bitmask
+	// htons(frag) & 0b10000000'00000000
+	//.....................................................................
+
+
+	// Explanation:
+	// Let the compiler figure out if the machine we are in is big endian or little endian by using bitwise shift operators.
+	// << shifts in the direction of the most significant bit, and >> shifts in the dir. of the least significant bit.
+	// This is great because the compiler knows the direction of the most significant bit. It could be big endian or
+	//		little endian. We don't know which it is, but the compiler does, therefore we let the compiler handle the direction to shift.	
+
+	// This is what it looks like:	
+	// ver == 0b0000'0100  |
+	// ihl == 0b1111'0000  =
+	// ------------------
+	// spb == 0b1111'0100
+
+	// I COULD instead do either:
+	// A. Look through all the compiler specific stuff and things for all the compilers ever... OR
+	// B. Create 2 structures. One is for little endian. The other is for big endian.
+	//		Next, create the function commented out below.
+	//		After that, if (isLittleEndian() == true), then use the struct made for little endians.
+	//
+	//	bool isLittleEndian()	
+	//	{
+	//	union
+	//	{
+	//		std::uint32_t i;
+	//		std::uint8_t b[4];
+	//	}iEndians;
+	//	iEndians.i = 0x01020304;	// If the machine is little endian, then iEndians.i will show up as:
+	//								//		\0x  01 02 03 04
+	//								//		\0b  0000'0001 / 0000'0010 / 0000'0011 / 0000'0100
+	//								// So what we're checking for is, as a decimal number, b[0] == 4. If true, then it's == little endian.
+	//
+	//								// When looking at it from a big endian machine, then iEndians.i will show up as:
+	//								//		\0x  04 03 02 01
+	//								//		\0b  0000'0100 / 0000'0011 / 0000'0010 / 0000'0001
+	//								// The bit order hasn't changed, just the bytes.
+	//								// So what we're checking for is, as a decimal number, b[0] == 1. If true, then it's == big endian
+	//	if (iEndians.b[0] == 4)
+	//		return true;			// Little endian
+	//	else if (iEndians.b[0] == 1)
+	//		return false;			// Must be big endian
+	//	else
+	//		exit(1);				// Shouldn't ever happen.
+}
+
+uint16_t Raw::roL(uint16_t unsigned_number_to_shift, uint16_t unsigned_shift_count)
+{
+	
+	uint16_t most_significant_bitmask = 1 << ( (sizeof(unsigned_number_to_shift) * 8 - 1) );		// multiply the size of x by 8.. because sizeof returns the num of bytes.
+																					// multiply by 8 to get the bit count. Then -1 so we don't shift it off into space.
+	uint16_t least_significant_bitmask = 1;	// the least_significant_bitmask			
+
+	for ( ; unsigned_shift_count > 0; unsigned_shift_count--) {
+																	
+
+		if (unsigned_number_to_shift & most_significant_bitmask) {			// Checking to see if the most significant bit is set ... bool checks for nonzero. if it is nonzero, true, else if it is 0, it is false.		
+			unsigned_number_to_shift <<= 1;									// If it is set, then shift left 1, and set the least significant bit
+			unsigned_number_to_shift |= least_significant_bitmask;			// to 1 (b/c they come in as a 0) by bitwise ORing the number to
+		}
+		else {
+			unsigned_number_to_shift <<= 1;
+		}
+	}
+	return unsigned_number_to_shift;
+
+
+
+	//in regards to rotating right on signed int's:
+	// it can retain its signededness  after shifting to the right (aka most significant bit is still set to 1)
+	// this could be unexpected since a 0 should be there. so this needs to be accounted for.
+}
+
+/*
+uint16_t Raw::rolVersionTwo(uint16_t number, uint16_t shift_count) {
+	if ((shift_count &= 31) == 0)
+		return number;
+	return (number << shift_count) | (number >> (32 - shift_count));
+	// This is Bertrand Marron's code from stack overflow. It is much more concise and maybe even faster?
+}
+*/
 
 bool Raw::initializeWinsock()
 {
@@ -974,20 +1108,17 @@ bool Raw::initializeWinsock()
 }
 
 
-bool Raw::GetAddress(std::string ip, std::string port)
+bool Raw::setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_host_port)
 {
 	if (global_verbose == true)
-		std::cout << "Retreiving info: IP address and port...\n";
+		std::cout << "Setting info: IP address and port...\n";
 	// Resolve the LOCAL server address and port.
 
-	SockIn.sin_family = AF_INET;
-#ifdef _WIN32
-	SockIn.sin_addr.S_un.S_addr = inet_addr(ip.c_str());
-#endif//_WIN32
-#ifdef __linux__
-	SockIn.sin_addr.S_addr = inet_addr(ip.c_str());
-#endif//__linux__
-	SockIn.sin_port = htons(atoi( port.c_str() ));
+	TargetSockAddrIn.sin_family = AF_INET;
+	TargetSockAddrIn.sin_addr.s_addr = inet_addr(target_ip.c_str());
+	TargetSockAddrIn.sin_port = htons(atoi( target_port.c_str() ));
+	my_host_ip_addr = my_ip;
+	my_host_port = my_host_port;
 
 	/*errchk = getaddrinfo(ip.c_str(), port.c_str(), &Hints, &PResult);
 	if (errchk != 0) {
@@ -996,8 +1127,6 @@ bool Raw::GetAddress(std::string ip, std::string port)
 		cleanup();
 		return false;
 	}*/
-
-
 
 	return true;
 }
@@ -1022,15 +1151,13 @@ SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optio
 	return created_socket;
 }
 
+// This echo request is going to a dead end IP address at 3.3.3.3
 bool Raw::craftFixedICMPEchoRequestPacket()
 {
-#ifdef _WIN32
+	const char on = 1;
+	int on_len = sizeof(int);
 
-
-	//const char on = 1;
-	//int on_len = sizeof(int);
-
-	// tell kernel that we are doing our own IP structures
+	// Tell kernel that we are doing our own IP structures
 	errchk = setsockopt(created_socket, IPPROTO_IP, IP_HDRINCL, (char*)&on, on_len);
 	if (errchk == SOCKET_ERROR) {
 		getError();
@@ -1039,36 +1166,54 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 		cleanup();
 		return false;
 	}
-	//int spongebob = sizeof(IPV4Header);
-	//assert(spongebob == 20);
-	//ipv4 Header
-	IPV4Header.ihl = sizeof(IPV4Header) >> 2;				// 15 is max value, 5 is min. sizeof(IPV4Header) >> 2 is just dividing it by 4 (shifting to the right 2x);
-	IPV4Header.ver = 4;										// 4 == ipv4
-	IPV4Header.dscp = 0;									// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
-	IPV4Header.ecn = 0;										// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
-	IPV4Header.total_len = sizeof(IPV4Header) + sizeof(ICMPHeader)/* + payload*/;
-	IPV4Header.id = htons(12345);							//?
+
+	// ipv4 Header
+	std::string dead_end_ip_addr = "3.3.3.3";
+
+	IPV4Header.ver = 4;													// 4 == ipv4
+	IPV4Header.ihl = sizeof(IPV4Header) >> 2;							// ihl min value == 5, max == 15; sizeof(IPV4Header) >> 2 is just dividing it by 4 (shifting to the right 2x);
+	//IPV4Header.ihl_and_ver = setIHLAndVer(sizeof(IPV4Header) >> 2, 4);// this isn't necessary b/c they are unsigned chars.
+	//IPV4Header.dscp_and_ecn = setDSCPAndECN(0, 0);					// this isn't necessary b/c it is unsigned char.
+	IPV4Header.dscp = 0;												// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
+	IPV4Header.ecn = 0;													// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
+	IPV4Header.total_len = sizeof(IPV4Header) + sizeof(ICMPHeader) + sizeof(payload);
+	IPV4Header.id = htons(55155);										//?
+	//IPV4Header.flags_and_frag_offset = setFlagsAndFragOffset((uint16_t)0, (uint16_t)0);	// POSSIBLY BROKEN. leave it set to 0.
 	IPV4Header.flags = 0;
 	IPV4Header.frag_offset = htons(0);
 	IPV4Header.ttl = 64;
-	IPV4Header.protocol = 1;								// 1 == ICMP
-	IPV4Header.chksum = /*datchecksum*/ 0;					// need a checksum
-	IPV4Header.src_ip = /*datip*/inet_addr("192.168.1.116");
-	IPV4Header.dst_ip = /*datip*/inet_addr("68.4.206.140");
+	IPV4Header.protocol = 1;											// 1 == ICMP
+	IPV4Header.chksum = /*datchecksum*/ 0;								// need a checksum
+	IPV4Header.src_ip.s_addr = inet_addr( my_host_ip_addr.c_str() );	// needs conversion to big endian
+	IPV4Header.dst_ip.s_addr = inet_addr( dead_end_ip_addr.c_str() );		// do not convert to big endian if assigning it something located inside a sockaddr_in structure
+	//	IPV4Header.dst_ip.s_addr = TargetSockAddrIn.sin_addr.s_addr;		// this is one that is set to the target instead of a dead end
 
-	// ICMP header			//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
+
+	// ICMP header				//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeader.type = ICMP_ECHO;
 	ICMPHeader.code = ICMP_ECHO_CODE_ZERO;
-	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));
+	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));	// This trick only works with the most basic icmpheader. do not use.
 	//ICMPHeader.id = htons(12345);
 	//ICMPHeader.seq = 1;
 
-	// Copying IPV4Header into the sendbuffer
-	memcpy_s(sendbuf, sendbufMAXLENGTH, &IPV4Header, sizeof(IPV4Header));
-	sendbuf_len = sizeof(IPV4Header);
-	// Copying the ICMPHeader into the sendbuffer by adding it onto the
-	memcpy_s(sendbuf + sendbuf_len, sendbufMAXLENGTH - sendbuf_len, &ICMPHeader, sizeof(ICMPHeader));
-	sendbuf_len += sizeof(ICMPHeader);
+	std::string package_for_payload = "OneTwoSkyTree";
+	size_t package_for_payload_size = strlen(package_for_payload.c_str() );
+	size_t ipv4header_size = sizeof(IPV4Header);
+	size_t icmpheader_size = sizeof(ICMPHeader);
+
+	// Putting stuff in the payload
+	if ( (package_for_payload_size < sizeof(payload)) && package_for_payload_size > 0 )
+		memcpy(payload, package_for_payload.c_str(), package_for_payload_size);
+
+	// Copying IPV4Header into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
+	memcpy_s(sendbuf, sendbufMAXLENGTH, &IPV4Header, ipv4header_size);
+	current_sendbuf_len = ipv4header_size;
+	// Copying the ICMPHeader into the sendbuffer starting at sendbuf[current_sendbuf_len]
+	memcpy_s(sendbuf + current_sendbuf_len, sendbufMAXLENGTH - current_sendbuf_len, &ICMPHeader, icmpheader_size);
+	current_sendbuf_len += icmpheader_size;
+	// Copying payload into the sendbuffer
+	memcpy_s(sendbuf + current_sendbuf_len, sendbufMAXLENGTH - current_sendbuf_len, payload, package_for_payload_size);
+	current_sendbuf_len += package_for_payload_size;
 
 	// Output buffer to screen in hex
 	if (global_verbose == true) {
@@ -1079,8 +1224,6 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 		}
 		std::cout << std::dec;	// Gotta set the stream back to decimal or else it will forever output in hex
 	}
-
-#endif//_WIN32
 	return true;
 }
 
@@ -1088,8 +1231,8 @@ bool Raw::sendTheThing()
 {
 	std::cout << "Sizeof iphdr: " << sizeof(IPV4Header) << " \n";
 	std::cout << "sizeof icmphdr: " << sizeof(ICMPHeader) << " \n";
-	std::cout << "sendbuf_len: " << sendbuf_len << "\n";
-	errchk = sendto(created_socket, sendbuf, sendbuf_len, 0, (sockaddr*)&SockIn, sizeof(SockIn));
+	std::cout << "current_sendbuf_len: " << current_sendbuf_len << "\n";
+	errchk = sendto(created_socket, sendbuf, current_sendbuf_len, 0, (sockaddr*)&TargetSockAddrIn, sizeof(TargetSockAddrIn));
 	if (errchk == SOCKET_ERROR){
 		getError();
 		std::cout << "Sendto failed.\n";
