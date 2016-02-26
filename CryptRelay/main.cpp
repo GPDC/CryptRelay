@@ -64,24 +64,29 @@ int main(int argc, char *argv[])
 	if (errchk = CLI.getCommandLineInput(argc, argv) == 0)	// Ip address and port info will be stored in CLI.
 		return 0;
 
-
 	//===================================== Starting Chat Program =====================================
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
-	// Craft an ipv4 icmp packet and sendto ip:3.3.3.3 an EchoRequest every 3 seconds
+	// Craft an ipv4 icmp packet
 	Raw RawEchoReq;
 	if (RawEchoReq.initializeWinsock() == false)
 		return 0;
-	RawEchoReq.setAddress(CLI.target_ip_address, CLI.target_port,
-						  CLI.my_ip_address, CLI.my_host_port);
+	RawEchoReq.setAddress(
+		CLI.target_ip_address,
+		CLI.target_port,
+		CLI.my_ip_address,
+		CLI.my_host_port
+	);
 	if (RawEchoReq.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW) == false)	// RAW sockets require admin / root privileges.
 		return 0;		
 	if (RawEchoReq.craftFixedICMPEchoRequestPacket() == false)
 		return 0;
 
-	// now put this in a thread and loop it every 5 seconds until global_connection_success == true;
+	// Threaded loop EchoRequest to ip:3.3.3.3 every 3 seconds
 	RawEchoReq.createThreadLoopEchoRequestToDeadEnd(&RawEchoReq);		// to stop this thread, set RawEchoReq.stop_echo_request_loop = true;
+
+
 
 	std::cout << "PAUSE...";
 	std::string pause = "";

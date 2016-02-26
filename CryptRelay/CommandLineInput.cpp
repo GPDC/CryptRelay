@@ -46,7 +46,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 	std::vector<std::string> arg;
 
-	IPAddress ipaddress_get;
+	IPAddress IPAdressFormatCheck;
 
 	// Put all argv's into a vector so they can be compared to strings
 	for (int i = 0; i < argc; i++)
@@ -78,7 +78,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-t" && i < arg_size - 1)
 			{
-				err_chk = ipaddress_get.isIPV4FormatCorrect(argv[i + 1]);
+				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
@@ -86,15 +86,15 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-tp")
 			{
-				err_chk = ipaddress_get.isPortFormatCorrect(argv[i + 1]);
+				err_chk = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
-				target_port = argv[i + 1];
+					target_port = argv[i + 1];
 			}
 			if (arg[i] == "-m")
 			{
-				err_chk = ipaddress_get.isIPV4FormatCorrect(argv[i + 1]);
+				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
@@ -102,7 +102,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-mp")
 			{
-				err_chk = ipaddress_get.isPortFormatCorrect(argv[i + 1]);
+				err_chk = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
@@ -120,6 +120,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 		}
 	}
 
-	// Finished, return success
+	// Finished without errors, return success
 	return 1;
 }

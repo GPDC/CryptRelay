@@ -153,7 +153,7 @@ private:
 	WSADATA wsaData;
 #endif
 
-	// IP header information stored here
+	// IP header information. Size is normally 20 bytes.
 	struct iphdr					// https://en.wikipedia.org/wiki/IPv4#Header
 	{		
 		u_char ihl : 4;				// Internet Header Length is the size of this ipv4 structure / 4; ex: sizeof(IPV4Header) >> 2;
@@ -178,6 +178,7 @@ private:
 
 	}IPV4Header;
 
+	// ICMP header information. Size is normally 8 bytes.
 	struct icmpheader_echorequest
 	{
 		u_char type;
@@ -185,13 +186,14 @@ private:
 		u_short checksum;
 		u_short id;
 		u_short seq;
-	}ICMPHeader;
+	}ICMPHeader, ICMPHeaderTimeExceeded;
 
 
 	sockaddr_in TargetSockAddrIn;
 	sockaddr_in *PResultSockIn;
 
 	SOCKET created_socket;
+
 	std::string target_ip_addr;
 	std::string target_port;
 	std::string my_host_ip_addr;
@@ -200,17 +202,19 @@ private:
 	int iResult;
 	int errchk;
 
-	static const int payload_max_length = 50;
-	char payload[payload_max_length] = { };
+	// If  IP + ICMP Headers == 28 bytes, that leaves 65,507 bytes left for the ICMP data.
+	static const int payload_max_length = 50;	
+	char payload[payload_max_length] = { };		
+
 	static const int sendbuf_max_length = 400;
 	char sendbuf[sendbuf_max_length];
 
 	size_t current_sendbuf_len;
 
-#define ICMP_ECHO 8
-#define ICMP_ECHO_CODE_ZERO 0	// This is ICMP_ECHO's only code option
-#define ICMP_REPLY 0
-#define ICMP_REPLY_CODE_ZERO 0	// This is ICMP_REPLY's only code option
+	const int ICMP_ECHO = 8;
+	const int ICMP_ECHO_CODE_ZERO = 0;	// This is ICMP_ECHO's only code option
+	const int ICMP_REPLY = 0;
+	const int ICMP_REPLY_CODE_ZERO = 0;	// This is ICMP_REPLY's only code option
 };
 
 #endif
