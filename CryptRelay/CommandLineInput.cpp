@@ -8,6 +8,9 @@
 #include "connection.h"
 #include "FormatCheck.h"
 
+const std::string CommandLineInput::THE_DEFAULT_PORT = "7001";
+const std::string CommandLineInput::THE_DEFAULT_IPADDRESS = "1.2.3.4";
+
 CommandLineInput::CommandLineInput()
 {
 }
@@ -41,8 +44,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 	target_ip_address = "";
 	target_port = "";
-	my_ip_address = connection::DEFAULT_IP_TO_LISTEN;
-	my_host_port = connection::DEFAULT_PORT_TO_LISTEN;
+	my_ip_address = TCPConnection::DEFAULT_IP_TO_LISTEN;
+	my_host_port = TCPConnection::DEFAULT_PORT_TO_LISTEN;
 
 	std::vector<std::string> arg;
 

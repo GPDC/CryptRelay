@@ -38,6 +38,7 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include "RawConnection.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -51,6 +52,7 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include "RawConnection.h"
 #endif//_WIN32
 
 
@@ -100,7 +102,7 @@ int main(int argc, char *argv[])
 		// This seems to be the only way to do it w/o admin/root privileges on windows. the ICMP request & time exceeded method is
 		// much cleaner, but again, requires admin priv.
 
-		connection UDPSpamObj;
+		TCPConnection UDPSpamObj;
 		//todo: put all send actions in a thread
 		UDPSpamObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
 		UDPSpamObj.initializeWinsock();
@@ -121,7 +123,7 @@ int main(int argc, char *argv[])
 */
 
 	//Server startup sequence
-	connection serverObj;
+	TCPConnection serverObj;
 	if (global_verbose == true)
 	{
 		std::cout << "SERVER::";
@@ -131,7 +133,7 @@ int main(int argc, char *argv[])
 	serverObj.ServerSetHints();
 
 	//Client startup sequence
-	connection clientObj;
+	TCPConnection clientObj;
 	if (global_verbose == true)
 	{
 		std::cout << "CLIENT::";
@@ -146,13 +148,13 @@ int main(int argc, char *argv[])
 
 	//Wait for 1 thread to finish
 #ifdef __linux__
-	pthread_join(connection::thread1, NULL);
-	//pthread_join(connection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
+	pthread_join(TCPConnection::thread1, NULL);
+	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
 #endif//__linux__
 #ifdef _WIN32
 	WaitForMultipleObjects(
 		2,			//number of objects in array
-		connection::ghEvents,	//array of objects
+		TCPConnection::ghEvents,	//array of objects
 		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
 		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
 #endif//_WIN32
@@ -160,25 +162,25 @@ int main(int argc, char *argv[])
 	//Display the winning thread
 	if (global_verbose == true)
 	{
-		if (connection::globalWinner == -8)
+		if (TCPConnection::globalWinner == -8)
 			std::cout << "MAIN && Client thread is the winner!\n";
-		else if (connection::globalWinner == -7)
+		else if (TCPConnection::globalWinner == -7)
 			std::cout << "MAIN && Server thread is the winner!\n";
 		else
 			std::cout << "MAIN && There is no winner.\n";
 	}
 
-	int who_won = connection::globalWinner;
-	if (who_won == connection::NOBODY_WON) 
+	int who_won = TCPConnection::globalWinner;
+	if (who_won == TCPConnection::NOBODY_WON) 
 	{
 		std::cout << "Error: Unexpected race result. Exiting\n";
 		return 1;
 	}
 
 	//Continue running the program for the thread that returned and won.
-	while (who_won == connection::CLIENT_WON || who_won == connection::SERVER_WON){
+	while (who_won == TCPConnection::CLIENT_WON || who_won == TCPConnection::SERVER_WON){
 		//if server won, then act as a server.
-		if (who_won == connection::SERVER_WON)
+		if (who_won == TCPConnection::SERVER_WON)
 		{ 
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
@@ -190,7 +192,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		//If client won, then act as a client
-		else if (who_won == connection::CLIENT_WON)
+		else if (who_won == TCPConnection::CLIENT_WON)
 		{
 			std::cout << "Connection established as the client.\n";
 			clientObj.clientCreateSendThread(&clientObj);
@@ -201,7 +203,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		//If nobody won, quit
-		else if (who_won == connection::NOBODY_WON) 
+		else if (who_won == TCPConnection::NOBODY_WON) 
 		{
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
 			std::cout << "ERROR: Shutting down.\n";

@@ -10,7 +10,7 @@ public:
 	CommandLineInput();
 	~CommandLineInput();
 
-	void helpAndReadMe(int argc);
+	
 	int getCommandLineInput(int argc, char* argv[]);
 
 	std::string target_ip_address;
@@ -20,6 +20,10 @@ public:
 
 protected:
 private:
+	void helpAndReadMe(int argc);
+
+	static const std::string THE_DEFAULT_PORT;
+	static const std::string THE_DEFAULT_IPADDRESS;
 
 };
 
