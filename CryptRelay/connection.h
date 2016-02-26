@@ -80,7 +80,6 @@ public:	// Anyone aware of the class connection will also be aware of these memb
 	bool shutdownConnection();
 	void myWSACleanup();
 	void getError();
-	void mySleep(int number_in_ms);
 
 	//void UDPSpamSetHints();
 	//bool UDPSpamGetAddr();
@@ -127,24 +126,30 @@ public:
 	~Raw();
 
 	bool isLittleEndian();
-	std::uint8_t setIHLAndVer(u_int ihl, u_int ver);
-	std::uint8_t setDSCPAndECN(u_int, u_int);
+	//std::uint8_t setIHLAndVer(u_int ihl, u_int ver);
+	//std::uint8_t setDSCPAndECN(u_int, u_int);
 	std::uint16_t setFlagsAndFragOffset(uint16_t, uint16_t);
 	uint16_t roL(uint16_t, uint16_t);
 	bool initializeWinsock();
 	SOCKET createSocket(int, int, int);
 	bool craftFixedICMPEchoRequestPacket();
 	bool sendTheThing();
-	bool setAddress(std::string target_ip = connection::DEFAULT_IP_TO_LISTEN, std::string target_port = connection::DEFAULT_PORT_TO_LISTEN, std::string my_ip = connection::DEFAULT_IP_TO_LISTEN, std::string my_host_port = connection::DEFAULT_PORT_TO_LISTEN);
+	void setAddress(std::string target_ip = connection::DEFAULT_IP_TO_LISTEN, std::string target_port = connection::DEFAULT_PORT_TO_LISTEN, std::string my_ip = connection::DEFAULT_IP_TO_LISTEN, std::string my_host_port = connection::DEFAULT_PORT_TO_LISTEN);
 	void closeThisSocket(SOCKET fd);
 	bool shutdownConnection(SOCKET socket);
 	void myWSACleanup();
 	void getError();
 
+	void createThreadLoopEchoRequestToDeadEnd(void *);
+	static void loopEchoRequestToDeadEnd(void* instance);
+
+	static bool stop_echo_request_loop;	// static variables must be declared outside of the class constructor
+
 protected:
 private:
 
 #ifdef _WIN32
+	static HANDLE ghEvents2[1];		// static variables must be declared outside of the class constructor
 	WSADATA wsaData;
 #endif
 

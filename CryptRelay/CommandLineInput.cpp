@@ -1,11 +1,12 @@
 //CommandLineInput.cpp
-#include "CommandLineInput.h"
-#include "GlobalTypeHeader.h"
 #include <string>
 #include <iostream>
+#include <vector>
+
+#include "CommandLineInput.h"
+#include "GlobalTypeHeader.h"
 #include "connection.h"
 #include "ipaddress.h"
-#include <vector>
 
 CommandLineInput::CommandLineInput()
 {
@@ -18,15 +19,15 @@ void CommandLineInput::helpAndReadMe(int argc)
 {
 
 	std::cout << "Proper format is:   cryptrelay.exe -t 192.168.27.50 -tp 7172 -m 192.168.1.101 -mp 7172\n";
-	std::cout << "\n";																			//the weight of each one. need to add them up to set MAX_DIFF_INPUTS
-	std::cout << "-h:	help		Displays the readme\n";										//1
-	std::cout << "-t:	target		The target's IP address.\n";								//2
-	std::cout << "-tp:	targetport	The target's port number.\n";								//2
-	std::cout << "-m:	me		Your IP address that you want to listen on.\n";					//2
-	std::cout << "-mp:	myport		Your port number that you want to listen on.\n";			//2
-	std::cout << "-v:	verbose		Displays a lot of text output on screen.\n";					//1
+	std::cout << "\n";
+	std::cout << "-h:	help		Displays the readme\n";
+	std::cout << "-t:	target		The target's IP address.\n";
+	std::cout << "-tp:	targetport	The target's port number.\n";
+	std::cout << "-m:	me		Your IP address that you want to listen on.\n";
+	std::cout << "-mp:	myport		Your port number that you want to listen on.\n";
+	std::cout << "-v:	verbose		Displays a lot of text output on screen.\n";
 	std::cout << "\nNOT YET IMPLEMENTED:\n";
-	std::cout << "-f:	file		The file, and location of the file you wish to xfer.\n";	//2
+	std::cout << "-f:	file		The file, and location of the file you wish to xfer.\n";
 	std::cout << "\nTo exit the program, please type 'cryptrelay.exit' at any time.\n\n\n";
 	return;
 }
@@ -35,7 +36,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
-	const int MAX_DIFF_INPUTS = 12; //max possible count of argc to bother reading from
 	int err_chk;
 	int arg_size;
 
@@ -45,7 +45,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 	my_host_port = connection::DEFAULT_PORT_TO_LISTEN;
 
 	std::vector<std::string> arg;
-	arg.reserve(MAX_DIFF_INPUTS);
 
 	ipaddress ipaddress_get;
 
@@ -60,7 +59,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 	if (argc <= 1)
 	{
 		helpAndReadMe(argc);
-		return 1;
+		return 0;
 	}
 	//check all argv inputs to see what the user wants to do
 	if (argc >= 2)
@@ -75,13 +74,13 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				|| arg[i] == "readme")
 			{
 				helpAndReadMe(argc);
-				return 1;
+				return 0;
 			}
 			if (arg[i] == "-t" && i < arg_size - 1)
 			{
 				err_chk = ipaddress_get.get_target(argv[i + 1]);
 				if (err_chk == false)
-					return 1;
+					return 0;
 				else
 					target_ip_address = argv[i + 1];
 			}
@@ -97,7 +96,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk = ipaddress_get.get_target(argv[i + 1]);
 				if (err_chk == false)
-					return 1;
+					return 0;
 				else
 					my_ip_address = argv[i + 1];
 			}
@@ -110,13 +109,17 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				my_host_port = argv[i + 1];
 			}
 			if (arg[i] == "-v")
+			{
 				global_verbose = true;
+			}
 			if (arg[i] == "-f")
 			{
 				std::cout << "-f hasn't been implemented yet.\n";
-				return 1;
+				return 0;
 			}
 		}
 	}
-	return 0; //shouldn't be possible to get here
+
+	// finished, return success
+	return 1;
 }

@@ -17,10 +17,6 @@
 //ipv6
 
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
-#include "connection.h"
-#include "GlobalTypeHeader.h"
-#include "CommandLineInput.h"
-
 #include <iostream>
 #include <string.h>
 #include <vector>
@@ -38,45 +34,54 @@
 #include <signal.h>
 
 #include <pthread.h>	//<process.h>
-#endif//__linux__
 
-#ifdef _WIN32
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#endif//__linux__
 
+#ifdef _WIN32
 #include <iostream>
 #include <string>
 #include <vector>
 #include <WS2tcpip.h>
 
 #include <process.h>	//<pthread.h>
+
+#include "connection.h"
+#include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
 #endif//_WIN32
 
 
-const int MAX_DIFF_INPUTS = 12; // Max possible count of argc to bother reading from
-								// though i think if i put the stuff i'm checking into a struct i could get the size of the struct
-								// and have that value be here...
 bool global_verbose = false;
 
 int main(int argc, char *argv[])
 {
+	int errchk = 0;
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	CLI.getCommandLineInput(argc, argv);	// Ip address and port info will be stored in CLI.
+	if (errchk = CLI.getCommandLineInput(argc, argv) == 0)	// Ip address and port info will be stored in CLI.
+		return 0;
 
 
 	//===================================== Starting Chat Program =====================================
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
+	// Craft an ipv4 icmp packet and sendto ip:3.3.3.3 an EchoRequest every 3 seconds
 	Raw RawEchoReq;
-	RawEchoReq.initializeWinsock();
+	if (RawEchoReq.initializeWinsock() == false)
+		return 0;
 	RawEchoReq.setAddress(CLI.target_ip_address, CLI.target_port,
 						  CLI.my_ip_address, CLI.my_host_port);
-	RawEchoReq.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);		// RAW sockets require admin / root privileges.
-	RawEchoReq.craftFixedICMPEchoRequestPacket();
-	RawEchoReq.sendTheThing();
+	if (RawEchoReq.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW) == false)	// RAW sockets require admin / root privileges.
+		return 0;		
+	if (RawEchoReq.craftFixedICMPEchoRequestPacket() == false)
+		return 0;
+
+	// now put this in a thread and loop it every 5 seconds until global_connection_success == true;
+	RawEchoReq.createThreadLoopEchoRequestToDeadEnd(&RawEchoReq);		// to stop this thread, set RawEchoReq.stop_echo_request_loop = true;
 
 	std::cout << "PAUSE...";
 	std::string pause = "";
@@ -136,7 +141,7 @@ int main(int argc, char *argv[])
 
 	//Wait for 1 thread to finish
 #ifdef __linux__
-	pthread_join(connection::thread1, NULL);				//currently, on the linux side, the program is practically stuck on connect. idk y.
+	pthread_join(connection::thread1, NULL);
 	//pthread_join(connection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
 #endif//__linux__
 #ifdef _WIN32

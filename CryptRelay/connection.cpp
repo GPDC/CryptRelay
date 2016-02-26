@@ -15,7 +15,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cerrno>
-#include <pthread.h>
+#include <pthread.h>	//<process.h>
 #include <iomanip>	// std::setw(2) && std::setfill('0')
 
 #include <arpa/inet.h>
@@ -24,18 +24,21 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include "CrossPlatformSleep.h"
 #endif//__linux__
 
 #ifdef _WIN32
-#include "connection.h"
-#include "GlobalTypeHeader.h"
-#include "CommandLineInput.h"
 #include <ws2tcpip.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <process.h>
+#include <process.h>	//<pthread.h>
 #include <iomanip>	// std::setw(2) && std::setfill('0')
+
+#include "connection.h"
+#include "GlobalTypeHeader.h"
+#include "CommandLineInput.h"
+#include "CrossPlatformSleep.h"
 #endif//_WIN32
 
 //NAT WIKI: Many NAT implementations follow the port preservation design for TCP: for a given outgoing TCP communication, they use the same values as internal and external port numbers.NAT port preservation for outgoing TCP connections is crucial for TCP NAT traversal, because as TCP requires that one port can only be used for one communication at a time, programs bind distinct TCP sockets to ephemeral ports for each TCP communication, rendering NAT port prediction impossible for TCP.[2]
@@ -65,11 +68,21 @@
 #define SD_SEND         0x01
 #endif//__linux__
 
+// Everything below are here because they are static(available to all instances of this class). 
+const int connection::NOBODY_WON = -30;
+const int connection::SERVER_WON = -7;
+const int connection::CLIENT_WON = -8;
 
+const std::string connection::DEFAULT_PORT_TO_LISTEN = "7172";			//currently, set this one to have the server listen on this port
+const int connection::DEFAULT_BUFLEN = 512;
+const std::string connection::DEFAULT_IP_TO_LISTEN = "192.168.1.116";	//currently, set this one to have the server listen on this IP
+int connection::recvbuflen = DEFAULT_BUFLEN;
+char connection::recvbuf[DEFAULT_BUFLEN];
 
-#ifdef _WIN32
-HANDLE connection:: ghEvents[3]{};
-#endif//_WIN32
+int connection::globalWinner = NOBODY_WON;
+SOCKET connection::globalSocket = INVALID_SOCKET;
+
+char globalvalue = 9;
 
 #ifdef __linux__
 int connection::ret1 = 0;//server race thread
@@ -81,22 +94,9 @@ pthread_t connection::thread2;//client
 pthread_t connection::thread3;//send
 #endif//__linux__
 
-
-const int connection::NOBODY_WON = -30;
-const int connection::SERVER_WON = -7;
-const int connection::CLIENT_WON = -8;
-
-//these are out here because they are static(available to all instances of this class). 
-const std::string connection::DEFAULT_PORT_TO_LISTEN = "7172";			//currently, set this one to have the server listen on this port
-const int connection::DEFAULT_BUFLEN = 512;
-const std::string connection::DEFAULT_IP_TO_LISTEN = "192.168.1.116";	//currently, set this one to have the server listen on this IP
-int connection::recvbuflen = DEFAULT_BUFLEN;
-char connection::recvbuf[DEFAULT_BUFLEN];
-
-int connection::globalWinner = NOBODY_WON;
-SOCKET connection::globalSocket = INVALID_SOCKET;
-
-char globalvalue = 9;
+#ifdef _WIN32
+HANDLE connection::ghEvents[3]{};
+#endif//_WIN32
 
 
 
@@ -243,6 +243,7 @@ void connection::clientCompetitionThread(void* instance)
 		std::cout << "CTHREAD :: ";
 	if (self->clientGetAddress() == false) return; //1;		//puts the local port info in the addrinfo structure
 
+	CrossPlatformSleep Sleeping;
 	while (globalWinner != SERVER_WON && globalWinner != CLIENT_WON) 
 	{
 		int iFeedback;
@@ -261,7 +262,7 @@ void connection::clientCompetitionThread(void* instance)
 				self->closeThisSocket(iFeedback);
 				return;
 			}
-			self->mySleep(1000);
+			Sleeping.mySleep(1000);
 			continue;
 		}
 		else{	//connection is established, the client has won the competition.
@@ -681,7 +682,6 @@ bool connection::serverSetIpAndPort(std::string user_defined_ip_address, std::st
 		std::cout << "User defined IP to listen on:   " << my_host_ip_addr << "\n";
 		std::cout << "User defined port to listen on: " << my_host_port << "\n";
 	}
-	//std::stoi(port);//convert string to int
 	return false;
 }
 
@@ -698,14 +698,14 @@ void connection::createServerRaceThread(void* instance)
 
 
 #ifdef _WIN32
-	ghEvents[0] = (HANDLE)_beginthread(serverCompetitionThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+	ghEvents[0] = (HANDLE)_beginthread(serverCompetitionThread, 0, instance);
 #endif//__WIN32
 }
 
 void connection::createClientRaceThread(void* instance)
 {
 #ifdef __linux__
-	ret2 = pthread_create(&thread2, NULL, PosixThreadEntranceClientCompetitionThread, instance);
+	ret2 = pthread_create(&thread2, NULL, PosixThreadEntranceClientCompetitionThread, instance);	//why am i going to a function that just goes to another function?
 	if (ret2)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
@@ -815,16 +815,7 @@ void connection::getError()
 #endif
 }
 
-//milliseconds only. xplatform windows & linux
-void connection::mySleep(int number_in_ms)
-{
-#ifdef __linux___
-	usleep(number_in_ms * 1000);		// Takes input in microseconds; times it by 1000 to turn it into ms.
-#endif//__linux__
-#ifdef _WIN32
-	Sleep(number_in_ms);				// In milliseconds
-#endif//_WIN32
-}
+
 
 
 /************************************ UDP Section **************************************/
@@ -902,7 +893,8 @@ END UDP COMMENT OUT *********/
 /******************** Raw class ************************/
 // Reminder: Carefully read every. single. word. inside documentation for berkley sockets (this applies to everything).
 //		Otherwise you might skip the 2 most important words in the gigantic document.
-
+bool Raw::stop_echo_request_loop = false;
+HANDLE Raw::ghEvents2[1];
 Raw::Raw()
 {
 	// SOCKET
@@ -974,21 +966,21 @@ bool Raw::isLittleEndian()	// Figuring out where to store this since i'm not usi
 }
 
 // ihl min is 5, max is 15;
-std::uint8_t Raw::setIHLAndVer(u_int ihl, u_int ver)
-{
-	return (ver << 4) | ihl;
-}		
-std::uint8_t Raw::setDSCPAndECN(u_int dscp, u_int ecn)
-{
-	return (dscp << 2) | ecn;	//dscp takes up 6 bits, ecn 2.
-
-
-	// For example if dscp = 4 and ecn = 1
-	//00010000	dscp |		//after having been shifted already
-	//00000001 ecn  =
-	//---------
-	//00010001
-}
+//std::uint8_t Raw::setIHLAndVer(u_int ihl, u_int ver)
+//{
+//	return (ver << 4) | ihl;
+//}		
+//std::uint8_t Raw::setDSCPAndECN(u_int dscp, u_int ecn)
+//{
+//	return (dscp << 2) | ecn;	//dscp takes up 6 bits, ecn 2.
+//
+//
+//	// For example if dscp = 4 and ecn = 1
+//	//00010000	dscp |		//after having been shifted already
+//	//00000001 ecn  =
+//	//---------
+//	//00010001
+//}
 
 // Unsure if this is working correctly or if wireshark is displaying it incorrectly?
 std::uint16_t Raw::setFlagsAndFragOffset(uint16_t flags, uint16_t frag_offset)
@@ -1095,7 +1087,7 @@ bool Raw::initializeWinsock()
 }
 
 
-bool Raw::setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_host_port)
+void Raw::setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_host_port)
 {
 	if (global_verbose == true)
 	{
@@ -1109,7 +1101,7 @@ bool Raw::setAddress(std::string target_ip, std::string target_port, std::string
 	my_host_ip_addr = my_ip;
 	my_host_port = my_host_port;
 
-	return true;
+	return;
 }
 
 SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optional return value.
@@ -1150,41 +1142,9 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 		return false;
 	}
 
-	std::string package_for_payload = "OneTwoSkyTree";
-	size_t package_for_payload_size = strlen(package_for_payload.c_str());
 	size_t ipv4header_size = sizeof(IPV4Header);
 	size_t icmpheader_size = sizeof(ICMPHeader);
 
-	// Putting stuff in the payload
-	if ((package_for_payload_size <= payload_max_length) && package_for_payload_size > 0)
-	{
-		memcpy(payload, package_for_payload.c_str(), package_for_payload_size);
-	}
-	// Copying IPV4Header into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
-	memcpy_s(
-		sendbuf, sendbuf_max_length,
-		&IPV4Header,
-		ipv4header_size
-	);
-	current_sendbuf_len = ipv4header_size;
-
-	// Copying the ICMPHeader into the sendbuffer starting at sendbuf[current_sendbuf_len]
-	memcpy_s(
-		sendbuf + current_sendbuf_len,
-		sendbuf_max_length - current_sendbuf_len,
-		&ICMPHeader,
-		icmpheader_size
-	);
-	current_sendbuf_len += icmpheader_size;
-
-	// Copying payload into the sendbuffer
-	memcpy_s(
-		sendbuf + current_sendbuf_len,
-		sendbuf_max_length - current_sendbuf_len,
-		payload,
-		package_for_payload_size
-	);
-	current_sendbuf_len += package_for_payload_size;
 
 	// ipv4 Header
 	std::string dead_end_ip_addr = "3.3.3.3";
@@ -1209,9 +1169,44 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 	// ICMP header														//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeader.type = ICMP_ECHO;
 	ICMPHeader.code = ICMP_ECHO_CODE_ZERO;
-	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));						// This trick only works with the most basic icmpheader, and no payload to boot. do not use.
+	ICMPHeader.checksum = htons(~(ICMP_ECHO << 8));						// This trick only works with the most basic icmpheader; no payload. do not use.
 	//ICMPHeader.id = htons(12345);
 	//ICMPHeader.seq = 1;
+
+
+	std::string package_for_payload = "OneTwoSkyTree";
+	size_t package_for_payload_size = strlen(package_for_payload.c_str());
+
+	// Putting stuff in the payload
+	if ((package_for_payload_size <= payload_max_length) && package_for_payload_size > 0)
+	{
+		memcpy(payload, package_for_payload.c_str(), package_for_payload_size);
+	}
+	// Copying IPV4Header into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
+	memcpy_s(
+		sendbuf, sendbuf_max_length,
+		&IPV4Header,
+		ipv4header_size
+		);
+	current_sendbuf_len = ipv4header_size;
+
+	// Copying the ICMPHeader into the sendbuffer starting at sendbuf[current_sendbuf_len]
+	memcpy_s(
+		sendbuf + current_sendbuf_len,
+		sendbuf_max_length - current_sendbuf_len,
+		&ICMPHeader,
+		icmpheader_size
+		);
+	current_sendbuf_len += icmpheader_size;
+
+	// Copying payload into the sendbuffer
+	memcpy_s(
+		sendbuf + current_sendbuf_len,
+		sendbuf_max_length - current_sendbuf_len,
+		payload,
+		package_for_payload_size
+		);
+	current_sendbuf_len += package_for_payload_size;
 
 
 	// Output buffer to screen in hex
@@ -1229,14 +1224,60 @@ bool Raw::craftFixedICMPEchoRequestPacket()
 		}
 		std::cout << std::dec;					// Gotta set the stream back to decimal or else it will forever output in hex
 	}
+
+	if (global_verbose == true)
+	{
+		std::cout << "Sizeof iphdr: " << sizeof(IPV4Header) << " \n";
+		std::cout << "sizeof icmphdr: " << sizeof(ICMPHeader) << " \n";
+		std::cout << "current_sendbuf_len: " << current_sendbuf_len << "\n";
+	}
 	return true;
+}
+
+void Raw::createThreadLoopEchoRequestToDeadEnd(void *instance)
+{
+#ifdef __linux__
+
+#endif __linux__
+#ifdef _WIN32
+	if (instance == NULL)
+	{
+		return;
+	}
+	Raw* self = (Raw*)instance;
+	self->ghEvents2[0] = (HANDLE)_beginthread(loopEchoRequestToDeadEnd, 0, instance);
+	return;
+#endif//_WIN32
+}
+
+// Send EchoRequest to ip: 3.3.3.3 every 3 seconds
+void Raw::loopEchoRequestToDeadEnd(void* instance)
+{
+	if (instance == NULL)
+	{
+		return;
+	}
+	Raw* self = (Raw*)instance;		// gotta make sure we are using this thread on the correct object instance!
+
+	CrossPlatformSleep Sleeping;
+	while (self->stop_echo_request_loop == false)
+	{
+		if (self->stop_echo_request_loop == true)
+		{
+			return;
+		}
+		self->errchk = self->sendTheThing();
+		if (self->errchk == false)
+		{
+			exit(0);		// hmmmmm not so sure about using exit() yet...
+		}
+		Sleeping.mySleep(3000);			// milliseconds
+	}
+	return;
 }
 
 bool Raw::sendTheThing()
 {
-	std::cout << "Sizeof iphdr: " << sizeof(IPV4Header) << " \n";
-	std::cout << "sizeof icmphdr: " << sizeof(ICMPHeader) << " \n";
-	std::cout << "current_sendbuf_len: " << current_sendbuf_len << "\n";
 	errchk = sendto(
 		created_socket,
 		sendbuf,
@@ -1293,17 +1334,26 @@ void Raw::myWSACleanup()
 #endif//_WIN32
 }
 
+// errno needs to be set to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
 void Raw::getError()
 {
 #ifdef __linux__
 	int errsv = errno;
-	std::cout << "ERROR " << errsv << " :" << strerror(errsv);
+	std::cout << "ERROR " << errsv << ". ";
+	if (errsv == 10013)
+	{
+		std::cout << "Permission Denied. ";
+	}
 	return;
 #endif//__linux__
 
 #ifdef _WIN32
 	int errsv = WSAGetLastError();
 	std::cout << "ERROR: " << errsv << ". ";
+	if (errsv == 10013)
+	{
+		std::cout << "Permission Denied. ";
+	}
 	return;
 #endif//_WIN32
 }

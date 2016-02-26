@@ -150,12 +150,14 @@
   <ItemGroup>
     <ClCompile Include="CommandLineInput.cpp" />
     <ClCompile Include="connection.cpp" />
+    <ClCompile Include="CrossPlatformSleep.cpp" />
     <ClCompile Include="ipaddress.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandLineInput.h" />
     <ClInclude Include="connection.h" />
+    <ClInclude Include="CrossPlatformSleep.h" />
     <ClInclude Include="GlobalTypeHeader.h" />
     <ClInclude Include="ipaddress.h" />
   </ItemGroup>

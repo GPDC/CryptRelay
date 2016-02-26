@@ -29,10 +29,11 @@
 #endif
 
 #ifdef _WIN32
-#include "ipaddress.h"
-#include "GlobalTypeHeader.h"
 #include <string>
 #include <iostream>
+
+#include "ipaddress.h"
+#include "GlobalTypeHeader.h"
 #endif
 
 ipaddress::ipaddress()
