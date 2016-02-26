@@ -5,15 +5,15 @@
 //TODO:
 //nat traversal
 //encryption
-//rename ipaddress.cpp to FormatCheck.cpp
 //add port checking in FormatCheck.cpp
-//clean up current style format to adhere to the guide
 //create a file in the same folder cryptrelay.exe is in and place whatever the user inputted for -m and -mp inside there.
 //	^this is so the user will not have to specify their IP and port to listen on _every_single_time.
 //when person specifies a port to listen on, maybe should check if that port is currently being used by some other program?
 //output what IP and port you are listening on
 //output the IP and port of the person you connected to.
 //fix chat output issue when someone sends you a message while you are typing
+//In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,
+//	and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
 //ipv6
 
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads

@@ -2,7 +2,8 @@
 
 #include "CrossPlatformSleep.h"
 
-//milliseconds only. xplatform windows & linux
+
+// Milliseconds only. xplatform windows & linux
 void CrossPlatformSleep::mySleep(int number_in_ms)
 {
 #ifdef __linux___

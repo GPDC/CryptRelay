@@ -151,7 +151,7 @@
     <ClCompile Include="CommandLineInput.cpp" />
     <ClCompile Include="connection.cpp" />
     <ClCompile Include="CrossPlatformSleep.cpp" />
-    <ClCompile Include="ipaddress.cpp" />
+    <ClCompile Include="FormatCheck.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -159,7 +159,7 @@
     <ClInclude Include="connection.h" />
     <ClInclude Include="CrossPlatformSleep.h" />
     <ClInclude Include="GlobalTypeHeader.h" />
-    <ClInclude Include="ipaddress.h" />
+    <ClInclude Include="FormatCheck.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,4 +1,4 @@
-//ipaddress.cpp
+//FormatCheck.cpp
 
 //wrote this all 3 majorly different ways 3 different times as practice. (didn't use library functions that would make this extremely quick & easy)
 //what is written below is a bit ugly, and could be improved __a_lot__, but it currently works.
@@ -24,7 +24,7 @@
 #include <stdio.h>
 //#include <errno.h>
 
-#include "ipaddress.h"
+#include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
 #endif
 
@@ -32,97 +32,97 @@
 #include <string>
 #include <iostream>
 
-#include "ipaddress.h"
+#include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
 #endif
 
-ipaddress::ipaddress()
+#define BAD_FORMAT -100
+#define MAX_PORT_LENGTH 5
+#define MAX_PORT_NUMBER 65535		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
+
+IPAddress::IPAddress()
 {
 }
-ipaddress::~ipaddress()
+IPAddress::~IPAddress()
 {
 }
 
-bool ipaddress::get_target(char* targetIPaddress)
+bool IPAddress::isIPV4FormatCorrect(char* ipaddress)
 {
-	//get target IP address from user
+	bool is_format_good = false;
 	if (global_verbose == true)
 	{
-		std::cout << "targetIPaddress = " << targetIPaddress << "\n";
+		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
 	}
-	bool is_format_good = false;
-	while (is_format_good == false)
-	{
-		//check if the formatting for the IP address is correct
-		is_format_good = is_ipv4_format_correct(targetIPaddress);
+	
+	// Check if the formatting for the IP address is correct
+	is_format_good = checkFormat(ipaddress);
 
-		//if the format is correct then go ahead and give main the target IP string so it can be used.
-		if (is_format_good == true)
-		{
-			return true;
-		}
-		else
-		{
-			std::cout << "bad IP address format.\n\n";
-			return false;
-		}
+	// If the format is correct then go ahead and give main the target IP string so it can be used.
+	if (is_format_good == true)
+	{
+		return true;
 	}
-	return false;
+	else
+	{
+		std::cout << "Bad IP address format.\n\n";
+		return false;
+	}
 }
 
 
-int ipaddress::find_next_period(std::string targetIPaddress, int start)
+int IPAddress::findNextPeriod(std::string ipaddress, int start)
 {
-	int size_of_ip_address = targetIPaddress.size();
+	int size_of_ip_address = ipaddress.size();
 	int period_location = -1;
-	//if it isn't the starting subnet, then give it a +1 or else it will always find the next period where the last period was.
+	// If it isn't the starting subnet, then give it a +1 or else it will always find the next period where the last period was.
 	if (start > 0)
 	{
 		start = start + 1;
 	}
 
-	//start iterating at the spot of the last period.
+	// Start iterating at the spot of the last period.
 	for (; start < size_of_ip_address; start++)
 	{
-		//not working yet.
-		if (targetIPaddress[start + 1] == '.' && targetIPaddress[start] == '.')
+		// Check for two periods right next to eachother
+		if (ipaddress[start + 1] == '.' && ipaddress[start] == '.')
 		{
 			if (global_verbose == true)
 				std::cout << "2 periods in a row detected.\n";
-			//return false
-			return -100;
+			// Return false
+			return BAD_FORMAT;
 		}
 
 		if (start == size_of_ip_address - 1)
 		{
 			if (global_verbose == true)
 			{
-				std::cout << "end of ip address string detected.\n";
+				std::cout << "End of ip address string detected.\n";
 			}
 		}
 
-		//if it is a period, save the location. else, increment
-		if (targetIPaddress[start] == '.')
+		// If it is a period, save the location. else, increment
+		if (ipaddress[start] == '.')
 		{
 			period_location = start;
 			if (global_verbose == true)
-				std::cout << "found a period at location: " << period_location << ".\n";
+				std::cout << "Found a period at location: " << period_location << ".\n";
 			if (period_location == 0)
-				return -100;
+				return BAD_FORMAT;
 			break;
 		}
 	}
 	return period_location;
 }
 
-bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int end)
+bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 {
 	int subnet_array_count = end - start;
 
 	//add protection for arrays going out of bounds, and check for invalid IP address at the same time
 	if (subnet_array_count > 3 || subnet_array_count < 1)
 	{
-		std::cout << "subnet out of range\n";
+		std::cout << "Subnet out of range\n";
 		return false;
 	}
 
@@ -133,7 +133,7 @@ bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int e
 	int last_period = start;
 	for (int i = 0; i < subnet_array_count; i++, last_period++)
 	{
-		subnet_array[i] = targetIPaddress[last_period] - 48;
+		subnet_array[i] = ipaddress[last_period] - 48;
 	}
 
 	//the subnet was broken apart into individual single digit numbers. now put them back together using multiplication.
@@ -146,29 +146,28 @@ bool ipaddress::check_subnet_range(std::string targetIPaddress, int start, int e
 	//check for valid subnet range.
 	if (global_verbose == true)
 	{
-		std::cout << "subnet addition total = " << total << "\n";
+		std::cout << "Subnet addition total = " << total << "\n";
 	}
 	if (total > 255 || total < 0)
 	{
-		//total is being saved out of scope for some reason...........................................it has diff behavior if it failed once for my input, then on my next correct format input it will be odd output.
-		std::cout << "subnet out of range.\n";
+		std::cout << "Subnet out of range.\n";
 		return false;
 	}
 	return true;
 }
 
 
-bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
+bool IPAddress::checkFormat(std::string ipaddress)
 {
 	int period_count = 0;
 	int start = 0;
 	int end = 0;
 
-	for (unsigned int c = 0; c < targetIPaddress.size(); c++)
+	for (unsigned int c = 0; c < ipaddress.size(); c++)
 	{
 		//checking for ascii 0-9 and '.'   ... if it isn't any of those, then it sends the user to try again with different input.
 		//grouping together multiple OR statements or AND statements with parenthesis makes them group up into a single BOOL statement.
-		if ((targetIPaddress[c] < '0' || targetIPaddress[c] > '9') && targetIPaddress[c] != '.')
+		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
 		{
 			std::cout << "Only numbers and periods allowed.\n";
 			return false;
@@ -177,26 +176,26 @@ bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
 
 	for (int i = 0; i < 4; i++)
 	{
-		end = find_next_period(targetIPaddress, start);
-		if (end == -100)
+		end = findNextPeriod(ipaddress, start);
+		if (end == BAD_FORMAT)
 		{
 			return false;
 		}
-		if (end != -100 && end != -1)
+		if (end != BAD_FORMAT && end != -1)
 		{
 			period_count++;
 		}
 		if (end == -1)
 		{
-			end = targetIPaddress.size();
+			end = ipaddress.size();
 		}
-		if (check_subnet_range(targetIPaddress, start, end) == false)
+		if (checkSubnetRange(ipaddress, start, end) == false)
 		{
 			return false;
 		}
 		//back to the future
 		start = end + 1;
-		if (end == targetIPaddress.size())
+		if (end == ipaddress.size())
 		{
 			break;
 		}
@@ -210,4 +209,47 @@ bool ipaddress::is_ipv4_format_correct(std::string targetIPaddress)
 	{
 		return true;
 	}
+}
+
+bool IPAddress::isPortFormatCorrect(char* port)
+{
+	int length_of_port = strlen(port);
+	if (global_verbose == true)
+	{
+		std::cout << "Unverified port: " << port << "\n";
+	}
+
+	if (length_of_port > MAX_PORT_LENGTH)
+	{
+		std::cout << "ERROR: Port number is too high\n";
+		return false;
+	}
+	for (int i = 0; i < length_of_port; ++i)	
+	{
+		// ascii 48 == 0 and ascii 57 == 9
+		if (port[i] < 48 || port[i] > 57)
+		{
+			std::cout << "Please enter a valid port number.\n";
+			return false;
+		}
+	}
+
+	// Convert from ascii to decimal while adding up each individual number
+	int total = 0;
+	for (int i = 0; i < length_of_port; ++i)
+	{
+		total = (total * 10) + (port[i] - 48);
+	}
+
+	// Now that we know they are all numbers, check for valid port range
+	if (total > MAX_PORT_NUMBER)
+	{
+		return false;
+	}
+	else
+	{
+		return total;
+	}
+
+	return true;
 }

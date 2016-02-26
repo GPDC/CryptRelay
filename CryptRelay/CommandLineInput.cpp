@@ -6,7 +6,7 @@
 #include "CommandLineInput.h"
 #include "GlobalTypeHeader.h"
 #include "connection.h"
-#include "ipaddress.h"
+#include "FormatCheck.h"
 
 CommandLineInput::CommandLineInput()
 {
@@ -35,7 +35,7 @@ void CommandLineInput::helpAndReadMe(int argc)
 int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
-	// but for now this is simple and easy to read/understand, so its nice.
+	//	 but for now this is simple and easy to read/understand, so its nice.
 	int err_chk;
 	int arg_size;
 
@@ -46,22 +46,22 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 	std::vector<std::string> arg;
 
-	ipaddress ipaddress_get;
+	IPAddress ipaddress_get;
 
-	//put all argv's into a vector so they can be compared to strings
+	// Put all argv's into a vector so they can be compared to strings
 	for (int i = 0; i < argc; i++)
 	{
 		arg.push_back(argv[i]);
 	}
 	arg_size = arg.size();
 
-	//if command line arguments supplied, show the ReadMe
+	// If command line arguments supplied, show the ReadMe
 	if (argc <= 1)
 	{
 		helpAndReadMe(argc);
 		return 0;
 	}
-	//check all argv inputs to see what the user wants to do
+	// Check all argv inputs to see what the user wants to do
 	if (argc >= 2)
 	{
 		for (int i = 1; i < argc; ++i)
@@ -78,7 +78,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-t" && i < arg_size - 1)
 			{
-				err_chk = ipaddress_get.get_target(argv[i + 1]);
+				err_chk = ipaddress_get.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
@@ -86,15 +86,15 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-tp")
 			{
-				//err_chk = ipaddress_get.port(argv[i + 1]);
-				//if (err_chk == false)
-				//	return 1;
-				//else
+				err_chk = ipaddress_get.isPortFormatCorrect(argv[i + 1]);
+				if (err_chk == false)
+					return 0;
+				else
 				target_port = argv[i + 1];
 			}
 			if (arg[i] == "-m")
 			{
-				err_chk = ipaddress_get.get_target(argv[i + 1]);
+				err_chk = ipaddress_get.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
@@ -102,11 +102,11 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			if (arg[i] == "-mp")
 			{
-				//err_chk = ipaddress_get.port(argv[i + 1]);
-				//if (err_chk == false)
-				//	return 1;
-				//else
-				my_host_port = argv[i + 1];
+				err_chk = ipaddress_get.isPortFormatCorrect(argv[i + 1]);
+				if (err_chk == false)
+					return 0;
+				else
+					my_host_port = argv[i + 1];
 			}
 			if (arg[i] == "-v")
 			{
@@ -120,6 +120,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 		}
 	}
 
-	// finished, return success
+	// Finished, return success
 	return 1;
 }

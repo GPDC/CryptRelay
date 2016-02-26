@@ -1094,7 +1094,7 @@ void Raw::setAddress(std::string target_ip, std::string target_port, std::string
 		std::cout << "Setting info: IP address and port...\n";
 	}
 
-	// Retrieving all the info that was gathered by CommandLineInput and checked by ipaddress.cpp
+	// Retrieving all the info that was gathered by CommandLineInput and checked by FormatCheck.cpp
 	TargetSockAddrIn.sin_family = AF_INET;
 	TargetSockAddrIn.sin_addr.s_addr = inet_addr(target_ip.c_str());
 	TargetSockAddrIn.sin_port = htons(atoi( target_port.c_str() ));
