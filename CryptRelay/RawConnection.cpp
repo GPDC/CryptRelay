@@ -13,8 +13,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cerrno>
-#include <pthread.h>	//<process.h>
-#include <iomanip>	// std::setw(2) && std::setfill('0')
+#include <pthread.h>			//<process.h>
+#include <iomanip>				// std::setw(2) && std::setfill('0')
 
 #include <arpa/inet.h>
 #include <signal.h>
@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <process.h>	//<pthread.h>
-#include <iomanip>	// std::setw(2) && std::setfill('0')
+#include <process.h>			//<pthread.h>
+#include <iomanip>				// std::setw(2) && std::setfill('0')
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
@@ -41,13 +41,15 @@
 #include "RawConnection.h"
 #endif//_WIN32
 
-
 // Reminder: Carefully read every. single. word. inside documentation for berkley sockets (this applies to everything).
 //		Otherwise you might skip the 2 most important words in the gigantic document.
+
 bool Raw::stop_echo_request_loop = false;
+
 #ifdef _WIN32
 HANDLE Raw::ghEvents2[1];
 #endif//_WIN32
+
 Raw::Raw()
 {
 	// SOCKET

@@ -15,8 +15,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cerrno>
-#include <pthread.h>	//<process.h>
-#include <iomanip>	// std::setw(2) && std::setfill('0')
+#include <pthread.h>			//<process.h>
+#include <iomanip>				// std::setw(2) && std::setfill('0')
 
 #include <arpa/inet.h>
 #include <signal.h>
@@ -32,8 +32,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <process.h>	//<pthread.h>
-#include <iomanip>	// std::setw(2) && std::setfill('0')
+#include <process.h>			//<pthread.h>
+#include <iomanip>				// std::setw(2) && std::setfill('0')
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
