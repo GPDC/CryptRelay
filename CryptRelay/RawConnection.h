@@ -27,22 +27,27 @@ public:
 	Raw();
 	~Raw();
 
+	// This function just holds a bunch of smaller functions as a way of organisation and permissions protections by putting them in private.
+	bool sendICMPTimeExceeded();
+	bool sendICMPEchoRequeest();
+
 	bool isLittleEndian();
 	//std::uint8_t setIHLAndVer(u_int ihl, u_int ver);
 	//std::uint8_t setDSCPAndECN(u_int, u_int);
 	std::uint16_t setFlagsAndFragOffset(uint16_t, uint16_t);
 	uint16_t roL(uint16_t, uint16_t);
 	bool initializeWinsock();
-	SOCKET createSocket(int, int, int);
-	bool craftFixedICMPEchoRequestPacket();
-	bool sendTheThing();
-	void setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_host_port);
+	SOCKET createSocket(int family, int socktype, int protocol);
+	bool craftFixedICMPEchoRequestPacket(SOCKET fd);
+	bool craftICMPTimeExceededPacket(SOCKET fd);
+	bool sendTheThing(SOCKET fd, char buffer[], size_t buffer_length);
+	void setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_port);
 	void closeThisSocket(SOCKET fd);
-	bool shutdownConnection(SOCKET socket);
+	bool shutdownConnection(SOCKET fd);
 	void myWSACleanup();
 	void getError();
 
-	void createThreadLoopEchoRequestToDeadEnd(void *);
+	void createThreadLoopEchoRequestToDeadEnd();
 	static void loopEchoRequestToDeadEnd(void* instance);
 
 	static bool stop_echo_request_loop;	// static variables must be declared outside of the class constructor
@@ -56,9 +61,9 @@ private:
 #endif//_WIN32
 
 	// IP header information. Size is normally 20 bytes.
-	struct iphdr					// https://en.wikipedia.org/wiki/IPv4#Header
+	struct IPHeader					// https://en.wikipedia.org/wiki/IPv4#Header
 	{
-		u_char ihl : 4;				// Internet Header Length is the size of this ipv4 structure / 4; ex: sizeof(IPV4Header) >> 2;
+		u_char ihl : 4;				// Internet Header Length is the size of this ipv4 structure / 4; ex: sizeof(IPV4HeaderEchoRequest) >> 2;
 		u_char ver : 4;				// Version. For example: 4  is the version number for ipv4
 		u_char dscp : 6;			// differentiated_services_code_point. Originally called Type of Service (ToS) field. 
 		u_char ecn : 2;				// explicit_congestion_notification. This field is defined in RFC 3168 and allows end-to-end notification of network congestion without dropping packets. ECN is an optional feature that is only used when both endpoints support it and are willing to use it. It is only effective when supported by the underlying network.
@@ -78,46 +83,126 @@ private:
 		// If desired, options go here
 		// opts
 
-	}IPV4Header;
+	}IPV4HeaderEchoRequest, IPV4HeaderTimeExceeded;
 
 	// ICMP header information. Size is normally 8 bytes.
-	struct icmpheader_echorequest
+	struct ICMPHeader
 	{
 		u_char type;
 		u_char code;
 		u_short checksum;
 		u_short id;
 		u_short seq;
-	}ICMPHeader, ICMPHeaderTimeExceeded;
+	}ICMPHeaderEchoRequest, ICMPHeaderTimeExceeded;
+
+	struct miniICMPHeaderTimeExceeded
+	{
+		u_int original_ipheader : 20;
+		u_int original_payload : 8;			// 8 bytes of the original payload
+	}TimeExceededAttachment;
 
 
 	sockaddr_in TargetSockAddrIn;
 	sockaddr_in *PResultSockIn;
 
-	SOCKET created_socket;
-
+	//SOCKET socket_ech_req;
+	//SOCKET socket_tim_exc;
+	//SOCKET created_socket;
+	
 	std::string target_ip_addr;
 	std::string target_port;
 	std::string my_host_ip_addr;
 	std::string my_host_port;
+	std::string package_for_payload;
 
 	int iResult;
 	int errchk;
 
 	// If  IP + ICMP Headers == 28 bytes, that leaves 65,507 bytes left for the ICMP data.
-	static const int payload_max_length = 50;
+	/*
 	char payload[payload_max_length] = {};
 
-	static const int sendbuf_max_length = 400;
-	char sendbuf[sendbuf_max_length];
+	
+	char sendbuf[sendbuf_max_length] = {};
+	char sendbuf_time_exceeded[sendbuf_max_length] = {};
 
 	size_t current_sendbuf_len;
+	size_t current_sendbuf_time_exceeded_len;
+	size_t package_for_payload_size;
+	*/
 
+	static const int payload_max_length = 50;
+	static const int sendbuf_max_length = 400;
+
+	struct BufferAndPayloadInfo
+	{
+		SOCKET s;
+
+		char sendbuf[sendbuf_max_length];
+		char payload[payload_max_length];
+
+		size_t current_sendbuf_len;
+		size_t package_for_payload_size;
+	};
+	BufferAndPayloadInfo ER;	// Echo Request
+	BufferAndPayloadInfo TE;	// Time Exceeded
 	const int ICMP_ECHO = 8;
 	const int ICMP_ECHO_CODE_ZERO = 0;	// This is ICMP_ECHO's only code option
 	const int ICMP_REPLY = 0;
 	const int ICMP_REPLY_CODE_ZERO = 0;	// This is ICMP_REPLY's only code option
+	const int ICMP_TIME_EXCEEDED = 11;
+	const int ICMP_TIME_EXCEEDED_CODE_TTL_EXPIRED_IN_TRANSIT = 0;
 };
 
 
 #endif
+
+
+
+/*
+IPV4 Header:
+
+|00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|
+-------------------------------------------------------------------------------------------------
+|  Version	|	 IHL	|		DSCP	  | ECN |				  Total Length					|
+-------------------------------------------------------------------------------------------------
+|				Identification					|  Flags |			 Fragment Offset			|
+-------------------------------------------------------------------------------------------------
+|	   Time To Live		|		Protocol		|				Header Checksum					|
+-------------------------------------------------------------------------------------------------
+|										 Source IP Address										|
+-------------------------------------------------------------------------------------------------
+|									   Destination IP Address									|
+-------------------------------------------------------------------------------------------------
+|									    Options (If IHL > 5)									|
+-------------------------------------------------------------------------------------------------
+
+
+Generic ICMP Header:
+
+|00|01|02|03|04|05|06|07|08|09|10|11|12|13|14|15|16|17|18|19|20|21|22|23|24|25|26|27|28|29|30|31|
+-------------------------------------------------------------------------------------------------
+|		   Type			|		  Code			|					Checksum					|
+-------------------------------------------------------------------------------------------------
+|											Header Data											|
+-------------------------------------------------------------------------------------------------
+
+(Optional) ICMP Payload:
+
+-------------------------------------------------------------------------------------------------
+|									 (Optional) Payload Data									|
+-------------------------------------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+*/

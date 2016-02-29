@@ -61,6 +61,7 @@ bool global_verbose = false;
 int main(int argc, char *argv[])
 {
 	int errchk = 0;
+
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
 	if (errchk = CLI.getCommandLineInput(argc, argv) == 0)	// Ip address and port info will be stored in CLI.
@@ -70,23 +71,26 @@ int main(int argc, char *argv[])
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
-	// Craft an ipv4 icmp packet
-	Raw RawEchoReq;
-	if (RawEchoReq.initializeWinsock() == false)
+
+
+	Raw RawBetterNamePls;
+	// Initialize Winsock for everything in the Raw class
+	if (RawBetterNamePls.initializeWinsock() == false)
 		return 0;
-	RawEchoReq.setAddress(
+	// Set address information for the Raw class
+	RawBetterNamePls.setAddress(
 		CLI.target_ip_address,
 		CLI.target_port,
 		CLI.my_ip_address,
 		CLI.my_host_port
-	);
-	if (RawEchoReq.createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW) == false)	// RAW sockets require admin / root privileges.
-		return 0;		
-	if (RawEchoReq.craftFixedICMPEchoRequestPacket() == false)
-		return 0;
+		);
 
-	// Threaded loop EchoRequest to ip:3.3.3.3 every 3 seconds
-	RawEchoReq.createThreadLoopEchoRequestToDeadEnd(&RawEchoReq);		// to stop this thread, set RawEchoReq.stop_echo_request_loop = true;
+	// SERVER: Start Threaded ICMP Echo Request
+	if (RawBetterNamePls.sendICMPEchoRequeest() == false)	// to stop this thread, set RawBetterNamePls.stop_echo_request_loop = true;
+		return 0;
+	// CLIENT: Start ICMP Time Exceeded
+	if (RawBetterNamePls.sendICMPTimeExceeded() == false)
+		return 0;
 
 
 
@@ -125,21 +129,19 @@ int main(int argc, char *argv[])
 	//Server startup sequence
 	TCPConnection serverObj;
 	if (global_verbose == true)
-	{
 		std::cout << "SERVER::";
-	}
 	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_host_port);
-	if (serverObj.initializeWinsock() == false) return 1;
+	if (serverObj.initializeWinsock() == false)
+		return 1;
 	serverObj.ServerSetHints();
 
 	//Client startup sequence
 	TCPConnection clientObj;
 	if (global_verbose == true)
-	{
 		std::cout << "CLIENT::";
-	}
 	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
-	if (clientObj.initializeWinsock() == false) return 1;
+	if (clientObj.initializeWinsock() == false)
+		return 1;
 	clientObj.ClientSetHints();
 
 	//BEGIN THREAD RACE
@@ -185,10 +187,12 @@ int main(int argc, char *argv[])
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
 			serverObj.serverCreateSendThread(&serverObj);
-			if (serverObj.receiveUntilShutdown() == false) return 1;
+			if (serverObj.receiveUntilShutdown() == false)
+				return 1;
 
 			//shutdown
-			if (serverObj.shutdownConnection() == false) return 1;
+			if (serverObj.shutdownConnection() == false)
+				return 1;
 			break;
 		}
 		//If client won, then act as a client
@@ -196,10 +200,12 @@ int main(int argc, char *argv[])
 		{
 			std::cout << "Connection established as the client.\n";
 			clientObj.clientCreateSendThread(&clientObj);
-			if (clientObj.receiveUntilShutdown() == false) return 1;
+			if (clientObj.receiveUntilShutdown() == false)
+				return 1;
 
 			//shutdown
-			if (clientObj.shutdownConnection() == false) return 1;
+			if (clientObj.shutdownConnection() == false)
+				return 1;
 			break;
 		}
 		//If nobody won, quit
@@ -264,9 +270,9 @@ Globals:								# Put the word global in front of it like so:
 	ex variable:	global_this_is_an_example;
 	ex function:	globalThisIsAnExample;
 
-Curly braces:	bool thisIsAnExample()
-				{
-					int i = 5;
+Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks better;
+				{								// Single lines with curly braces, or
+					int i = 5;					// Single lines with no curly braces.
 					if (i == 70)
 					{
 						return true;
@@ -274,6 +280,16 @@ Curly braces:	bool thisIsAnExample()
 					else
 					{
 						return false;
+					}
+
+					if (i == 5)
+					{
+						if(1 + 1 == 2)
+							1pptheory = true;
+						if(truth == lie)
+							return false;
+						if(bear == big)
+							std::cout << "Oh my!\n";
 					}
 				}
 
