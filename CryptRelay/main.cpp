@@ -2,6 +2,9 @@
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
 
+// Windows might be blocking me from sending packets with spoofed source IPs. My google-fu is failing me; hard to find answer.
+// I don't think Linux would block it, but if it does, it can be changed!
+
 //TODO:
 //nat traversal
 //encryption
@@ -64,7 +67,7 @@ int main(int argc, char *argv[])
 
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	if (errchk = CLI.getCommandLineInput(argc, argv) == 0)	// Ip address and port info will be stored in CLI.
+	if (errchk = CLI.getCommandLineInput(argc, argv) == false)	// Ip address and port info will be stored in CLI.
 		return 0;
 
 	//===================================== Starting Chat Program =====================================
@@ -79,10 +82,12 @@ int main(int argc, char *argv[])
 		return 0;
 	// Set address information for the Raw class
 	RawBetterNamePls.setAddress(
-		CLI.target_ip_address,
+		CLI.target_extrnl_ip_address,
 		CLI.target_port,
+		CLI.target_local_ip,
 		CLI.my_ip_address,
-		CLI.my_host_port
+		CLI.my_host_port,
+		CLI.my_ext_ip_address
 		);
 
 	// SERVER: Start Threaded ICMP Echo Request
@@ -92,6 +97,9 @@ int main(int argc, char *argv[])
 	if (RawBetterNamePls.sendICMPTimeExceeded() == false)
 		return 0;
 
+	// rcvfrom();
+	// if received packet, try to initiate TCP connection.
+	// if TCP connection successful, shutdown all threads related to ICMP.
 
 
 	std::cout << "PAUSE...";
@@ -139,7 +147,7 @@ int main(int argc, char *argv[])
 	TCPConnection clientObj;
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
-	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
+	clientObj.clientSetIpAndPort(CLI.target_extrnl_ip_address, CLI.target_port);
 	if (clientObj.initializeWinsock() == false)
 		return 1;
 	clientObj.ClientSetHints();

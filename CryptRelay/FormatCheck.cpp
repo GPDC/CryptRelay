@@ -244,11 +244,13 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	// Now that we know they are all numbers, check for valid port range
 	if (total > MAX_PORT_NUMBER)
 	{
+		std::cout << "Port number is too large. Exiting.\n";
 		return false;
 	}
 	else
 	{
-		return total;
+		return true;
+		// return total;	// could return total and never have to bother converting port string to int ever again.
 	}
 
 	return true;

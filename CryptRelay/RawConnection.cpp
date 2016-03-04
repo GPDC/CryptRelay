@@ -52,8 +52,6 @@ HANDLE Raw::ghEvents2[1];
 
 Raw::Raw()
 {
-
-
 	// int
 	iResult = 0;
 	errchk = 0;
@@ -65,14 +63,14 @@ Raw::Raw()
 	memset(&ICMPHeaderEchoRequest, 0, sizeof(ICMPHeaderEchoRequest));
 	memset(&ICMPHeaderTimeExceeded, 0, sizeof(ICMPHeaderTimeExceeded));
 	// sockaddr_in
-	memset(&TargetSockAddrIn, 0, sizeof(TargetSockAddrIn));
+	memset(&TargetExternalSockAddrIn, 0, sizeof(TargetExternalSockAddrIn));
 	// BufferAndPayloadInfo
 	memset(&ER, 0, sizeof(ER));
 	memset(&TE, 0, sizeof(TE));
 
 	// SOCKET (The sockets within a struct must come after the memset for the struct)
-	TE.s = INVALID_SOCKET;
-	ER.s = INVALID_SOCKET;
+	TE.s = INVALID_SOCKET;	// s == Socket
+	ER.s = INVALID_SOCKET;	// s == Socket
 }
 Raw::~Raw()
 {
@@ -112,7 +110,7 @@ bool Raw::sendICMPTimeExceeded()
 
 	//
 
-	sendTheThing(TE.s, TE.sendbuf, TE.current_sendbuf_len);
+	sendTheThing(TE.s, TE.sendbuf, TE.current_sendbuf_len, (sockaddr*)&TargetExternalSockAddrIn, sizeof(TargetExternalSockAddrIn));
 
 	return true;
 }
@@ -286,7 +284,7 @@ bool Raw::initializeWinsock()
 }
 
 
-void Raw::setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_port)
+void Raw::setAddress(std::string target_ip, std::string target_port, std::string target_local_ip, std::string my_ip, std::string my_port, std::string my_ext_ip)
 {
 	if (global_verbose == true)
 	{
@@ -294,11 +292,32 @@ void Raw::setAddress(std::string target_ip, std::string target_port, std::string
 	}
 
 	// Retrieving all the info that was gathered by CommandLineInput and checked by FormatCheck.cpp
-	TargetSockAddrIn.sin_family = AF_INET;
-	TargetSockAddrIn.sin_addr.s_addr = inet_addr(target_ip.c_str());
-	TargetSockAddrIn.sin_port = htons(atoi(target_port.c_str()));
+	TargetExternalSockAddrIn.sin_family = AF_INET;
+	TargetExternalSockAddrIn.sin_addr.s_addr = inet_addr(target_ip.c_str());
+	TargetExternalSockAddrIn.sin_port = htons(atoi(target_port.c_str()));
+
+	TargetLocalSockAddrIn.sin_family = AF_INET;
+	TargetLocalSockAddrIn.sin_addr.s_addr = inet_addr(target_local_ip.c_str());
+	TargetLocalSockAddrIn.sin_port = htons(atoi(target_port.c_str()));
+
+	MyExternalSockAddrIn.sin_family = AF_INET;
+	MyExternalSockAddrIn.sin_addr.s_addr = inet_addr(my_ext_ip.c_str());
+	MyExternalSockAddrIn.sin_port = htons(atoi(my_port.c_str()));
+
+	MyLocalSockAddrIn.sin_family = AF_INET;
+	MyLocalSockAddrIn.sin_addr.s_addr = inet_addr(my_ip.c_str());
+	MyLocalSockAddrIn.sin_port = htons(atoi(my_port.c_str()));
+
+	target_local_ip_addr = target_local_ip;
+
 	my_host_ip_addr = my_ip;
 	my_host_port = my_port;
+	my_external_host_ip_addr = my_ext_ip;
+
+	if (global_verbose == true)
+	{
+		std::cout << "t_ext " << target_ip << ", " << "t_p " << target_port << ", " << "t_local " << target_local_ip << ", " << "my_local " << my_ip << ", " << "my_port " << my_port << ", " << "my_ext " << my_ext_ip << "\n";
+	}
 
 	return;
 }
@@ -344,40 +363,40 @@ bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 
 	size_t ipv4header_size = sizeof(IPV4HeaderEchoRequest);
 	size_t icmpheader_size = sizeof(ICMPHeaderEchoRequest);
-
-
-	// ipv4 Header
+	
 	std::string dead_end_ip_addr = "3.3.3.3";
+	DeadEndSockAddrIn.sin_family = AF_INET;
+	DeadEndSockAddrIn.sin_addr.s_addr = inet_addr(dead_end_ip_addr.c_str());
+	DeadEndSockAddrIn.sin_port = TargetExternalSockAddrIn.sin_port;
 
-	IPV4HeaderEchoRequest.ihl = sizeof(IPV4HeaderEchoRequest) >> 2;				// ihl min value == 5, max == 15; sizeof(IPV4HeaderEchoRequest) >> 2 is just dividing it by 4 (shifting to the right 2x);
-	IPV4HeaderEchoRequest.ver = 4;												// 4 == ipv4
-	IPV4HeaderEchoRequest.dscp = 0;												// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
-	IPV4HeaderEchoRequest.ecn = 0;												// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
-	IPV4HeaderEchoRequest.total_len = (uint16_t)(ipv4header_size 
-									 + icmpheader_size 
-									 + payload_max_length);
-	IPV4HeaderEchoRequest.id = htons(55155);									//?
-																				//IPV4HeaderEchoRequest.flags_and_frag_offset = setFlagsAndFragOffset((uint16_t)0, (uint16_t)0);	// POSSIBLY BROKEN. leave it set to 0.
+	// ipv4 Header																// https://en.wikipedia.org/wiki/IPv4
+	IPV4HeaderEchoRequest.ihl = sizeof(IPV4HeaderEchoRequest) >> 2;				// ihl min value == 5, max == 15; sizeof(IPV4HeaderEchoRequest) >> 2 is just dividing it by 4;
+	IPV4HeaderEchoRequest.ver = 4;												// 4 == ipv4, 6 == ipv6
+	IPV4HeaderEchoRequest.dscp = 0;
+	IPV4HeaderEchoRequest.ecn = 0;
+	IPV4HeaderEchoRequest.total_len = (uint16_t)(ipv4header_size + icmpheader_size /* + payload_max_length*/);
+	IPV4HeaderEchoRequest.id = htons(256);										//?
 	IPV4HeaderEchoRequest.flags = 0;
 	IPV4HeaderEchoRequest.frag_offset = htons(0);
 	IPV4HeaderEchoRequest.ttl = 64;
 	IPV4HeaderEchoRequest.protocol = 1;											// 1 == ICMP
-	IPV4HeaderEchoRequest.chksum = /*datchecksum*/ 0;							// need a checksum
-	IPV4HeaderEchoRequest.src_ip.s_addr = inet_addr(my_host_ip_addr.c_str());	// needs conversion to big endian
-	IPV4HeaderEchoRequest.dst_ip.s_addr = inet_addr(dead_end_ip_addr.c_str());	// do not convert to big endian if assigning it something located inside a sockaddr_in structure
-																				// TargetSockAddrIn.sin_addr.s_addr;	// this is one that is set to the target instead of a dead end
-
+	IPV4HeaderEchoRequest.chksum = 0;
+	IPV4HeaderEchoRequest.src_ip.s_addr = MyLocalSockAddrIn.sin_addr.s_addr;	//inet_addr("local ip")
+	IPV4HeaderEchoRequest.dst_ip.s_addr = DeadEndSockAddrIn.sin_addr.s_addr;	//inet_addr("3.3.3.3");
+	IPV4HeaderEchoRequest.chksum = ICMPChkSum(&IPV4HeaderEchoRequest, ipv4header_size);
 
 	// ICMP header																//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeaderEchoRequest.type = ICMP_ECHO;
 	ICMPHeaderEchoRequest.code = ICMP_ECHO_CODE_ZERO;
-	ICMPHeaderEchoRequest.checksum = htons(~(ICMP_ECHO << 8));					// This trick only works with the most basic icmpheader; no payload. do not use.
-	//ICMPHeaderEchoRequest.id = htons(12345);
-	//ICMPHeaderEchoRequest.seq = 1;
+	ICMPHeaderEchoRequest.checksum = 0;
+	ICMPHeaderEchoRequest.id = 0;
+	ICMPHeaderEchoRequest.seq = 0;
+	ICMPHeaderEchoRequest.checksum = ICMPChkSum(&ICMPHeaderEchoRequest, icmpheader_size);
 
-
-	package_for_payload = "OneTwoSkyTree";
+	package_for_payload = "";
 	ER.package_for_payload_size = strlen(package_for_payload.c_str());
+
+	// Need size checking in here for payload !!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	// Putting stuff in the payload
 	if ((ER.package_for_payload_size <= payload_max_length) && ER.package_for_payload_size > 0)
@@ -402,20 +421,24 @@ bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 	ER.current_sendbuf_len += icmpheader_size;
 
 	// Copying payload into the sendbuffer
-	memcpy_s(
-		ER.sendbuf + ER.current_sendbuf_len,
-		sendbuf_max_length - ER.current_sendbuf_len,
-		ER.payload,
-		ER.package_for_payload_size
-		);
-	ER.current_sendbuf_len += ER.package_for_payload_size;
+	/*if (ER.package_for_payload_size > 0)
+	{
+		memcpy_s(
+			ER.sendbuf + ER.current_sendbuf_len,
+			sendbuf_max_length - ER.current_sendbuf_len,
+			ER.payload,
+			ER.package_for_payload_size
+			);
+		ER.current_sendbuf_len += ER.package_for_payload_size;
+	}*/
+	
 
 
 	// Output buffer to screen in hex
 	if (global_verbose == true)
 	{
 		std::cout << "Buffer contents:\n";
-		for (int i = 0; i < ER.current_sendbuf_len; i++)
+		for (u_int i = 0; i < ER.current_sendbuf_len; i++)
 		{
 			std::cout
 				<< " 0x"
@@ -448,7 +471,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
-		std::cout << "setsockopt failed\n";
+		std::cout << "setsockopt failed.\n";
 		closeThisSocket(fd);
 		myWSACleanup();
 		return false;
@@ -458,36 +481,37 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 	size_t icmpheader_size = sizeof(ICMPHeaderTimeExceeded);
 	size_t mini_icmpheader_attachment_size = sizeof(TimeExceededAttachment);
 
+	// Copying the IPV4 Echo Request Header so we can change a some variables
+	IPV4HeaderEchoRequestCopy = IPV4HeaderEchoRequest;											// sidenote, extra steps need to be taken if there is a pointer in the class/struct (there isn't though, atleast in this one!)
+	IPV4HeaderEchoRequestCopy.src_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;			//inet_addr("external ip");
+	IPV4HeaderEchoRequestCopy.ttl = 1;															// This is what would normally be the value if the time exceeded.
+	IPV4HeaderEchoRequestCopy.total_len = htons(IPV4HeaderEchoRequestCopy.total_len);			//????? because the kernel did the htons() for me on the original ipv4 packet? whats going on?
+	IPV4HeaderEchoRequestCopy.chksum = 0;														// Must set it to 0 before calculating the checksum
+	IPV4HeaderEchoRequestCopy.chksum = ICMPChkSum(&IPV4HeaderEchoRequestCopy, ipv4header_size);	// Gotta checksum again b/c things have changed
 
 	// ipv4 Header
 	IPV4HeaderTimeExceeded.ihl = sizeof(IPV4HeaderTimeExceeded) >> 2;				// ihl min value == 5, max == 15; sizeof(IPV4HeaderEchoRequest) >> 2 is just dividing it by 4 (shifting to the right 2x);
 	IPV4HeaderTimeExceeded.ver = 4;													// 4 == ipv4
 	IPV4HeaderTimeExceeded.dscp = 0;												// https://en.wikipedia.org/wiki/Differentiated_Services_Code_Point
 	IPV4HeaderTimeExceeded.ecn = 0;													// https://en.wikipedia.org/wiki/Explicit_Congestion_Notification
-	IPV4HeaderTimeExceeded.total_len = (uint16_t)(
-		ipv4header_size
-		+ icmpheader_size
-		+ payload_max_length);
-	IPV4HeaderTimeExceeded.id = htons(55155);										//?
-	//IPV4HeaderTimeExceeded.flags_and_frag_offset = setFlagsAndFragOffset((uint16_t)0, (uint16_t)0);	// POSSIBLY BROKEN. leave it set to 0.
+	IPV4HeaderTimeExceeded.total_len = (uint16_t)(ipv4header_size + icmpheader_size + mini_icmpheader_attachment_size /*+ payload_max_length*/);
+	IPV4HeaderTimeExceeded.id = htons(256);											//?
 	IPV4HeaderTimeExceeded.flags = 0;
 	IPV4HeaderTimeExceeded.frag_offset = htons(0);
 	IPV4HeaderTimeExceeded.ttl = 64;
 	IPV4HeaderTimeExceeded.protocol = 1;											// 1 == ICMP
-	IPV4HeaderTimeExceeded.chksum = /*datchecksum*/ 0;								// need a checksum
-	IPV4HeaderTimeExceeded.src_ip.s_addr = inet_addr(my_host_ip_addr.c_str());		// needs conversion to big endian
-	IPV4HeaderTimeExceeded.dst_ip.s_addr = TargetSockAddrIn.sin_addr.s_addr;		// do not convert to big endian if assigning it something located inside a sockaddr_in structure
-																					// TargetSockAddrIn.sin_addr.s_addr;	// this is one that is set to the target instead of a dead end
-
+	IPV4HeaderTimeExceeded.chksum = 0;												// set checksum to 0 before calculating the checksum (though, i did memset 0 the whole thing already)
+	IPV4HeaderTimeExceeded.src_ip.s_addr = MyLocalSockAddrIn.sin_addr.s_addr;		//inet_addr("local ip");
+	IPV4HeaderTimeExceeded.dst_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;//inet_addr("external ip");
+	IPV4HeaderTimeExceeded.chksum = ICMPChkSum(&IPV4HeaderTimeExceeded, ipv4header_size);
 
 	// ICMP header																	//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeaderTimeExceeded.type = ICMP_TIME_EXCEEDED;
 	ICMPHeaderTimeExceeded.code = ICMP_TIME_EXCEEDED_CODE_TTL_EXPIRED_IN_TRANSIT;
-	ICMPHeaderTimeExceeded.checksum = htons(~(ICMP_ECHO << 8));						// This trick only works with the most basic icmpheader; no payload. do not use.
-	//ICMPHeaderTimeExceeded.id = htons(12345);
-	//ICMPHeaderTimeExceeded.seq = 1;
+	ICMPHeaderTimeExceeded.checksum = 0;
+	ICMPHeaderTimeExceeded.checksum = ICMPChkSum(&ICMPHeaderTimeExceeded, icmpheader_size);
 
-
+	
 	// Copying IPV4HeaderTimeExceeded into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
 	memcpy_s(
 		TE.sendbuf, sendbuf_max_length,
@@ -509,7 +533,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 	memcpy_s(
 		TE.sendbuf + TE.current_sendbuf_len,
 		sendbuf_max_length - TE.current_sendbuf_len,
-		&IPV4HeaderEchoRequest,
+		&IPV4HeaderEchoRequestCopy,
 		ipv4header_size
 		);
 	TE.current_sendbuf_len += ipv4header_size;
@@ -523,7 +547,6 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 		);
 	TE.current_sendbuf_len += icmpheader_size;
 	
-
 	//// Copying original payload into the sendbuffer
 	//memcpy_s(
 	//	TE.sendbuf + TE.current_sendbuf_len,
@@ -534,11 +557,12 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 	//TE.current_sendbuf_len += ER.package_for_payload_size;	//ER.package_for_payload_size is not a mistake
 
 
+
 	// Output buffer to screen in hex
 	if (global_verbose == true)
 	{
 		std::cout << "Buffer contents:\n";
-		for (int i = 0; i < TE.current_sendbuf_len; i++)
+		for (u_int i = 0; i < TE.current_sendbuf_len; i++)
 		{
 			std::cout
 				<< " 0x"
@@ -555,7 +579,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 	{
 		std::cout << "Sizeof IPHeader: " << ipv4header_size << " \n";
 		std::cout << "Sizeof icmphdr: " << icmpheader_size << " \n";
-		std::cout << "surrent_sendbuf_len: " << TE.current_sendbuf_len << "\n";
+		std::cout << "current_sendbuf_len: " << TE.current_sendbuf_len << "\n";
 	}
 	return true;
 }
@@ -571,7 +595,7 @@ void Raw::createThreadLoopEchoRequestToDeadEnd()
 #endif//_WIN32
 }
 
-// Send EchoRequest to ip: 3.3.3.3 every 30 seconds
+// Send EchoRequest to ip: 3.3.3.3 on a threaded loop
 void Raw::loopEchoRequestToDeadEnd(void* instance)
 {
 	if (instance == NULL)
@@ -589,27 +613,27 @@ void Raw::loopEchoRequestToDeadEnd(void* instance)
 		}
 		else
 		{
-			self->errchk = self->sendTheThing(self->ER.s, self->ER.sendbuf, self->ER.current_sendbuf_len);
+			self->errchk = self->sendTheThing(self->ER.s, self->ER.sendbuf, self->ER.current_sendbuf_len, (sockaddr*)&self->DeadEndSockAddrIn, sizeof(self->DeadEndSockAddrIn));
 			if (self->errchk == false)
 			{
 				exit(0);		// hmmmmm not so sure about using exit() yet...
 			}
 		}
 
-		Sleeping.mySleep(30'000);			// milliseconds
+		Sleeping.mySleep(10'000);			// milliseconds
 	}
 	return;
 }
-
-bool Raw::sendTheThing(SOCKET fd, char buffer[], size_t buffer_length)
+ 
+bool Raw::sendTheThing(SOCKET fd, char buffer[], size_t buffer_length, const sockaddr* to, int tolen)
 {
 	errchk = sendto(
 		fd,
-		buffer,					// need flexible sendbuf
-		buffer_length,	// need flexible sendbuf len
+		buffer,
+		buffer_length,
 		0,
-		(sockaddr*)&TargetSockAddrIn,
-		sizeof(TargetSockAddrIn)
+		to,
+		tolen
 		);
 	if (errchk == SOCKET_ERROR)
 	{
@@ -659,7 +683,7 @@ void Raw::myWSACleanup()
 #endif//_WIN32
 }
 
-// errno needs to be set to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
+// Set errno to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
 void Raw::getError()
 {
 #ifdef __linux__
@@ -681,4 +705,40 @@ void Raw::getError()
 	}
 	return;
 #endif//_WIN32
+}
+
+// Pretty sure I must have made one of the slowest checksums out there. Though this program doesn't need the speed, it would be interesting to think of a better way.
+uint16_t Raw::ICMPChkSum(void *data, size_t size)
+{
+	uint16_t* datums = (uint16_t*)data;	// treat it like a 2 byte int so we can add it into sum 2 bytes at a time.
+	if (size % 2 == 1)					// checking to see if the data being passed in is an odd number. it needs to be even b/c we are treating it as a 16bit word.
+	{
+		std::cout << "Checksum error. Data passed into checksum is not an even number.\n";
+		std::cout << "Please change Checksum code to accommodate it. Returning 0.\n";
+		return 0;
+	}
+	uint32_t sum = 0;
+
+	for (u_int i = 0; i < size / 2; ++i)
+	{
+		sum += datums[i];
+		if (sum > 0xFFFF)
+		{
+			sum = sum & 0xFFFF;
+			sum += 1;	
+		}
+	}
+	return ~sum;
+
+	// RFC 792 https://tools.ietf.org/html/rfc792
+	// The 16 bit one's complement of the one's complement sum of all 16 bit words in the header.
+
+	// My comment: The way this is worded makes this a tad more confusing that it should be.
+	// What it means by one's complement is to take the 17th bit (when it exists/created), and add
+	// it back in at the least significant bit slot.
+	// The other one's complement refers to the ~ operator. Just return ~sum.
+
+	// Special note on Checksums:
+	// It appears everything in the packet needs to have a checksum done.
+	// If a single checksum is not done, then all the other checksums will be counted as incorrect, even though that isn't true.
 }

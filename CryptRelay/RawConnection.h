@@ -28,24 +28,18 @@ public:
 	~Raw();
 
 	// This function just holds a bunch of smaller functions as a way of organisation and permissions protections by putting them in private.
-	bool sendICMPTimeExceeded();
 	bool sendICMPEchoRequeest();
+	bool sendICMPTimeExceeded();
+
 
 	bool isLittleEndian();
 	//std::uint8_t setIHLAndVer(u_int ihl, u_int ver);
 	//std::uint8_t setDSCPAndECN(u_int, u_int);
 	std::uint16_t setFlagsAndFragOffset(uint16_t, uint16_t);
 	uint16_t roL(uint16_t, uint16_t);
+
 	bool initializeWinsock();
-	SOCKET createSocket(int family, int socktype, int protocol);
-	bool craftFixedICMPEchoRequestPacket(SOCKET fd);
-	bool craftICMPTimeExceededPacket(SOCKET fd);
-	bool sendTheThing(SOCKET fd, char buffer[], size_t buffer_length);
-	void setAddress(std::string target_ip, std::string target_port, std::string my_ip, std::string my_port);
-	void closeThisSocket(SOCKET fd);
-	bool shutdownConnection(SOCKET fd);
-	void myWSACleanup();
-	void getError();
+	void setAddress(std::string target_ip, std::string target_port, std::string target_local_ip, std::string my_ip, std::string my_port, std::string my_ext_ip);
 
 	void createThreadLoopEchoRequestToDeadEnd();
 	static void loopEchoRequestToDeadEnd(void* instance);
@@ -54,6 +48,15 @@ public:
 
 protected:
 private:
+	SOCKET createSocket(int family, int socktype, int protocol);
+	bool craftFixedICMPEchoRequestPacket(SOCKET fd);
+	bool craftICMPTimeExceededPacket(SOCKET fd);
+	bool sendTheThing(SOCKET fd, char buffer[], size_t buffer_length, const sockaddr* to, int tolen);
+	void closeThisSocket(SOCKET fd);
+	bool shutdownConnection(SOCKET fd);
+	void myWSACleanup();
+	void getError();
+	uint16_t ICMPChkSum(void *data, size_t size);
 
 #ifdef _WIN32
 	static HANDLE ghEvents2[1];		// static variables must be declared outside of the class constructor
@@ -83,7 +86,7 @@ private:
 		// If desired, options go here
 		// opts
 
-	}IPV4HeaderEchoRequest, IPV4HeaderTimeExceeded;
+	}IPV4HeaderEchoRequest, IPV4HeaderEchoRequestCopy, IPV4HeaderTimeExceeded;
 
 	// ICMP header information. Size is normally 8 bytes.
 	struct ICMPHeader
@@ -98,21 +101,26 @@ private:
 	struct miniICMPHeaderTimeExceeded
 	{
 		u_int original_ipheader : 20;
-		u_int original_payload : 8;			// 8 bytes of the original payload
+		u_int original_icmpheader : 8;
 	}TimeExceededAttachment;
 
 
-	sockaddr_in TargetSockAddrIn;
-	sockaddr_in *PResultSockIn;
+	sockaddr_in TargetExternalSockAddrIn;
+	//
+	sockaddr_in TargetLocalSockAddrIn;
+	sockaddr_in MyLocalSockAddrIn;
+	sockaddr_in MyExternalSockAddrIn;
+	//
+	sockaddr_in DeadEndSockAddrIn;
 
 	//SOCKET socket_ech_req;
 	//SOCKET socket_tim_exc;
 	//SOCKET created_socket;
 	
-	std::string target_ip_addr;
-	std::string target_port;
+	std::string target_local_ip_addr;
 	std::string my_host_ip_addr;
 	std::string my_host_port;
+	std::string my_external_host_ip_addr;
 	std::string package_for_payload;
 
 	int iResult;
@@ -148,8 +156,6 @@ private:
 	BufferAndPayloadInfo TE;	// Time Exceeded
 	const int ICMP_ECHO = 8;
 	const int ICMP_ECHO_CODE_ZERO = 0;	// This is ICMP_ECHO's only code option
-	const int ICMP_REPLY = 0;
-	const int ICMP_REPLY_CODE_ZERO = 0;	// This is ICMP_REPLY's only code option
 	const int ICMP_TIME_EXCEEDED = 11;
 	const int ICMP_TIME_EXCEEDED_CODE_TTL_EXPIRED_IN_TRANSIT = 0;
 };
