@@ -45,9 +45,10 @@
 //		Otherwise you might skip the 2 most important words in the gigantic document.
 
 bool Raw::stop_echo_request_loop = false;
+bool Raw::stop_time_exceeded_loop = false;
 
 #ifdef _WIN32
-HANDLE Raw::ghEvents2[1];
+HANDLE Raw::ghEvents2[2];
 #endif//_WIN32
 
 Raw::Raw()
@@ -108,9 +109,7 @@ bool Raw::sendICMPTimeExceeded()
 		craftICMPTimeExceededPacket(TE.s);
 	}
 
-	//
-
-	sendTheThing(TE.s, TE.sendbuf, TE.current_sendbuf_len, (sockaddr*)&TargetExternalSockAddrIn, sizeof(TargetExternalSockAddrIn));
+	createThreadLoopTimeExceeded();
 
 	return true;
 }
@@ -308,11 +307,6 @@ void Raw::setAddress(std::string target_ip, std::string target_port, std::string
 	MyLocalSockAddrIn.sin_addr.s_addr = inet_addr(my_ip.c_str());
 	MyLocalSockAddrIn.sin_port = htons(atoi(my_port.c_str()));
 
-	target_local_ip_addr = target_local_ip;
-
-	my_host_ip_addr = my_ip;
-	my_host_port = my_port;
-	my_external_host_ip_addr = my_ext_ip;
 
 	if (global_verbose == true)
 	{
@@ -603,28 +597,53 @@ void Raw::loopEchoRequestToDeadEnd(void* instance)
 		return;
 	}
 	Raw* self = (Raw*)instance;
-
+	int errchk = 0;
 	CrossPlatformSleep Sleeping;
+
 	while (stop_echo_request_loop == false)
 	{
-		if (stop_echo_request_loop == true)
+		errchk = self->sendTheThing(self->ER.s, self->ER.sendbuf, self->ER.current_sendbuf_len, (sockaddr*)&self->DeadEndSockAddrIn, sizeof(self->DeadEndSockAddrIn));
+		if (errchk == false)
 		{
-			return;
+			exit(0);		// hmmmmm not so sure about using exit() yet...
 		}
-		else
-		{
-			self->errchk = self->sendTheThing(self->ER.s, self->ER.sendbuf, self->ER.current_sendbuf_len, (sockaddr*)&self->DeadEndSockAddrIn, sizeof(self->DeadEndSockAddrIn));
-			if (self->errchk == false)
-			{
-				exit(0);		// hmmmmm not so sure about using exit() yet...
-			}
-		}
-
 		Sleeping.mySleep(10'000);			// milliseconds
 	}
 	return;
 }
  
+void Raw::createThreadLoopTimeExceeded()
+{
+#ifdef __linux__
+
+#endif __linux__
+#ifdef _WIN32
+	ghEvents2[1] = (HANDLE)_beginthread(loopTimeExceeded, 0, this);
+	return;
+#endif//_WIN32
+}
+void Raw::loopTimeExceeded(void* instance)
+{
+	if (instance == NULL)
+	{
+		return;
+	}
+	Raw* self = (Raw*)instance;
+	int errchk = 0;
+	CrossPlatformSleep Sleeping;
+
+	while (stop_time_exceeded_loop == false)
+	{
+		errchk = self->sendTheThing(self->TE.s, self->TE.sendbuf, self->TE.current_sendbuf_len, (sockaddr*)&self->TargetExternalSockAddrIn, sizeof(self->TargetExternalSockAddrIn));
+		if (errchk == false)
+		{
+			exit(0);
+		}
+		Sleeping.mySleep(5'000);
+	}
+	return;
+}
+
 bool Raw::sendTheThing(SOCKET fd, char buffer[], size_t buffer_length, const sockaddr* to, int tolen)
 {
 	errchk = sendto(

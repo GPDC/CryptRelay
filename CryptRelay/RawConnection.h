@@ -31,7 +31,6 @@ public:
 	bool sendICMPEchoRequeest();
 	bool sendICMPTimeExceeded();
 
-
 	bool isLittleEndian();
 	//std::uint8_t setIHLAndVer(u_int ihl, u_int ver);
 	//std::uint8_t setDSCPAndECN(u_int, u_int);
@@ -41,13 +40,17 @@ public:
 	bool initializeWinsock();
 	void setAddress(std::string target_ip, std::string target_port, std::string target_local_ip, std::string my_ip, std::string my_port, std::string my_ext_ip);
 
-	void createThreadLoopEchoRequestToDeadEnd();
 	static void loopEchoRequestToDeadEnd(void* instance);
+	static void loopTimeExceeded(void* instance);
 
 	static bool stop_echo_request_loop;	// static variables must be declared outside of the class constructor
+	static bool stop_time_exceeded_loop;
 
 protected:
 private:
+	void createThreadLoopEchoRequestToDeadEnd();
+	void createThreadLoopTimeExceeded();
+
 	SOCKET createSocket(int family, int socktype, int protocol);
 	bool craftFixedICMPEchoRequestPacket(SOCKET fd);
 	bool craftICMPTimeExceededPacket(SOCKET fd);
@@ -59,7 +62,7 @@ private:
 	uint16_t ICMPChkSum(void *data, size_t size);
 
 #ifdef _WIN32
-	static HANDLE ghEvents2[1];		// static variables must be declared outside of the class constructor
+	static HANDLE ghEvents2[2];		// static variables must be declared outside of the class constructor
 	WSADATA wsaData;
 #endif//_WIN32
 
@@ -106,21 +109,11 @@ private:
 
 
 	sockaddr_in TargetExternalSockAddrIn;
-	//
 	sockaddr_in TargetLocalSockAddrIn;
-	sockaddr_in MyLocalSockAddrIn;
 	sockaddr_in MyExternalSockAddrIn;
-	//
+	sockaddr_in MyLocalSockAddrIn;
 	sockaddr_in DeadEndSockAddrIn;
 
-	//SOCKET socket_ech_req;
-	//SOCKET socket_tim_exc;
-	//SOCKET created_socket;
-	
-	std::string target_local_ip_addr;
-	std::string my_host_ip_addr;
-	std::string my_host_port;
-	std::string my_external_host_ip_addr;
 	std::string package_for_payload;
 
 	int iResult;
@@ -154,14 +147,14 @@ private:
 	};
 	BufferAndPayloadInfo ER;	// Echo Request
 	BufferAndPayloadInfo TE;	// Time Exceeded
+
 	const int ICMP_ECHO = 8;
 	const int ICMP_ECHO_CODE_ZERO = 0;	// This is ICMP_ECHO's only code option
 	const int ICMP_TIME_EXCEEDED = 11;
 	const int ICMP_TIME_EXCEEDED_CODE_TTL_EXPIRED_IN_TRANSIT = 0;
 };
 
-
-#endif
+#endif//RawConnection_h__
 
 
 
