@@ -119,18 +119,6 @@ private:
 	int errchk;
 
 	// If  IP + ICMP Headers == 28 bytes, that leaves 65,507 bytes left for the ICMP data.
-	/*
-	char payload[payload_max_length] = {};
-
-	
-	char sendbuf[sendbuf_max_length] = {};
-	char sendbuf_time_exceeded[sendbuf_max_length] = {};
-
-	size_t current_sendbuf_len;
-	size_t current_sendbuf_time_exceeded_len;
-	size_t package_for_payload_size;
-	*/
-
 	static const int payload_max_length = 50;
 	static const int sendbuf_max_length = 400;
 

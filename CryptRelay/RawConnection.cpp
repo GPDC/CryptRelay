@@ -1,4 +1,4 @@
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS	// TEMPORARY, inet_addr();
 // RawConnection.cpp
 #ifdef __linux__
 #include <iostream>
@@ -83,17 +83,17 @@ bool Raw::sendICMPEchoRequeest()
 {
 	// Create a socket; if successful, craft a packet
 	ER.s = createSocket(AF_INET, SOCK_RAW, IPPROTO_RAW);
-	if (ER.s == false)
-	{
-		return false;
-	}
-	else
+	if (ER.s == true)
 	{
 		if (craftFixedICMPEchoRequestPacket(ER.s) == false)
 			return false;
 	}
+	else
+	{
+		return false;
+	}
 
-	// Threaded 30 sec loop sending Echo Requests
+	// Threaded loop sending Echo Requests
 	createThreadLoopEchoRequestToDeadEnd();
 
 	return true;
@@ -309,6 +309,11 @@ void Raw::setAddress(std::string target_ip, std::string target_port, std::string
 	MyLocalSockAddrIn.sin_addr.s_addr = inet_addr(my_ip.c_str());
 	MyLocalSockAddrIn.sin_port = htons(atoi(my_port.c_str()));
 
+	std::string dead_end_ip_addr = "3.3.3.3";
+	DeadEndSockAddrIn.sin_family = AF_INET;
+	DeadEndSockAddrIn.sin_addr.s_addr = inet_addr(dead_end_ip_addr.c_str());
+	DeadEndSockAddrIn.sin_port = TargetExternalSockAddrIn.sin_port;
+
 
 	if (global_verbose == true)
 	{
@@ -318,14 +323,14 @@ void Raw::setAddress(std::string target_ip, std::string target_port, std::string
 	return;
 }
 
-SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optional return value.
+SOCKET Raw::createSocket(int family, int socktype, int protocol)
 {
 	SOCKET created_socket = INVALID_SOCKET;
 	if (global_verbose == true)
 	{
 		std::cout << "Creating RAW Socket...\n";
 	}
-	// Create a SOCKET handle for connecting to server(no ip address here, that is with bind)
+	// Create a SOCKET handle for connecting
 	created_socket = socket(family, socktype, protocol);			// Must be admin / root / SUID 0  in order to open a RAW socket
 	if (created_socket == INVALID_SOCKET)
 	{
@@ -340,13 +345,13 @@ SOCKET Raw::createSocket(int family, int socktype, int protocol)	// Purely optio
 
 
 
-// This echo request is going to a dead end IP address at 3.3.3.3
+// This echo request is going to an IP address at 3.3.3.3. It won't reply.	// It does belong to a large company though, so not ideal.
 bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 {
 	const char on = 1;
 	int on_len = sizeof(int);
 
-	// Tell kernel that we are doing our own IP structures
+	// Tell kernel that we are doing our own IP structures (reminder: socket == fd == file descriptor)
 	errchk = setsockopt(fd, IPPROTO_IP, IP_HDRINCL, (char*)&on, on_len);
 	if (errchk == SOCKET_ERROR)
 	{
@@ -360,26 +365,21 @@ bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 	size_t ipv4header_size = sizeof(IPV4HeaderEchoRequest);
 	size_t icmpheader_size = sizeof(ICMPHeaderEchoRequest);
 	
-	std::string dead_end_ip_addr = "3.3.3.3";
-	DeadEndSockAddrIn.sin_family = AF_INET;
-	DeadEndSockAddrIn.sin_addr.s_addr = inet_addr(dead_end_ip_addr.c_str());
-	DeadEndSockAddrIn.sin_port = TargetExternalSockAddrIn.sin_port;
-
 	// ipv4 Header																// https://en.wikipedia.org/wiki/IPv4
 	IPV4HeaderEchoRequest.ihl = sizeof(IPV4HeaderEchoRequest) >> 2;				// ihl min value == 5, max == 15; sizeof(IPV4HeaderEchoRequest) >> 2 is just dividing it by 4;
 	IPV4HeaderEchoRequest.ver = 4;												// 4 == ipv4, 6 == ipv6
 	IPV4HeaderEchoRequest.dscp = 0;
 	IPV4HeaderEchoRequest.ecn = 0;
 	IPV4HeaderEchoRequest.total_len = (uint16_t)(ipv4header_size + icmpheader_size /* + payload_max_length*/);
-	IPV4HeaderEchoRequest.id = htons(256);										//?
+	IPV4HeaderEchoRequest.id = htons(256);
 	IPV4HeaderEchoRequest.flags = 0;
 	IPV4HeaderEchoRequest.frag_offset = htons(0);
 	IPV4HeaderEchoRequest.ttl = 64;
 	IPV4HeaderEchoRequest.protocol = 1;											// 1 == ICMP
 	IPV4HeaderEchoRequest.chksum = 0;
-	IPV4HeaderEchoRequest.src_ip.s_addr = MyLocalSockAddrIn.sin_addr.s_addr;	//inet_addr("local ip")
-	IPV4HeaderEchoRequest.dst_ip.s_addr = DeadEndSockAddrIn.sin_addr.s_addr;	//inet_addr("3.3.3.3");
-	IPV4HeaderEchoRequest.chksum = ICMPChkSum(&IPV4HeaderEchoRequest, ipv4header_size);
+	IPV4HeaderEchoRequest.src_ip.s_addr = MyLocalSockAddrIn.sin_addr.s_addr;
+	IPV4HeaderEchoRequest.dst_ip.s_addr = DeadEndSockAddrIn.sin_addr.s_addr;
+	IPV4HeaderEchoRequest.chksum = ICMPChkSum(&IPV4HeaderEchoRequest, ipv4header_size);	// Checksums must be done after everything else is set, and chksum field is set to 0.
 
 	// ICMP header																//https://en.wikipedia.org/wiki/Internet_Control_Message_Protocol
 	ICMPHeaderEchoRequest.type = ICMP_ECHO;
@@ -389,17 +389,18 @@ bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 	ICMPHeaderEchoRequest.seq = 0;
 	ICMPHeaderEchoRequest.checksum = ICMPChkSum(&ICMPHeaderEchoRequest, icmpheader_size);
 
+	// Put stuff in the package in order to have the package placed inside the payload truck.
 	package_for_payload = "";
 	ER.package_for_payload_size = strlen(package_for_payload.c_str());
-
-	// Need size checking in here for payload !!~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 	// Putting stuff in the payload
 	if ((ER.package_for_payload_size <= payload_max_length) && ER.package_for_payload_size > 0)
 	{
 		memcpy(ER.payload, package_for_payload.c_str(), ER.package_for_payload_size);
 	}
+
 	// Copying IPV4HeaderEchoRequest into the sendbuffer starting at the address of sendbuf (that is sendbuf[0])
+	if (ipv4header_size <= (sendbuf_max_length - ipv4header_size))
 	memcpy_s(
 		ER.sendbuf, sendbuf_max_length,
 		&IPV4HeaderEchoRequest,
@@ -408,28 +409,38 @@ bool Raw::craftFixedICMPEchoRequestPacket(SOCKET fd)
 	ER.current_sendbuf_len = ipv4header_size;
 
 	// Copying the ICMPHeaderEchoRequest into the sendbuffer starting at sendbuf[ER.current_sendbuf_len]
-	memcpy_s(
-		ER.sendbuf + ER.current_sendbuf_len,
-		sendbuf_max_length - ER.current_sendbuf_len,
-		&ICMPHeaderEchoRequest,
-		icmpheader_size
-		);
-	ER.current_sendbuf_len += icmpheader_size;
-
-	// Copying payload into the sendbuffer
-	/*if (ER.package_for_payload_size > 0)
+	if (icmpheader_size <= (sendbuf_max_length - icmpheader_size - ER.current_sendbuf_len))
 	{
 		memcpy_s(
 			ER.sendbuf + ER.current_sendbuf_len,
 			sendbuf_max_length - ER.current_sendbuf_len,
-			ER.payload,
-			ER.package_for_payload_size
+			&ICMPHeaderEchoRequest,
+			icmpheader_size
 			);
-		ER.current_sendbuf_len += ER.package_for_payload_size;
-	}*/
+		ER.current_sendbuf_len += icmpheader_size;
+	}
+
+	// Copying payload into the sendbuffer, as long as there is something in it, and it isn't too big
+	if (ER.package_for_payload_size > 0)
+	{
+		if (ER.package_for_payload_size <= (payload_max_length - ER.package_for_payload_size - ER.current_sendbuf_len))
+		{
+			memcpy_s(
+				ER.sendbuf + ER.current_sendbuf_len,
+				sendbuf_max_length - ER.current_sendbuf_len,
+				ER.payload,
+				ER.package_for_payload_size
+				);
+			ER.current_sendbuf_len += ER.package_for_payload_size;
+		}
+		else
+		{
+			std::cout << "ERROR: package is too big for payload.\n";
+			return false;
+		}
+	}
 	
-
-
+	
 	// Output buffer to screen in hex
 	if (global_verbose == true)
 	{
@@ -479,7 +490,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 
 	// Copying the IPV4 Echo Request Header so we can change a some variables
 	IPV4HeaderEchoRequestCopy = IPV4HeaderEchoRequest;											// sidenote, extra steps need to be taken if there is a pointer in the class/struct (there isn't though, atleast in this one!)
-	IPV4HeaderEchoRequestCopy.src_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;			// This needs to be the target's external ip
+	IPV4HeaderEchoRequestCopy.src_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;			// This needs to be the target's external ip?
 	IPV4HeaderEchoRequestCopy.ttl = 1;															// This is what would normally be the value if the time exceeded.
 	IPV4HeaderEchoRequestCopy.total_len = htons(IPV4HeaderEchoRequestCopy.total_len);			//????? because the kernel did the htons() for me on the original ipv4 packet? whats going on?
 	IPV4HeaderEchoRequestCopy.chksum = 0;														// Must set it to 0 before calculating the checksum
@@ -543,6 +554,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 		);
 	TE.current_sendbuf_len += icmpheader_size;
 	
+	// commented out as i'm currently not sending payloads
 	//// Copying original payload into the sendbuffer
 	//memcpy_s(
 	//	TE.sendbuf + TE.current_sendbuf_len,

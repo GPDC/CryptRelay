@@ -1,6 +1,6 @@
 //TCPConnection.cpp
 //could i use vectors instead of char arrays for messages?
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _WINSOCK_DEPRECATED_NO_WARNINGS	// TEMPORARY, inet_addr();
 #undef UNICODE
 #ifdef __linux__
 #include <iostream>
@@ -82,7 +82,7 @@ char TCPConnection::recvbuf[DEFAULT_BUFLEN];
 int TCPConnection::globalWinner = NOBODY_WON;
 SOCKET TCPConnection::globalSocket = INVALID_SOCKET;
 
-char globalvalue = 9;
+//char globalvalue = 9;
 
 #ifdef __linux__
 int TCPConnection::ret1 = 0;//server race thread
