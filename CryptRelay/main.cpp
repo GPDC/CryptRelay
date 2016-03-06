@@ -74,8 +74,7 @@ int main(int argc, char *argv[])
 
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
-
-
+	
 	Raw RawBetterNamePls;
 	// Initialize Winsock for everything in the Raw class
 	if (RawBetterNamePls.initializeWinsock() == false)
@@ -88,19 +87,14 @@ int main(int argc, char *argv[])
 		CLI.my_ip_address,
 		CLI.my_host_port,
 		CLI.my_ext_ip_address
-		);
+	);
 
 	// SERVER: Start Threaded ICMP Echo Request
 	if (RawBetterNamePls.sendICMPEchoRequeest() == false)	// to stop this thread, set RawBetterNamePls.stop_echo_request_loop = true;
 		return 0;
-	// CLIENT: Start ICMP Time Exceeded
+	// CLIENT: Start Threaded ICMP Time Exceeded
 	if (RawBetterNamePls.sendICMPTimeExceeded() == false)
 		return 0;
-
-	// rcvfrom();
-	// if received packet, try to initiate TCP connection.
-	// if TCP connection successful, shutdown all threads related to ICMP.
-
 
 	std::cout << "PAUSE...";
 	std::string pause = "";
@@ -134,7 +128,7 @@ int main(int argc, char *argv[])
 	}
 */
 
-	//Server startup sequence
+	// Server startup sequence
 	TCPConnection serverObj;
 	if (global_verbose == true)
 		std::cout << "SERVER::";
@@ -143,7 +137,7 @@ int main(int argc, char *argv[])
 		return 1;
 	serverObj.ServerSetHints();
 
-	//Client startup sequence
+	// Client startup sequence
 	TCPConnection clientObj;
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
@@ -152,11 +146,11 @@ int main(int argc, char *argv[])
 		return 1;
 	clientObj.ClientSetHints();
 
-	//BEGIN THREAD RACE
+	// BEGIN THREAD RACE
 	serverObj.createServerRaceThread(&serverObj);			//<-----------------
 	clientObj.createClientRaceThread(&clientObj);			//<----------------
 
-	//Wait for 1 thread to finish
+	// Wait for 1 thread to finish
 #ifdef __linux__
 	pthread_join(TCPConnection::thread1, NULL);
 	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
@@ -169,7 +163,7 @@ int main(int argc, char *argv[])
 		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
 #endif//_WIN32
 
-	//Display the winning thread
+	// Display the winning thread
 	if (global_verbose == true)
 	{
 		if (TCPConnection::globalWinner == -8)
@@ -187,9 +181,9 @@ int main(int argc, char *argv[])
 		return 1;
 	}
 
-	//Continue running the program for the thread that returned and won.
+	// Continue running the program for the thread that returned and won.
 	while (who_won == TCPConnection::CLIENT_WON || who_won == TCPConnection::SERVER_WON){
-		//if server won, then act as a server.
+		// If server won, then act as a server.
 		if (who_won == TCPConnection::SERVER_WON)
 		{ 
 			std::cout << "Connection established as the server.\n";
@@ -203,7 +197,7 @@ int main(int argc, char *argv[])
 				return 1;
 			break;
 		}
-		//If client won, then act as a client
+		// If client won, then act as a client
 		else if (who_won == TCPConnection::CLIENT_WON)
 		{
 			std::cout << "Connection established as the client.\n";
@@ -211,12 +205,12 @@ int main(int argc, char *argv[])
 			if (clientObj.receiveUntilShutdown() == false)
 				return 1;
 
-			//shutdown
+			// Shutdown
 			if (clientObj.shutdownConnection() == false)
 				return 1;
 			break;
 		}
-		//If nobody won, quit
+		// If nobody won, quit
 		else if (who_won == TCPConnection::NOBODY_WON) 
 		{
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
@@ -238,12 +232,12 @@ int main(int argc, char *argv[])
 
 	/*
 
-	//wait until all threads are finished
+	// Wait until all threads are finished
 	WaitForMultipleObjects(
-		1,			//number of objects in array
-		ghEvents,	//array of objects
-		TRUE,		//wait for all objects
-		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+		1,			// Number of objects in array
+		ghEvents,	// Array of objects
+		TRUE,		// Wait for all objects
+		INFINITE);	// Its going to wait this long, OR until all threads are finished, in order to continue.
 
 	*/
 

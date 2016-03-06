@@ -21,7 +21,6 @@
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
-#include "CommandLineInput.h"
 #include "CrossPlatformSleep.h"
 #include "RawConnection.h"
 #endif//__linux__
@@ -36,7 +35,6 @@
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
-#include "CommandLineInput.h"
 #include "CrossPlatformSleep.h"
 #include "RawConnection.h"
 #endif//_WIN32
@@ -65,6 +63,10 @@ Raw::Raw()
 	memset(&ICMPHeaderTimeExceeded, 0, sizeof(ICMPHeaderTimeExceeded));
 	// sockaddr_in
 	memset(&TargetExternalSockAddrIn, 0, sizeof(TargetExternalSockAddrIn));
+	memset(&TargetLocalSockAddrIn, 0, sizeof(TargetLocalSockAddrIn));
+	memset(&MyExternalSockAddrIn, 0, sizeof(MyExternalSockAddrIn));
+	memset(&MyLocalSockAddrIn, 0, sizeof(MyLocalSockAddrIn));
+	memset(&DeadEndSockAddrIn, 0, sizeof(DeadEndSockAddrIn));
 	// BufferAndPayloadInfo
 	memset(&ER, 0, sizeof(ER));
 	memset(&TE, 0, sizeof(TE));
@@ -477,7 +479,7 @@ bool Raw::craftICMPTimeExceededPacket(SOCKET fd)
 
 	// Copying the IPV4 Echo Request Header so we can change a some variables
 	IPV4HeaderEchoRequestCopy = IPV4HeaderEchoRequest;											// sidenote, extra steps need to be taken if there is a pointer in the class/struct (there isn't though, atleast in this one!)
-	IPV4HeaderEchoRequestCopy.src_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;			//inet_addr("external ip");
+	IPV4HeaderEchoRequestCopy.src_ip.s_addr = TargetExternalSockAddrIn.sin_addr.s_addr;			// This needs to be the target's external ip
 	IPV4HeaderEchoRequestCopy.ttl = 1;															// This is what would normally be the value if the time exceeded.
 	IPV4HeaderEchoRequestCopy.total_len = htons(IPV4HeaderEchoRequestCopy.total_len);			//????? because the kernel did the htons() for me on the original ipv4 packet? whats going on?
 	IPV4HeaderEchoRequestCopy.chksum = 0;														// Must set it to 0 before calculating the checksum
@@ -622,6 +624,8 @@ void Raw::createThreadLoopTimeExceeded()
 	return;
 #endif//_WIN32
 }
+
+// Send a looped ICMP Time Exceeded packet to the target
 void Raw::loopTimeExceeded(void* instance)
 {
 	if (instance == NULL)
@@ -639,7 +643,7 @@ void Raw::loopTimeExceeded(void* instance)
 		{
 			exit(0);
 		}
-		Sleeping.mySleep(5'000);
+		Sleeping.mySleep(5'000);	// Milliseconds
 	}
 	return;
 }

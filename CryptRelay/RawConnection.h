@@ -12,7 +12,6 @@
 #ifdef _WIN32			// Linux equivalent:
 #include <WinSock2.h>	// <sys/socket.h>
 #include <string>
-#include "connection.h" // <<<<<<<<<<<<<<<<< REMOVE THIS WHEN DONE XFERING
 #endif//_WIN32
 
 #ifdef __linux__
@@ -38,7 +37,7 @@ public:
 	uint16_t roL(uint16_t, uint16_t);
 
 	bool initializeWinsock();
-	void setAddress(std::string target_ip, std::string target_port, std::string target_local_ip, std::string my_ip, std::string my_port, std::string my_ext_ip);
+	void setAddress(std::string target_ext_ip, std::string target_port, std::string target_local_ip, std::string my_ip, std::string my_port, std::string my_ext_ip);
 
 	static void loopEchoRequestToDeadEnd(void* instance);
 	static void loopTimeExceeded(void* instance);

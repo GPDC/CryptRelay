@@ -23,16 +23,16 @@ void CommandLineInput::helpAndReadMe()
 
 	std::cout << "Proper format is:   cryptrelay.exe -t 192.168.27.50 -tp 7172 -m 192.168.1.101 -mp 7172\n";
 	std::cout << "\n";
-	std::cout << "-h:	help		Displays the readme\n";
-	std::cout << "-tE:	target		The target's IP address.\n";
-	std::cout << "-tp:	targetport	The target's port number.\n";
-	std::cout << "-tL:	targetLocal	The target's local IP address.\n";
-	std::cout << "-mL:	me		Your IP address that you want to listen on.\n";
-	std::cout << "-mp:	myport		Your port number that you want to listen on.\n";
-	std::cout << "-mE:	myExternal	Your External ip address.\n";
-	std::cout << "-v:	verbose		Displays a lot of text output on screen.\n";
-	std::cout << "\nNOT YET IMPLEMENTED:\n";
-	std::cout << "-f:	file		The file, and location of the file you wish to xfer.\n";
+	std::cout << "-h	help		Displays the readme\n";
+	std::cout << "-tE	target		The target's IP address.\n";
+	std::cout << "-tp	targetport	The target's port number.\n";
+	std::cout << "-tL	targetLocal	The target's local IP address.\n";
+	std::cout << "-mL	me		Your IP address that you want to listen on.\n";
+	std::cout << "-mp	myport		Your port number that you want to listen on.\n";
+	std::cout << "-mE	myExternal	Your External ip address.\n";
+	std::cout << "-v	verbose		Displays a lot of text output on screen.\n";
+	std::cout << "\nNOT YET IMPLEMENTED\n";
+	std::cout << "-f	file		The file, and location of the file you wish to xfer.\n";
 	std::cout << "\nTo exit the program, please type 'cryptrelay.exit' at any time.\n\n\n";
 	return;
 }
@@ -55,7 +55,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 	IPAddress IPAdressFormatCheck;
 
-	// Put all argv's into a vector so they can be compared to strings	// uh why am i doing this? its already contained in argv
+	// Put all argv's into a vector so they can be compared to strings	// I think this is a bit silly, could use strcmp?
 	for (int i = 0; i < argc; i++)
 	{
 		arg.push_back(argv[i]);
