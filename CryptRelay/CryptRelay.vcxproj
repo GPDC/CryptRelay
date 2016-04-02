@@ -71,12 +71,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
+    <IncludePath>$(IncludePath)</IncludePath>
+    <LibraryPath>$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
+    <IncludePath>$(ProjectDir)\..\pjproject-2.4.5\pjsip\include;$(ProjectDir)\..\pjproject-2.4.5.\pjlib\include;$(ProjectDir)\..\pjproject-2.4.5.\pjlib-util\include;$(ProjectDir)\..\pjproject-2.4.5.\pjmedia\include;$(ProjectDir)\..\pjproject-2.4.5.\pjnath\include;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\..\pjproject-2.4.5\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
@@ -94,6 +98,7 @@
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
+      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -118,7 +123,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PJ_WIN32=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -153,7 +158,7 @@
     <ClCompile Include="CrossPlatformSleep.cpp" />
     <ClCompile Include="FormatCheck.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="RawConnection.cpp" />
+    <ClCompile Include="UPnP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandLineInput.h" />
@@ -161,7 +166,7 @@
     <ClInclude Include="CrossPlatformSleep.h" />
     <ClInclude Include="GlobalTypeHeader.h" />
     <ClInclude Include="FormatCheck.h" />
-    <ClInclude Include="RawConnection.h" />
+    <ClInclude Include="UPnP.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

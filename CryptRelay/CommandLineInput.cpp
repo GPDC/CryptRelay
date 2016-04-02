@@ -21,7 +21,7 @@ CommandLineInput::~CommandLineInput()
 void CommandLineInput::helpAndReadMe()
 {
 
-	std::cout << "Proper format is:   cryptrelay.exe -t 192.168.27.50 -tp 7172 -m 192.168.1.101 -mp 7172\n";
+	std::cout << "Proper format is:   cryptrelay.exe -tE 1.2.3.4 -tp 7172 -mL 192.168.1.101 -mp 7172\n";
 	std::cout << "\n";
 	std::cout << "-h	help		Displays the readme\n";
 	std::cout << "-tE	target		The target's IP address.\n";

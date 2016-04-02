@@ -32,6 +32,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cerrno>
+//#include <libupnp>	// Window's <UPnP.h>
 
 #include <arpa/inet.h>
 #include <signal.h>
@@ -41,7 +42,7 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "RawConnection.h"
+#include "UPnP.h
 #endif//__linux__
 
 #ifdef _WIN32
@@ -49,13 +50,14 @@
 #include <string>
 #include <vector>
 #include <WS2tcpip.h>
+#include <UPnP.h>		// linux's libupnp??
 
 #include <process.h>	//<pthread.h>
 
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "RawConnection.h"
+#include "UPnP.h"
 #endif//_WIN32
 
 
@@ -71,62 +73,48 @@ int main(int argc, char *argv[])
 		return 0;
 
 	//===================================== Starting Chat Program =====================================
-
-	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
-
 	
-	Raw RawBetterNamePls;
-	// Initialize Winsock for everything in the Raw class
-	if (RawBetterNamePls.initializeWinsock() == false)
-		return 0;
-	// Set address information for the Raw class
-	RawBetterNamePls.setAddress(
-		CLI.target_extrnl_ip_address,
-		CLI.target_port,
-		CLI.target_local_ip,
-		CLI.my_ip_address,
-		CLI.my_host_port,
-		CLI.my_ext_ip_address
-	);
-
-	// SERVER: Start Threaded ICMP Echo Request
-	if (RawBetterNamePls.sendICMPEchoRequeest() == false)	// to stop this thread, set RawBetterNamePls.stop_echo_request_loop = true;
-		return 0;
-	// CLIENT: Start Threaded ICMP Time Exceeded
-	if (RawBetterNamePls.sendICMPTimeExceeded() == false)
-		return 0;
+	UPnP UPnP_obj;
+	UPnP_obj.startUPnP();
 
 	std::cout << "PAUSE...";
 	std::string pause = "";
 	std::getline(std::cin, pause);
 
-/*
-	if (no_3rd_party == true) {
-		// Initiate the stupid idea (i think it will work though) of spamming ports with UDP to attempt a connection, lol.
-		// Unforeseen consequences may occur if sending lots of packets to a router / ports that might have a program on it that doesn't
-		// handle random packets very well? IDK.
-		// This seems to be the only way to do it w/o admin/root privileges on windows. the ICMP request & time exceeded method is
-		// much cleaner, but again, requires admin priv.
+	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
-		TCPConnection UDPSpamObj;
-		//todo: put all send actions in a thread
-		UDPSpamObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
-		UDPSpamObj.initializeWinsock();
-		UDPSpamObj.UDPSpamCreateSocket();
-		UDPSpamObj.UDPSpamPortsWithSendTo();
-		//todo: receive UDP messages at the same time here in the main thread.
+	// Client
+	TCPConnection ClientLoopAttack;
+	ClientLoopAttack.giveIPandPort(
+		CLI.target_extrnl_ip_address,
+		CLI.target_local_ip,
+		CLI.target_port,
+		CLI.my_ext_ip_address,
+		CLI.my_ip_address,
+		CLI.my_host_port
+	);
+	ClientLoopAttack.threadEntranceClientLoopAttack(&ClientLoopAttack);
 
-		// this requires the person you are trying to connect to to be doing the same thing you are doing here ^
+	// Server
+	TCPConnection ServerListen;
+	ServerListen.giveIPandPort(
+		CLI.target_extrnl_ip_address,
+		CLI.target_local_ip,
+		CLI.target_port,
+		CLI.my_ext_ip_address,
+		CLI.my_ip_address,
+		CLI.my_host_port
+		);
+	//ServerListen.threadEntranceServer(&ServerListen);
 
-		// ROUGH OUTLINE:
-		// the idea is to have person A randomly discover the external port of person B.
-		// and since B will be sending out messages, as well as trying to listen on a port for messages, it should
-		// be able to see/accept the incoming UDP msg that luckily got into the correct external port.
-		// now quickly do:
-		// 1. send 1 udp msg back to the address to stop A's UDP listening and make it drop into a TCP accept()
-		// 2. attempt a TCP connection with A using the external IP and port info that was gathered from the UDP msg.
-	}
-*/
+	std::cout << "PAUSE...";
+	pause = "";
+	std::getline(std::cin, pause);
+
+	// accept incoming connection
+	// get ip address of the accepted connection
+	// if it isn't the one you were expecting, close the connection and listen for connections again
+	// else continue on as normal, starting the chat system or w/e is desired
 
 	// Server startup sequence
 	TCPConnection serverObj;
@@ -164,17 +152,17 @@ int main(int argc, char *argv[])
 #endif//_WIN32
 
 	// Display the winning thread
+	int who_won = TCPConnection::global_winner;
 	if (global_verbose == true)
 	{
-		if (TCPConnection::globalWinner == -8)
+		if (who_won == TCPConnection::CLIENT_WON)
 			std::cout << "MAIN && Client thread is the winner!\n";
-		else if (TCPConnection::globalWinner == -7)
+		else if (who_won == TCPConnection::SERVER_WON)
 			std::cout << "MAIN && Server thread is the winner!\n";
 		else
 			std::cout << "MAIN && There is no winner.\n";
 	}
-
-	int who_won = TCPConnection::globalWinner;
+	
 	if (who_won == TCPConnection::NOBODY_WON) 
 	{
 		std::cout << "Error: Unexpected race result. Exiting\n";
@@ -187,13 +175,13 @@ int main(int argc, char *argv[])
 		if (who_won == TCPConnection::SERVER_WON)
 		{ 
 			std::cout << "Connection established as the server.\n";
-			serverObj.closeTheListeningSocket();	// No longer need listening socket since I only want to connect to 1 person at a time.
+			serverObj.closeThisSocket(serverObj.ListenSocket);	// No longer need listening socket since I only want to connect to 1 person at a time.
 			serverObj.serverCreateSendThread(&serverObj);
 			if (serverObj.receiveUntilShutdown() == false)
 				return 1;
 
 			//shutdown
-			if (serverObj.shutdownConnection() == false)
+			if (serverObj.shutdownConnection(serverObj.globalSocket) == false)
 				return 1;
 			break;
 		}
@@ -206,7 +194,7 @@ int main(int argc, char *argv[])
 				return 1;
 
 			// Shutdown
-			if (clientObj.shutdownConnection() == false)
+			if (clientObj.shutdownConnection(clientObj.globalSocket) == false)
 				return 1;
 			break;
 		}
@@ -215,15 +203,15 @@ int main(int argc, char *argv[])
 		{
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
 			std::cout << "ERROR: Shutting down.\n";
-			clientObj.myWSACleanup();
-			serverObj.myWSACleanup();
+			//clientObj.myWSACleanup();
+			//serverObj.myWSACleanup();
 			return 1;
 		}
 		else 
 		{
 			std::cout << "ERROR: Shutting down. The impossible is possible.\n";
-			clientObj.myWSACleanup();
-			serverObj.myWSACleanup();
+			//clientObj.myWSACleanup();
+			//serverObj.myWSACleanup();
 			return 1;
 		}
 	}
@@ -298,3 +286,11 @@ Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks b
 +++++++++++++++++++++++++++++++++++ End Formatting Guide +++++++++++++++++++++++++++++++++++
 
 */
+
+
+
+
+
+
+// Imporant note on building PJNATH library:
+// must limit parallel project builds to 1 at a time. More than this can cause it to fail in odd ways. (rly odd)
