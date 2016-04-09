@@ -1,11 +1,11 @@
-// UPnP.h
+// DEPRECATED_UPnP.cpp
 
 // See header file for information about UPnP.cpp
 
 #include <string>
 #include <iostream>
 
-#include "UPnP.h"
+#include "DEPRECATED_UPnP.h"
 #include "SocketClass.h"	// Currently retrieving all necessary includes for dealing with sockets from this.
 
 #define SUCCESS 1
@@ -27,20 +27,6 @@ UPnP::~UPnP()
 
 int UPnP::upnpStart()
 {
-	// ******* Find out who the router is via ssdp *******
-
-	// https://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol
-	// UPnP multicast address is: 239.255.255.250 and port 1900
-	// MX: max time in seconds to wait for response
-	// ST: Search Target. URN value of service to search
-	// Man: not sure what it stands for?
-	// USER-AGENT: optional for UPnP. OS/versionUDAP/2.0product/version
-	// Yes, \r\n needs to be put at the end. I believe the reason for this is
-	//	if you don't want to include USER-AGENT (it is optional with UPnP)
-	//	then the \r\n that would follow it is still necessary. Just a guess.
-
-
-
 	// Must start WSA if you want to do anything with sockets on Windows.
 	if (SockObj.myWSAStartup() == false)
 		return 0;
@@ -59,6 +45,15 @@ int UPnP::upnpStart()
 
 int UPnP::discoverInternetGatewayDevice()
 {
+	// https://en.wikipedia.org/wiki/Internet_Gateway_Device_Protocol
+	// UPnP multicast address is: 239.255.255.250 and port 1900
+	// MX: max time in seconds to wait for response
+	// ST: Search Target. URN value of service to search
+	// Man: not sure what it stands for?
+	// USER-AGENT: optional for UPnP. OS/versionUDAP/2.0product/version
+	// Yes, \r\n needs to be put at the end. I believe the reason for this is
+	//	if you don't want to include USER-AGENT (it is optional with UPnP)
+	//	then the \r\n that would follow it is still necessary. Just a guess.
 	const char* broadcast_discover_msg = "M-SEARCH * HTTP/1.1\r\nHost:239.255.255.250:1900\r\nST:urn:schemas-upnp-org:device:InternetGatewayDevice:1\r\nMan:\"ssdp:discover\"\r\nMX:3\r\n\r\n";
 	int broadcast_discover_msg_len = strlen(broadcast_discover_msg);
 

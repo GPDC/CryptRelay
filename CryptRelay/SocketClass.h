@@ -54,11 +54,13 @@ public:
 	bool myShutdown(SOCKET fd, int operation);
 	bool myListen(SOCKET fd);
 	bool myGetAddrInfo(std::string target_ip, std::string target_port, const ADDRINFOA *phints, PADDRINFOA *ppresult);
+
 	int myinet_pton(int family, PCSTR ip_addr, PVOID paddr_buf);
 	int mySend(SOCKET s, const char* buffer, int buffer_length, int flags);
 	int mySendTo(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
 	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
 	int	myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, int *from_len);
+
 	void myCloseSocket(SOCKET fd);
 	void myWSACleanup();
 	void myFreeAddrInfo(PADDRINFOA pAddrInfo);

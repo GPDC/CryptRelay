@@ -158,9 +158,8 @@
     <ClCompile Include="CrossPlatformSleep.cpp" />
     <ClCompile Include="FormatCheck.cpp" />
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="oldupnp.cpp" />
     <ClCompile Include="SocketClass.cpp" />
-    <ClCompile Include="UPnP.cpp" />
+    <ClCompile Include="DEPRECATED_UPnP.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CommandLineInput.h" />
@@ -168,9 +167,8 @@
     <ClInclude Include="CrossPlatformSleep.h" />
     <ClInclude Include="GlobalTypeHeader.h" />
     <ClInclude Include="FormatCheck.h" />
-    <ClInclude Include="oldupnp.h" />
     <ClInclude Include="SocketClass.h" />
-    <ClInclude Include="UPnP.h" />
+    <ClInclude Include="DEPRECATED_UPnP.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

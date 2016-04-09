@@ -1,4 +1,4 @@
-//UPnP.h
+// DEPRECATED_UPnP.h
 
 // Overview:
 // Implements UPnP.
@@ -20,8 +20,8 @@
 #include "SocketClass.h"
 
 
-#ifndef UPnP_h__
-#define UPnP_h__
+#ifndef DEPRECATED_UPnP_h__
+#define DEPRECATED_UPnP_h__
 
 class UPnP
 {
