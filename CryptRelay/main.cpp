@@ -57,7 +57,7 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "UPnP.h"
+#include "DEPRECATED_UPnP.h"
 #include "SocketClass.h"
 #endif//_WIN32
 

@@ -1,6 +1,19 @@
 // DEPRECATED_UPnP.cpp
+// Explanation: after looking at the documentation for UPnP there seems to be a lot of things
+//  to do and a lot of different circumstances that need handling so I think using a library
+//  would be such an immense time saver that it outweighs any learning benefit of UPnP.
+// Besides, creating my own implementation of UPnP isn't going to teach me anything useful
+//  other than just general programming stuff, since making your own UPnP implementation
+//  isn't exactly a thing people do all the time(from what I have gathered!).
 
 // See header file for information about UPnP.cpp
+
+// http://upnp.org/specs/arch/UPnP-arch-DeviceArchitecture-v1.1.pdf
+// Steps:
+// discover internet gateway device
+// gather returned LOCATION:  (port and IP)
+// this location link ... example: LOCATION: http://192.168.1.1:80/IGD.xml
+//  can allow us to control it
 
 #include <string>
 #include <iostream>
@@ -129,6 +142,7 @@ int UPnP::discoverInternetGatewayDevice()
 		// This doesn't seem to be needed, but here it is.
 		RcvSockAddrUPnP.sin_family = AF_INET;
 		RcvSockAddrUPnP.sin_addr.s_addr = INADDR_ANY;
+		RcvSockAddrUPnP.sin_port = htons(1900);
 
 		// Receive messages loop
 		do
@@ -226,7 +240,7 @@ int UPnP::controlInternetGatewayDevice()
 		"SOAPAction: \"urn:schemas-upnp-org:service:WANIPConnection:1#AddPortMapping\"\r\n"
 		"User-Agent: Mozilla/4.0 (compatible; UPnP/1.0; Windows 9x)\r\n"
 		"Host: " "192.168.1.1" "\r\n"
-		"Content-Length: " "636" "\r\n" //636 is strlen
+		"Content-Length: " "636" "\r\n" //636 is strlen as of right now ... change this to an actual variable
 		"Connection: Close\r\n"
 		"Cache-Control: no-cache\r\n"
 		"Pragma: no-cache\r\n\r\n";
@@ -238,7 +252,7 @@ int UPnP::controlInternetGatewayDevice()
 
 	// Setting ip addr, port, and ipv4 or ipv6
 	ControlSockAddrUPnP.sin_family = AF_INET;
-	ControlSockAddrUPnP.sin_port = htons(1900);
+	ControlSockAddrUPnP.sin_port = htons(49152);
 	if (SockObj.myinet_pton(AF_INET, "192.168.1.1", &ControlSockAddrUPnP.sin_addr) == FAIL) // temp ip addr, its supposed to be what is returned by discovery
 		return FAIL;
 
