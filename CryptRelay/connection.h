@@ -18,7 +18,15 @@
 typedef u_int SOCKET;
 #endif
 
+class Connection
+{
+public:
+	Connection();
+	~Connection();
 
+protected:
+private:
+};
 
 class TCPConnection
 {
@@ -68,30 +76,30 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 	void serverCreateSendThread(void* instance);
 	void clientCreateSendThread(void* instance);
 	void giveIPandPort(std::string target_external_ip_address, std::string target_local_ip_addr, std::string target_port, std::string my_external_ip_address, std::string my_ip_address, std::string my_host_port);
-	bool initializeWinsock();
+	bool initializeWinsock();//
 	void ServerSetHints();
 	void ClientSetHints();
 	SOCKET createSocket();
 	bool getAddress(std::string targ_ip, std::string targ_port);
-	bool bindToSocket(SOCKET fd);
-	SOCKET connectToTarget(SOCKET fd);
-	bool listenToSocket(SOCKET fd);
-	int acceptClient(SOCKET fd);
-	void closeThisSocket(SOCKET fd);
+	bool bindToSocket(SOCKET fd);//
+	SOCKET connectToTarget(SOCKET fd);//
+	bool listenToSocket(SOCKET fd);//
+	int acceptClient(SOCKET fd);//
+	void closeThisSocket(SOCKET fd);//
 	bool echoReceiveUntilShutdown();				// STATUS: NOT USED
 	bool receiveUntilShutdown();
-	bool shutdownConnection(SOCKET fd);
-	void myWSACleanup();
-	void getError();
-	//bool UDPSpamPortsWithSendTo();
+	bool shutdownConnection(SOCKET fd);//
+	void myWSACleanup();//
+	void getError();//
+	//bool spamPortsWithSendTo();
 
-	//void UDPSpamSetHints();
-	//int UDPSpamCreateSocket();
+	//void spamSetHints();
+	//int spamCreateSocket();
 
-	//void UDPSpamSetHints();
+	//void spamSetHints();
 	//bool UDPSpamGetAddr();
-	//int UDPSpamCreateSocket();
-	//bool UDPSpamPortsWithSendTo();
+	//int spamCreateSocket();
+	//bool spamPortsWithSendTo();
 
 	static SOCKET globalSocket;
 	static int global_winner;
@@ -129,6 +137,25 @@ private:	// No one but class TCPConnection is aware of these members
 };
 
 
+
+//+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class UDPConnection
+{
+public:
+	UDPConnection();
+	~UDPConnection();
+
+
+
+
+	/*
+	void spamSetHints();
+	int spamCreateSocket();
+	bool spamPortsWithSendTo();
+	*/
+protected:
+private:
+};
 
 
 #endif

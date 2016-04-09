@@ -58,6 +58,7 @@
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "UPnP.h"
+#include "SocketClass.h"
 #endif//_WIN32
 
 
@@ -73,14 +74,16 @@ int main(int argc, char *argv[])
 		return 0;
 
 	//===================================== Starting Chat Program =====================================
-	
-	UPnP UPnP_obj;
-	UPnP_obj.startUPnP();
+	UPnP Upnp;
+	if (Upnp.upnpStart() == FALSE)
+		std::cout << "Fatal: Couldn't port forward via UPnP.\n";
 
+	
 	std::cout << "PAUSE...";
 	std::string pause = "";
 	std::getline(std::cin, pause);
-
+	
+	/*
 	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
 
 	// Client
@@ -110,6 +113,9 @@ int main(int argc, char *argv[])
 	std::cout << "PAUSE...";
 	pause = "";
 	std::getline(std::cin, pause);
+
+	*/
+
 
 	// accept incoming connection
 	// get ip address of the accepted connection

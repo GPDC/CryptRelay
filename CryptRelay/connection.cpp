@@ -101,7 +101,17 @@ HANDLE TCPConnection::ghEvents[3]{};
 #endif//_WIN32
 
 
+Connection::Connection()
+{
 
+}
+Connection::~Connection()
+{
+
+}
+
+
+//-------------------------------------------------------------------------------
 TCPConnection::TCPConnection()
 {
 	memset(&UDPSockaddr_in, 0, sizeof(UDPSockaddr_in));
@@ -943,15 +953,31 @@ void TCPConnection::getError()
 
 
 /************************************ UDP Section **************************************/
-/* BEING UDP COMMENT OUT
-void TCPConnection::UDPSpamSetHints()
+UDPConnection::UDPConnection()
+{
+
+}
+UDPConnection::~UDPConnection()
+{
+
+}
+
+
+
+
+
+
+
+
+/*
+void UDPConnection::spamSetHints()
 {
 	hints.ai_family = AF_INET;
 	hints.ai_socktype = SOCK_DGRAM;
 	hints.ai_protocol = IPPROTO_UDP;
 }
 
-int TCPConnection::UDPSpamCreateSocket() {
+int UDPConnection::spamCreateSocket() {
 	if (global_verbose == true)
 		std::cout << "SPAM :: Creating Socket to listen on...\n";
 	// Create UDP socket
@@ -969,7 +995,7 @@ int TCPConnection::UDPSpamCreateSocket() {
 	//ListenSocket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
 }
 
-bool TCPConnection::UDPSpamPortsWithSendTo()
+bool UDPConnection::spamPortsWithSendTo()
 {
 
 	int intResult;
@@ -983,14 +1009,14 @@ bool TCPConnection::UDPSpamPortsWithSendTo()
 	//InetPton(UDPSockaddr_in.sin_family, target_ip_addr.c_str(), &UDPSockaddr_in.sin_addr.S_un.S_addr);
 	UDPSockaddr_in.sin_addr.s_addr = inet_addr( target_ext_ip.c_str() );
 
-//	iResult = sendto(UDPSpamSocket, sendbuf, current_sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
-//	if (iResult == SOCKET_ERROR) {
-//		getError();
-//		std::cout << "sendto failed.\n";
-//		closeThisSocket(UDPSpamSocket);
-//		//myWSACleanup();
-//		return 0;
-//	}
+	iResult = sendto(UDPSpamSocket, sendbuf, current_sendbuf_len, 0, (SOCKADDR *)& UDPSockaddr_in, sizeof(UDPSockaddr_in));
+	if (iResult == SOCKET_ERROR) {
+		getError();
+		std::cout << "sendto failed.\n";
+		closeThisSocket(UDPSpamSocket);
+		//myWSACleanup();
+		return 0;
+	}
 
 	// Send a packet to every single one of the target's ports
 	std::cout << "Spamming target's ports...\n";
@@ -1008,6 +1034,6 @@ bool TCPConnection::UDPSpamPortsWithSendTo()
 	std::cout << "Portspam complete.\n";
 	return true;
 }
-END UDP COMMENT OUT*/
+*/
 
 

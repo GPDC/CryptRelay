@@ -1,49 +1,50 @@
+//UPnP.h
+
+// Overview:
+// Implements UPnP.
+// Provide cross platform (windows, linux) capability to UPnP.
+// UPnP class makes extensive use of the SocketClass.h and SocketClass.cpp
+//	The error handling is almost entirely done in the SocketClass, not here.
+//	Any output to console (for example if verbosity is increased) is also handled in SocketClass.
+//	This is to keep UPnP as a high level class that is easy to see what is being done, without clutter.
+
+// Terminology:
+// UPnP is Universal Plug and Play. If a router has upnp enabled, it trusts anyone on the local
+//	network to change port forwarding settings. Only intended for home network use.
+
+// Warnings:
+// This class is not designed for multiple threads to be using it at the same time.
+
+#include <Winsock2.h>
+#include <WS2tcpip.h>
+#include "SocketClass.h"
+
+
 #ifndef UPnP_h__
 #define UPnP_h__
-#include <UPnP.h>
 
-class UPnP : public IUPnPDeviceFinderCallback
+class UPnP
 {
 public:
 	UPnP();
 	~UPnP();
 
-	bool startUPnP();
+	// The function that runs other functions. It discovers UPnP router, controls it
+	int upnpStart();
+	int discoverInternetGatewayDevice();
+	int controlInternetGatewayDevice();
 
-#ifdef _WIN32
-	HRESULT findUPnPDevice(BSTR TypeURI);
+	SocketClass SockObj;
 
-
-
-	HRESULT STDMETHODCALLTYPE DeviceAdded(
-		/* [in] */ LONG lFindData,
-		/* [in] */ __RPC__in_opt IUPnPDevice *pDevice);
-
-	HRESULT STDMETHODCALLTYPE DeviceRemoved(
-		/* [in] */ LONG lFindData,
-		/* [in] */ __RPC__in BSTR bstrUDN);
-
-	HRESULT STDMETHODCALLTYPE SearchComplete(
-		/* [in] */ LONG lFindData);
+	sockaddr_in		 ControlSockAddrUPnP;
+	sockaddr_in		 RcvSockAddrUPnP;
+	sockaddr_in		 BroadcastSockAddrUPnP;
 
 
-
-	HRESULT STDMETHODCALLTYPE QueryInterface(
-		/* [in] */ REFIID riid,
-		/* [iid_is][out] */ _COM_Outptr_ void __RPC_FAR *__RPC_FAR *ppvObject);
-
-	ULONG STDMETHODCALLTYPE AddRef(void);
-
-	ULONG STDMETHODCALLTYPE Release(void);
-
-#endif// _WIN32
 
 protected:
 private:
-
-#ifdef _WIN32
-	LONG m_lRefCount;
-#endif// _WIN32
 };
 
-#endif
+
+#endif//UPnPfile_h__
