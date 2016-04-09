@@ -256,11 +256,12 @@ int UPnP::controlInternetGatewayDevice()
 	if (SockObj.myinet_pton(AF_INET, "192.168.1.1", &ControlSockAddrUPnP.sin_addr) == FAIL) // temp ip addr, its supposed to be what is returned by discovery
 		return FAIL;
 
-	// Connection is being refused? why?
+	// Connect to the device
 	int errchk = SockObj.myConnect(sock_control, (sockaddr*)&ControlSockAddrUPnP, sizeof(ControlSockAddrUPnP));
 	if (errchk == SOCKET_ERROR || errchk == INVALID_SOCKET)
 		return FAIL;
 
+	// Stuff for send()
 	const int send_buf_len = 1024;
 	char send_buf[send_buf_len];
 
