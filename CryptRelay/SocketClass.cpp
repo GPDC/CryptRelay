@@ -32,9 +32,11 @@
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
+#ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		//tell the linker that Ws2_32.lib file is needed.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+#endif//_WIN32
 
 #ifdef __linux__
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.

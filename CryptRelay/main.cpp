@@ -1,3 +1,4 @@
+
 //main.cpp
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
@@ -57,8 +58,9 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "DEPRECATED_UPnP.h"
 #include "SocketClass.h"
+
+#include "UPnP.h"
 #endif//_WIN32
 
 
@@ -70,14 +72,16 @@ int main(int argc, char *argv[])
 
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	if (errchk = CLI.getCommandLineInput(argc, argv) == false)	// Ip address and port info will be stored in CLI.
+	if ((errchk = CLI.getCommandLineInput(argc, argv)) == false)	// Ip address and port info will be stored in CLI.
 		return 0;
 
 	//===================================== Starting Chat Program =====================================
 	UPnP Upnp;
-	if (Upnp.upnpStart() == FALSE)
-		std::cout << "Fatal: Couldn't port forward via UPnP.\n";
+	//Upnp.exampleStartUPnP();
+	if (Upnp.startUPnP() == FALSE)
+	std::cout << "Fatal: Couldn't port forward via UPnP.\n";
 
+	
 	
 	std::cout << "PAUSE...";
 	std::string pause = "";
@@ -266,6 +270,12 @@ Globals:								# Put the word global in front of it like so:
 	ex variable:	global_this_is_an_example;
 	ex function:	globalThisIsAnExample;
 
+ifdefs must always comment the endif with what it is endifing.
+#ifdef _WIN32
+#endif //_WIN32
+
+
+
 Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks better;
 				{								// Single lines with curly braces, or
 					int i = 5;					// Single lines with no curly braces.
@@ -300,3 +310,85 @@ Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks b
 
 // Imporant note on building PJNATH library:
 // must limit parallel project builds to 1 at a time. More than this can cause it to fail in odd ways. (rly odd)
+
+
+
+
+
+
+
+
+
+// How to build and setup miniupnp library:
+
+//********** Building Microsoft Visual Studio 2015 * ************
+//
+//1. create a txt file and rename it to miniupnpcstrings.h
+//	 This is because that file can't be built in windows for some reason.
+//
+//2. paste this into it :
+
+///* Project: miniupnp
+//* http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
+//* Author: Thomas Bernard
+//* Copyright (c) 2005-2009 Thomas Bernard
+//* This software is subjects to the conditions detailed
+//* in the LICENCE file provided within this distribution */
+//#ifndef __MINIUPNPCSTRINGS_H__
+//#define __MINIUPNPCSTRINGS_H__
+//
+//#define OS_STRING "Windows/7.0.0000"
+//#define MINIUPNPC_VERSION_STRING "1.9"
+//
+//#endif 
+
+//
+//3. in the miniupnpcstrings.h file you will see the line : #define MINIUPNPC_VERSION_STRING "1.9" 
+//	 I think this is the version of the library you are using. Who knows. I set it to 1.9. A forum post from long ago had it at 1.4
+//
+//4. open up visual studio solution in the msvc folder
+//
+//5. set to release mode and build miniupnp.c PROJECT
+//
+//6. set to debug mode and build miniupnp.c PROJECT
+//
+//
+//If you get some wierd errors, try re downloading and extract it again, do the whole process over
+//I actually had corrupted files a couple times amazingly enough!
+//
+//
+//********** Including / Linking Visual Studio 2015 * ***************
+//Steps to take for including it / linking it in your program(visual studio 2015)
+//
+//
+//In your program put these 2 lines b / c they are needed by the miniupnp library to work :
+//#pragma comment(lib, "Ws2_32.lib")
+//#pragma comment(lib, "Iphlpapi.lib")
+//If you were getting linker errors the cause might have been the two missing #pragma comment
+//
+//1. Set your configuration to Release and then follow the instructions :
+//
+//2. in project settings, Linker->Input->Additional Dependencies->miniupnpc - 1.9\msvc\Release\miniupnpc.lib
+//please note that it needs to be a full path to the miniupnpc.lib.Feel free to use macros.Macros not shown in example :
+//c : \dev\workspace\myproject\miniupnpc - 1.9\msvc\Release\miniupnpc.lib
+//
+//	3. in project settings, C / C++->Preprocessor->Preprocessor Definitions->STATICLIB
+//	please note we are just adding STATICLIB to the list of whatever is currently there.Don't delete everything in there.
+//
+//	4. in project settings, VC++ Directories->Include Directories -> \miniupnpc - 1.9
+//	please note that it needs to be a full path to the folder.Feel free to use macros.Macros not shown in example :
+//	C : \dev\workspace\myproject\miniupnpc - 1.9
+//
+//	5. in project settings, VC++ Directories->Include Directories -> \miniupnpc - 1.9
+//	please note that it needs to be a full path to the folder.Feel free to use macros.Macros not shown in example :
+//	C : \dev\workspace\myproject\miniupnpc - 1.9\msvc\Release
+//
+//	6. Set your configuration to Debug and do steps 1 through 5 all over again, but replaces any mention of "Release" with "debug".
+//	Make sure you changed the additional dependencies directory paths to have debug in it too.
+//
+//
+//	-----------unfinished section---------
+//	If you want to static link the library with your program :
+//
+//	1. project settings->c / c++->code generation->Runtime Library->change it to Multi - Threaded(/ MT) if you are on Release, and Multi - Threaded Debug(/ MTd) if you are on debug
+//
