@@ -17,7 +17,6 @@ CommandLineInput::CommandLineInput()
 	// bleh settings some old default values - this needs cleanup
 	target_extrnl_ip_address = "3.3.3.3";
 	target_port = "7419";
-	target_local_ip = "192.168.1.2";
 	my_ip_address = TCPConnection::DEFAULT_IP_TO_LISTEN;
 	my_host_port = TCPConnection::DEFAULT_PORT_TO_LISTEN;
 	my_ext_ip_address = "2.2.2.2";

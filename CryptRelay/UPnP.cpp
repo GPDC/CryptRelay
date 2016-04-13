@@ -379,7 +379,7 @@ void UPnP::autoAddPortForwardRule()
 		external_port = std::to_string(i_external_port);
 
 		if (global_verbose == true)
-			std::cout << "\n#Adding port forward entry...\n";
+			std::cout << "\n# Adding port forward entry...\n";
 		// Add port forwarding now
 		if (my_local_ip[0] != 0)
 		{
