@@ -45,6 +45,12 @@ UPnP::UPnP()
 	UpnpDevicesList = nullptr;
 	memset(&Urls, 0, sizeof(Urls));
 	memset(&IGDData, 0, sizeof(IGDData));
+
+	//
+	i_internal_port = 30001;			// Some devices require that the internal and external ports must be the same.
+	i_external_port = 30001;			// Some devices require that the internal and external ports must be the same.
+	internal_port = std::to_string(i_internal_port);
+	external_port = std::to_string(i_external_port);
 }
 
 UPnP::~UPnP()
@@ -87,8 +93,55 @@ int UPnP::startUPnP()
 	return 1;// Success
 }
 
+void UPnP::standaloneGetListOfPortForwards()
+{
+	// Enable socket use on Windows
+	SockStuff.myWSAStartup();
+
+	// Find UPnP devices on the local network
+	findUPnPDevices();
+
+	// Find valid IGD based off the list returned by upnpDiscover()
+	findValidIGD();
+
+	// Display the list of port forwards
+	getListOfPortForwards();
+}
 
 
+// If the user wants to delete a specfic port forward on his router,
+// then he can call this, specifying which one to delete.
+// With the current setup this means it is done via the
+// CommandLineInput class a.k.a. CLI.
+// In there the user inputs the options via command line
+void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol)
+{
+	// Enable socket use on Windows
+	SockStuff.myWSAStartup();
+
+	// Find UPnP devices on the local network
+	findUPnPDevices();
+
+	// Find valid IGD based off the list returned by upnpDiscover()
+	findValidIGD();
+
+	int r = UPNP_DeletePortMapping(
+		Urls.controlURL,
+		IGDData.first.servicetype,
+		extern_port,
+		protocol,
+		0
+		);
+	if (r != UPNPCOMMAND_SUCCESS)
+	{
+		if (r == 402)
+			std::cout << "Error: " << r << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
+		else if (r == 714)
+			std::cout << "Error: " << r << ". The port forward rule specified for deletion does not exist.\n";
+		else
+			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed.\n";
+	}
+}
 
 
 // Finds all UPnP devices on the local network. This is generally the first
@@ -260,9 +313,16 @@ void UPnP::displayTimeStarted(time_t* TimeStarted)
 	time(TimeStarted);
 
 	// Convert to local time.
-	err = localtime_x(&StorageForTimeData, TimeStarted);
+#ifdef _WIN32
+	err = localtime_s(&StorageForTimeData, TimeStarted);
 	if (err)
 		std::cout << "Invalid argument to localtime_s.";
+#endif//_WIN32
+#ifdef __linux__
+	err = localtime_s(TimeStarted, &StorageForTimeData);
+	if (err)
+		std::cout << "Invalid argument to localtime_r.";
+#endif//__linux__
 
 	if (StorageForTimeData.tm_hour > 12)				// Set up extension. 
 		strcpy_s(am_pm, sizeof(am_pm), "PM");
@@ -278,7 +338,7 @@ void UPnP::displayTimeStarted(time_t* TimeStarted)
 
 	// Output to console
 	std::cout << "Time started: ";
-	printf("%.19s %s\n", timebuf, am_pm);
+	printf("%.19s %s\n", timebuf, am_pm);				// %.19s just means that it will print out a max of 19 chars
 }
 
 // Give it the struct IGDdatas IGDData because that is
@@ -299,11 +359,9 @@ void UPnP::getListOfPortForwards()
 	char remote_host[64];
 	char lease_time[16];
 	
-	if (global_verbose == true)
-	{
-		std::cout << "#List of all port forwards on the IGD:\n";
-		std::cout << " i protocol exPort  inAddr       inPort description leaseTime Remote_Host\n";
-	}
+
+	std::cout << "# List of all port forwards on the IGD:\n";
+	std::cout << " i protocol exPort  inAddr       inPort description leaseTime Remote_Host\n";
 
 	do
 	{
@@ -333,12 +391,11 @@ void UPnP::getListOfPortForwards()
 		// If the list was successfully retrieved, print to console
 		if (r == 0)
 		{
-			if (global_verbose == true)
-			{
-				printf("%2d %s %10s->%s:%-5s '%s'     %s         '%s'\n",
-					i, protocol, ext_port, internal_client, internal_port,
-					description, lease_time, remote_host);
-			}
+
+			printf("%2d %s %10s->%s:%-5s '%s'     %s         '%s'\n",
+				i, protocol, ext_port, internal_client, internal_port,
+				description, lease_time, remote_host);
+
 		}
 		else
 			printf("GetGenericPortMappingEntry() returned %d (%s)\n",
@@ -361,10 +418,10 @@ void UPnP::autoAddPortForwardRule()
 	bool try_again = false;
 	const int try_again_count_limit = 20;
 	int try_again_count = try_again_count_limit;				// Limiting the number of attempts to make this work in certain fail cases.
-	unsigned short i_internal_port = 7419;						// Some devices require that the internal and external ports must be the same.
-	unsigned short i_external_port = 7419;						// Some devices require that the internal and external ports must be the same.
+	//unsigned short i_internal_port = 30001;						// Some devices require that the internal and external ports must be the same.
+	//unsigned short i_external_port = 30001;						// Some devices require that the internal and external ports must be the same.
 	const char * description_of_port_forward_entry = "CryptRelay";	// Describe what the port forward entry is for.
-	protocol = "TCP";											// TCP, UDP?
+	//protocol = "TCP";											// TCP, UDP?
 
 	// Amount of time (seconds) that the ports will be forwarded for. "0" == infinite.
 	// Some NATs only allow a lease time of "0".
@@ -400,6 +457,8 @@ void UPnP::autoAddPortForwardRule()
 				{
 				case 718:	// Port forward entry conflicts with one that is in use by another client on the LAN.
 				{
+					// This case will be tried a miximum of try_again_count_limit times.
+
 					if (global_verbose == true)
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
@@ -415,6 +474,14 @@ void UPnP::autoAddPortForwardRule()
 					++try_again_count;
 					try_again = true;
 
+					// Making sure error info is displayed even after that many attempts has failed.
+					if (try_again_count == try_again_count_limit)
+					{
+						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
+							external_port.c_str(), internal_port.c_str(), my_local_ip, r, strupnperror(r));
+						try_again = false;
+					}
+
 					break;
 				}
 				case 724:	// External and internal ports must match
@@ -423,7 +490,7 @@ void UPnP::autoAddPortForwardRule()
 						std::cout << "External and internal ports must match. Improvising...\n";
 					i_internal_port = 30001;
 					i_external_port = 30001;
-					++try_again_count;	// Just making sure it doesn't get stuck in a loop doing this.
+					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
 					try_again = true;
 
 					break;
@@ -431,7 +498,7 @@ void UPnP::autoAddPortForwardRule()
 				case 725:	// lease_duration is only supported as "0", aka infinite, on this NAT
 				{
 					lease_duration = "0";
-					++try_again_count;	// Just making sure it doesn't get stuck in a loop doing this.
+					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
 					try_again = true;
 
 					break;
@@ -457,6 +524,7 @@ void UPnP::autoAddPortForwardRule()
 	
 
 	// Display the port forwarding entry that was just added
+	// This should probably be its own function...
 	if (global_verbose == true)
 	{
 		// Things necessary for UPNP_GetSpecific_portMappingEntry() to output information to
@@ -499,6 +567,9 @@ void UPnP::autoAddPortForwardRule()
 // autoAddPortForwardingRule()
 void UPnP::autoDeletePortForwardRule()
 {
+	// Wish the library had an implementation to delete based off of
+	// the description. Maybe I can make one.
+
 	// Should check list of all current port forwards
 	// and then basically grep out the ones that have
 	// description_of_port_forward_entry in it
@@ -516,31 +587,6 @@ void UPnP::autoDeletePortForwardRule()
 			external_port.c_str(),
 			protocol,
 			0				// Remote Host
-		);
-	if (r != UPNPCOMMAND_SUCCESS)
-	{
-		if (r == 402)
-			std::cout << "Error: " << r << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
-		else if (r == 714)
-			std::cout << "Error: " << r << ". The port forward rule specified for deletion does not exist.\n";
-		else
-			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed.\n";
-	}
-}
-
-// If the user wants to delete a specfic port forward on his router,
-// then he can call this, specifying which one to delete.
-// With the current setup this means it is done via the
-// CommandLineInput class a.k.a. CLI.
-// In there the user inputs the options via command line
-void UPnP::deleteThisSpecificPortForward(const char * extern_port, const char* protocol)
-{
-	int r = UPNP_DeletePortMapping(
-			Urls.controlURL,
-			IGDData.first.servicetype,
-			extern_port,
-			protocol,
-			0
 		);
 	if (r != UPNPCOMMAND_SUCCESS)
 	{

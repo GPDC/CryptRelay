@@ -25,14 +25,15 @@ public:
 	~UPnP();
 
 	int startUPnP();
-	void getListOfPortForwards();
-	void deleteThisSpecificPortForward(const char * extern_port, const char* protocol);
+	void standaloneGetListOfPortForwards();		// Incase user just wants to access the list of port forwards
+	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
 	
 protected:
 private:
 	void findUPnPDevices();
 	void findValidIGD();
 	void displayInformation();
+	void getListOfPortForwards();
 	void displayTimeStarted(time_t* timestarted);
 	void autoAddPortForwardRule();
 	void autoDeletePortForwardRule();
@@ -54,11 +55,13 @@ private:
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
 	char external_ip_address[40] = { 0 };	// displayInformation() fills this out
 
-	// These are assigned and used in addPortForwardRule(), and
-	// external_port and protocol are used in deletePortForwardRule()
+	// These are assigned in the constructor and used in addPortForwardRule().
+	// external_port and protocol are used in autoDeletePortForwardRule()
+	unsigned short i_internal_port;						// Some devices require that the internal and external ports must be the same.
+	unsigned short i_external_port;						// Some devices require that the internal and external ports must be the same.
 	std::string internal_port;
 	std::string external_port;			// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
-	const char * protocol;				// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
+	const char * protocol = "TCP";				// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
 
 };
 

@@ -70,9 +70,10 @@ int main(int argc, char *argv[])
 {
 	int errchk = 0;
 
-	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	if ((errchk = CLI.getCommandLineInput(argc, argv)) == FALSE)	// Ip address and port info will be stored in CLI.
+	// Check what the user wants to do via command line input
+	// Information inputted by the user on startup is stored in CLI
+	if ( (errchk = CLI.getCommandLineInput(argc, argv) ) == FALSE)	
 		return 0;
 	// maybe I should have getCommandLineInput return a pointer to a structure with
 	// all information that is stored and/or is needed elsewhere in the program?

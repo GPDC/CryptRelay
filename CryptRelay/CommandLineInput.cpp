@@ -38,7 +38,8 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "-v	verbose		Displays a lot of text output on screen.\n";
 	std::cout << "-lan	LAN		Don't connect to the internet. Use LAN only.\n";
 	std::cout << "-spf	Show Port Forwards	Display the list of current port forwards on the router.\n";
-	std::cout << "-dpf	Show Port Forwards	Display the list of current port forwards on the router.\n";
+	std::cout << "-dpf	Delete Port Forward	Delete a specific port forward rule.\n";
+	std::cout << "         Format: cryptrelay.exe -dpf [external_port] [protocol]\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f	file		The file, and location of the file you wish to xfer.\n";
@@ -153,12 +154,15 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "-spf")
 			{
 				UPnP Upnp;
-				Upnp.getListOfPortForwards();
+				Upnp.standaloneGetListOfPortForwards();
+				return 0; // exit program even though this is not a failure.
 			}
-			else if (arg[i] == "-dpf")
+			else if (arg[i] == "-dpf" && i < arg_size - 2)
 			{
 				UPnP Upnp;
-				Upnp.deleteThisSpecificPortForward(argv[i + 1], argv[i + 2]);
+				Upnp.standaloneDeleteThisSpecificPortForward(argv[i + 1], argv[i + 2]);
+				return 0; // exit program even though this is not a failure.
+
 				// pls fix this. I should not be calling functions right here because
 				// we might not be done parsing the command line input! This function should
 				// only be called after we are done parsing.
