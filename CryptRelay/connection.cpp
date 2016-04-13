@@ -153,10 +153,9 @@ TCPConnection::~TCPConnection()
 	}
 }
 
-void TCPConnection::giveIPandPort(std::string target_extern_ip, std::string target_local_ip_addr, std::string target_port_, std::string my_external_ip_address, std::string my_ip_address, std::string my_port)
+void TCPConnection::giveIPandPort(std::string target_extern_ip, std::string target_port_, std::string my_external_ip_address, std::string my_ip_address, std::string my_port)
 {
 	target_ext_ip = target_extern_ip;
-	target_local_ip = target_local_ip_addr;
 	target_port = target_port_;
 	my_ext_ip = my_external_ip_address;
 	my_host_ip_addr = my_ip_address;

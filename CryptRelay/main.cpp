@@ -72,14 +72,25 @@ int main(int argc, char *argv[])
 
 	// Check what the user wants to do via command line input
 	CommandLineInput CLI;
-	if ((errchk = CLI.getCommandLineInput(argc, argv)) == false)	// Ip address and port info will be stored in CLI.
+	if ((errchk = CLI.getCommandLineInput(argc, argv)) == FALSE)	// Ip address and port info will be stored in CLI.
 		return 0;
+	// maybe I should have getCommandLineInput return a pointer to a structure with
+	// all information that is stored and/or is needed elsewhere in the program?
 
 	//===================================== Starting Chat Program =====================================
 	UPnP Upnp;
-	//Upnp.exampleStartUPnP();
-	if (Upnp.startUPnP() == FALSE)
-	std::cout << "Fatal: Couldn't port forward via UPnP.\n";
+
+	if (CLI.use_lan_only == true)
+	{
+		// Try to connect like normal
+	}
+	else if (CLI.use_upnp == true)
+	{
+		// Start UPnP
+		if (Upnp.startUPnP() == FALSE)
+			std::cout << "Fatal: Couldn't port forward via UPnP.\n";
+	}
+
 
 	
 	
@@ -94,7 +105,6 @@ int main(int argc, char *argv[])
 	TCPConnection ClientLoopAttack;
 	ClientLoopAttack.giveIPandPort(
 		CLI.target_extrnl_ip_address,
-		CLI.target_local_ip,
 		CLI.target_port,
 		CLI.my_ext_ip_address,
 		CLI.my_ip_address,
@@ -106,7 +116,6 @@ int main(int argc, char *argv[])
 	TCPConnection ServerListen;
 	ServerListen.giveIPandPort(
 		CLI.target_extrnl_ip_address,
-		CLI.target_local_ip,
 		CLI.target_port,
 		CLI.my_ext_ip_address,
 		CLI.my_ip_address,

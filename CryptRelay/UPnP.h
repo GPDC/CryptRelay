@@ -8,12 +8,15 @@
 // UPnP: Universal Plug and Play
 // IGD: Internet Gateway Device
 // External IP addr: the ip address that anyone on the internet will see you connecting from.
-// internal / local ip address: the ip address that anyhone on your LAN will see you connecting from.
+// External port: the port that anyone on the internet will see you connecting from.
+// Internal / local ip address: the ip address that anyone on your LAN will see you connecting from.
+// Internal port: the port that anyone on your LAN will see you connecting from.
 
 #ifndef UPnP_h__
 #define UPnP_h__
 
-#include "miniupnpc.h"//using this one atleast... needed in the header file to get the structs going
+#include "miniupnpc.h"		// needed in the header file to get the structs going
+#include "SocketClass.h"	// needed in the header file so the deconstructor can use myWSAStartup()
 
 class UPnP
 {
@@ -22,14 +25,19 @@ public:
 	~UPnP();
 
 	int startUPnP();
+	void getListOfPortForwards();
+	void deleteThisSpecificPortForward(const char * extern_port, const char* protocol);
 	
 protected:
 private:
 	void findUPnPDevices();
-	void findValidIGD(struct UPNPDev* ListOfUPnPDevices, struct UPNPUrls* IGDUrls, struct IGDdatas* IGDDatas);
-	void displayInformation(struct UPNPUrls * Urls, struct IGDdatas * IGDData);
-	void getListOfPortForwards(struct UPNPUrls * Urls, struct IGDdatas * IGDData);
-	void addPortForwardRule(struct UPNPUrls * Urls,	struct IGDdatas * IGDData,	const char * my_local_ip);
+	void findValidIGD();
+	void displayInformation();
+	void displayTimeStarted(time_t* timestarted);
+	void autoAddPortForwardRule();
+	void autoDeletePortForwardRule();
+
+	SocketClass SockStuff;
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist() to free allocated memory
@@ -38,16 +46,26 @@ private:
 	// findValidIGD() stores the IGD's urls here. Example: a url to control the device.
 	// Must call FreeUPNPUrls(Urls) to free allocated memory
 	UPNPUrls Urls;
-	
-	IGDdatas IGDData;					// findValidIGD() stores data here for the IGD.
 
+	// findValidIGD() stores data here for the IGD.
+	IGDdatas IGDData;					
+
+	// These are here so that  other functions can access them easily.
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
-	char externalIPAddress[40] = { 0 };	// displayInformation() fills this out
+	char external_ip_address[40] = { 0 };	// displayInformation() fills this out
+
+	// These are assigned and used in addPortForwardRule(), and
+	// external_port and protocol are used in deletePortForwardRule()
+	std::string internal_port;
+	std::string external_port;			// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
+	const char * protocol;				// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
+
 };
 
 #endif//UPnP_h__
 
 
 
-
+// FYI in the c language, calling something static means that it can't
+// be seen outside the file. Think of it like a private section of a class.
 

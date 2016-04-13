@@ -13,12 +13,20 @@ public:
 	
 	int getCommandLineInput(int argc, char* argv[]);
 
+	bool use_lan_only = false;	// default is false;
+	bool use_upnp = true;	// default is true;
+
 	std::string target_extrnl_ip_address;
 	std::string target_port;
-	std::string target_local_ip;
 	std::string my_ip_address;
 	std::string my_host_port;
 	std::string my_ext_ip_address;
+
+	struct UPnPDeleteSpecificPortForward
+	{
+		std::string extern_port;
+		std::string protocol;
+	};
 
 protected:
 private:

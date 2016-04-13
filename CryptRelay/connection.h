@@ -75,7 +75,7 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 	void createServerRaceThread(void* instance);
 	void serverCreateSendThread(void* instance);
 	void clientCreateSendThread(void* instance);
-	void giveIPandPort(std::string target_external_ip_address, std::string target_local_ip_addr, std::string target_port, std::string my_external_ip_address, std::string my_ip_address, std::string my_host_port);
+	void giveIPandPort(std::string target_external_ip_address, std::string target_port, std::string my_external_ip_address, std::string my_ip_address, std::string my_host_port);
 	bool initializeWinsock();//
 	void ServerSetHints();
 	void ClientSetHints();
