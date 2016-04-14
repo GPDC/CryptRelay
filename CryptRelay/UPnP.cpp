@@ -101,8 +101,8 @@ bool UPnP::startUPnP()
 // the chat program or anything else.
 void UPnP::standaloneGetListOfPortForwards()
 {
-	// Enable socket use on Windows
-	SockStuff.myWSAStartup();
+	//// Enable socket use on Windows
+	//SockStuff.myWSAStartup();
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
@@ -122,8 +122,8 @@ void UPnP::standaloneGetListOfPortForwards()
 // In there the user inputs the options via command line
 void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol)
 {
-	// Enable socket use on Windows
-	SockStuff.myWSAStartup();
+	//// Enable socket use on Windows
+	//SockStuff.myWSAStartup();
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();

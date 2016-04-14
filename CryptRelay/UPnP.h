@@ -13,7 +13,7 @@
 // Internal port: the port that anyone on your LAN will see you connecting from.
 
 // Three important steps in order to doing anything with UPnP:
-// 1. Enable socket use on Windows
+// 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
 //	  SockStuff.myWSAStartup();
 //
 // 2. Find UPnP devices on the local network
@@ -28,7 +28,7 @@
 #define UPnP_h__
 
 #include "miniupnpc.h"		// needed in the header file to get the structs going
-#include "SocketClass.h"	// needed in the header file so the deconstructor can use myWSAStartup()
+#include "SocketClass.h"
 
 class UPnP
 {
@@ -72,9 +72,9 @@ private:
 
 	// These are assigned in the constructor and used in addPortForwardRule().
 	// my_external_port and protocol are used in autoDeletePortForwardRule()
-	unsigned short i_internal_port;						// Some devices require that the internal and external ports must be the same.
-	unsigned short i_external_port;						// Some devices require that the internal and external ports must be the same.
-	const char * protocol = "TCP";				// This is here so deletePortForwardRule() in the deconstructor can delete a port forward.
+	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
+	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
+	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
 
 };
 

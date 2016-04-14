@@ -1,5 +1,10 @@
 //TCPConnection.cpp
-//could i use vectors instead of char arrays for messages?
+// SCHEDULED FOR DELETION, DEPRECATED
+// SCHEDULED FOR DELETION, DEPRECATED
+// SCHEDULED FOR DELETION, DEPRECATED
+// SCHEDULED FOR DELETION, DEPRECATED
+// SCHEDULED FOR DELETION, DEPRECATED
+// SCHEDULED FOR DELETION, DEPRECATED
 #define _WINSOCK_DEPRECATED_NO_WARNINGS	// TEMPORARY, and this has to be at the top
 #ifdef __linux__
 #include <iostream>

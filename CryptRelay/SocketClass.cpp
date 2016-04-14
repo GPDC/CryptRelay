@@ -49,6 +49,8 @@
 
 SocketClass::SocketClass()
 {
+	// Unsure If I should have this here quite frankly, but
+	// it IS necessary for 99% of things in this class.
 	myWSAStartup();
 }
 SocketClass::~SocketClass()

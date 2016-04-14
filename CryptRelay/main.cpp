@@ -113,12 +113,33 @@ int main(int argc, char *argv[])
 
 	}
 
-	// Start the chat program.
-	// &&&&this should be 2 threads...
-	if (ChatServer.startServer() == EXIT_FAILURE)
-		return EXIT_FAILURE;
-	if (ChatClient.startClient() == EXIT_FAILURE)
-		return EXIT_FAILURE;
+	//// Start the chat program.
+	//if (ChatServer.startServer() == EXIT_FAILURE)
+	//	return EXIT_FAILURE;
+	//if (ChatClient.startClient() == EXIT_FAILURE)
+	//	return EXIT_FAILURE;
+
+
+
+	// BEGIN THREAD RACE
+	ChatProgram::createStartServerThread(&ChatServer);			//<-----------------
+	ChatProgram::createClientRaceThread(&ChatClient);			//<----------------
+
+	// Wait for 1 thread to finish
+#ifdef __linux__
+	pthread_join(ChatProgram::thread1, NULL);
+	//pthread_join(ChatProgram::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
+#endif//__linux__
+#ifdef _WIN32
+	WaitForMultipleObjects(
+		2,			//number of objects in array
+		ChatProgram::ghEvents,	//array of objects
+		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
+		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+#endif//_WIN32
+
+
+
 
 	
 	

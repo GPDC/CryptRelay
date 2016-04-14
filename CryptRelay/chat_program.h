@@ -23,10 +23,30 @@ public:
 	ChatProgram();
 	~ChatProgram();
 
+#ifdef __linux__
+	static pthread_t thread0;	// Server
+	static pthread_t thread1;	// Client
+	static pthread_t thread2;
+	static int ret0;			// Server
+	static int ret1;			// Client
+	static int ret2;
+#endif //__linux__
+
+#ifdef _WIN32
+	static HANDLE ghEvents[3];	// For threads // i should be using vector of ghevents instead
+#endif //_WIN32
+
+	// To let whoever created this thread know it errored badly.
+	static bool fatal_thread_error;
+
+	static void createStartServerThread(void * instance);
+	static void createClientRaceThread(void * instance);
+
 	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = default_port, std::string my_internal_port = default_port);
 	bool startChatProgram();
-	int startServer();
-	int startClient();
+	static void startServer(void * instance);
+	static void startClient(void * instance);
+
 
 protected:
 private:
