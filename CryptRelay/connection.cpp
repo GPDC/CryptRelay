@@ -24,6 +24,7 @@
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "CrossPlatformSleep.h"
+#include "SocketClass.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -40,6 +41,7 @@
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "CrossPlatformSleep.h"
+#include "SocketClass.h"
 #endif//_WIN32
 
 //NAT WIKI: Many NAT implementations follow the port preservation design for TCP: for a given outgoing TCP communication, they use the same values as internal and external port numbers.NAT port preservation for outgoing TCP connections is crucial for TCP NAT traversal, because as TCP requires that one port can only be used for one communication at a time, programs bind distinct TCP sockets to ephemeral ports for each TCP communication, rendering NAT port prediction impossible for TCP.[2]
@@ -151,6 +153,31 @@ TCPConnection::~TCPConnection()
 	{
 		myWSACleanup();	// Free addrinfo and WSACleanup();
 	}
+}
+
+// The main chat program function that houses all functionality for the chat program.
+bool TCPConnection::startChatProgram()
+{
+	TCPConnection serverObj;
+	TCPConnection clientObj;
+	// BEGIN THREAD RACE
+	createServerRaceThread(&serverObj);			//<-----------------
+	createClientRaceThread(&clientObj);			//<----------------
+
+
+	// Wait for 1 thread to finish
+#ifdef __linux__
+	pthread_join(TCPConnection::thread1, NULL);
+	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
+#endif//__linux__
+#ifdef _WIN32
+	WaitForMultipleObjects(
+		2,			//number of objects in array
+		TCPConnection::ghEvents,	//array of objects
+		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
+		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+#endif//_WIN32
+
 }
 
 void TCPConnection::giveIPandPort(std::string target_extern_ip, std::string target_port_, std::string my_external_ip_address, std::string my_ip_address, std::string my_port)

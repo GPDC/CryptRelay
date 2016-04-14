@@ -49,21 +49,10 @@
 
 SocketClass::SocketClass()
 {
-	memset(&incomingAddr, 0, sizeof(incomingAddr));
-	memset(&hints, 0, sizeof(hints));
-
-	result = nullptr;
-	ptr = nullptr;
+	myWSAStartup();
 }
 SocketClass::~SocketClass()
 {
-	// ****IMPORTANT****
-	// All addrinfo structures must be freed once they are done being used.
-	// Making sure we never freeaddrinfo twice. Ugly bugs other wise.
-	// Check comments in the myFreeAddrInfo() to see how its done.
-	if (result != nullptr)
-		myFreeAddrInfo(result);
-
 	myWSACleanup();
 }
 
@@ -140,7 +129,7 @@ bool SocketClass::myBind(SOCKET fd, const sockaddr *name, int name_len)
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
-	myFreeAddrInfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
+	//myFreeAddrInfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
 
 	return true;
 }
@@ -288,6 +277,8 @@ SOCKET SocketClass::myAccept(SOCKET fd)
 #ifdef _WIN32
 	int addr_size;
 #endif//_WIN32
+	sockaddr_storage incomingAddr;
+	memset(&incomingAddr, 0, sizeof(incomingAddr));
 
 	addr_size = sizeof(incomingAddr);
 	std::cout << "Waiting for someone to connect...\n";

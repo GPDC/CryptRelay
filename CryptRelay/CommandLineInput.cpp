@@ -9,17 +9,9 @@
 #include "FormatCheck.h"
 #include "UPnP.h"
 
-const std::string CommandLineInput::THE_DEFAULT_PORT = "7001";
-const std::string CommandLineInput::THE_DEFAULT_IPADDRESS = "1.2.3.4";
-
 CommandLineInput::CommandLineInput()
 {
-	// bleh settings some old default values - this needs cleanup
-	target_extrnl_ip_address = "3.3.3.3";
-	target_port = "7419";
-	my_ip_address = TCPConnection::DEFAULT_IP_TO_LISTEN;
-	my_host_port = TCPConnection::DEFAULT_PORT_TO_LISTEN;
-	my_ext_ip_address = "2.2.2.2";
+
 }
 CommandLineInput::~CommandLineInput()
 {
@@ -28,7 +20,9 @@ CommandLineInput::~CommandLineInput()
 void CommandLineInput::helpAndReadMe()
 {
 
-	std::cout << "Proper format for a normal connection is:   cryptrelay.exe -t 1.2.3.4 -tp 7172\n";
+	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4 -tp 7172\n";
+	std::cout << "Proper format for a LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
+	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tp 30001 -mL 192.168.1.4 -mp 30001\n";
 	std::cout << "\n";
 	std::cout << "-h	help		Displays the readme\n";
 	std::cout << "-t	target		The target's IP address.\n";
@@ -39,7 +33,7 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "-lan	LAN		Don't connect to the internet. Use LAN only.\n";
 	std::cout << "-spf	Show Port Forwards	Display the list of current port forwards on the router.\n";
 	std::cout << "-dpf	Delete Port Forward	Delete a specific port forward rule.\n";
-	std::cout << "         Format: cryptrelay.exe -dpf [external_port] [protocol]\n";
+	std::cout << "         Format: cryptrelay.exe -dpf my_external_port protocol\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f	file		The file, and location of the file you wish to xfer.\n";
@@ -87,14 +81,14 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				helpAndReadMe();
 				return 0;
 			}
-			else if (arg[i] == "-tE" && i < arg_size - 1)
+			else if (arg[i] == "-t" && i < arg_size - 1)
 			{
 				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
 					return 0;
 				else
 				{
-					target_extrnl_ip_address = argv[i + 1];
+					target_ip_address = argv[i + 1];
 					++i;	// Because we already took the information from i + 1, there is no need to check what i + 1 is, so we skip it by doing ++i;
 				}
 			}

@@ -16,7 +16,7 @@ public:
 	bool use_lan_only = false;	// default is false;
 	bool use_upnp = true;	// default is true;
 
-	std::string target_extrnl_ip_address;
+	std::string target_ip_address;
 	std::string target_port;
 	std::string my_ip_address;
 	std::string my_host_port;
@@ -31,10 +31,6 @@ public:
 protected:
 private:
 	void helpAndReadMe();
-
-	static const std::string THE_DEFAULT_PORT;
-	static const std::string THE_DEFAULT_IPADDRESS;
-
 };
 
 

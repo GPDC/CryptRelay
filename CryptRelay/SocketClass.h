@@ -65,18 +65,14 @@ public:
 	void myWSACleanup();
 	void myFreeAddrInfo(PADDRINFOA pAddrInfo);
 
-	sockaddr_storage incomingAddr;
-	addrinfo		 hints;		// once hints is given to getaddrinfo() it will return *result
-	addrinfo		 *result;	// result now contains all relevant info for ip address, family, protocol, etc
-								// *result is ONLY used if there is a getaddrinfo() and result is put in the arguments.
-	addrinfo		 *ptr;
+	
 
 
 protected:
 private:
 
 #ifdef _WIN32
-	WSADATA wsaData;
+	WSADATA wsaData;			// for WSAStartup();
 #endif//_WIN32
 
 	// getError() 99% of cases you won't need to do anything with the return value.

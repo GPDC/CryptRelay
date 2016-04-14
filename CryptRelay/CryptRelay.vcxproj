@@ -156,6 +156,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="chat_program.cpp" />
     <ClCompile Include="CommandLineInput.cpp" />
     <ClCompile Include="connection.cpp" />
     <ClCompile Include="CrossPlatformSleep.cpp" />
@@ -165,6 +166,7 @@
     <ClCompile Include="UPnP.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="chat_program.h" />
     <ClInclude Include="CommandLineInput.h" />
     <ClInclude Include="connection.h" />
     <ClInclude Include="CrossPlatformSleep.h" />

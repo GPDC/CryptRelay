@@ -34,6 +34,12 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 	TCPConnection();
 	~TCPConnection();
 
+	// If you want to supply the TCPConnection class with IP and port info, use this function
+	void giveIPandPort(std::string target_external_ip_address, std::string target_port, std::string my_external_ip_address, std::string my_ip_address, std::string my_host_port);
+
+	// The main function for connecting to a target
+	bool startChatProgram();
+
 #ifdef _WIN32
 	static HANDLE ghEvents[3];
 #endif//_WIN32
@@ -75,7 +81,9 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 	void createServerRaceThread(void* instance);
 	void serverCreateSendThread(void* instance);
 	void clientCreateSendThread(void* instance);
-	void giveIPandPort(std::string target_external_ip_address, std::string target_port, std::string my_external_ip_address, std::string my_ip_address, std::string my_host_port);
+
+	
+
 	bool initializeWinsock();//
 	void ServerSetHints();
 	void ClientSetHints();
@@ -109,7 +117,7 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 protected:	// Only the children and their children are aware of these members
 
 private:	// No one but class TCPConnection is aware of these members
-	
+
 	SOCKET ConnectSocket;							// Since it is NOT static, every instance has its own ConnectSocket
 	SOCKET AcceptedSocket;
 	SOCKET UDPSpamSocket;

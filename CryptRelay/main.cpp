@@ -43,6 +43,8 @@
 #include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include "chat_program.h"
+
 #include "UPnP.h
 #endif//__linux__
 
@@ -59,6 +61,7 @@
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "SocketClass.h"
+#include "chat_program.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -74,29 +77,53 @@ int main(int argc, char *argv[])
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
 	if ( (errchk = CLI.getCommandLineInput(argc, argv) ) == FALSE)	
-		return 0;
-	// maybe I should have getCommandLineInput return a pointer to a structure with
-	// all information that is stored and/or is needed elsewhere in the program?
+		return EXIT_FAILURE;
+
 
 	//===================================== Starting Chat Program =====================================
 	UPnP Upnp;
+	ChatProgram ChatServer;
+	ChatProgram ChatClient;
 
 	if (CLI.use_lan_only == true)
 	{
-		// Try to connect like normal
+		// Giving the TCP class the user specified target ip and port
+		// also giving the TCP class the IPs and port gathered by
+		// the Upnp class.
+		ChatServer.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
+		ChatClient.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
 	}
-	else if (CLI.use_upnp == true)
+	else if (CLI.use_upnp == true)	// Checking to make sure user didn't turn off UPnP
 	{
-		// Start UPnP
-		if (Upnp.startUPnP() == FALSE)
+		// If UPnP is working, start the chat program using that knowledge.
+		if (Upnp.startUPnP() == true)
+		{
+			// Giving the TCP class the user specified target ip and port
+			// also giving the TCP class the IPs and port gathered by
+			// the Upnp class.
+			// THIS SHOULD BE: if CLI.ipaddr or port w/e has something in it, then give that to Chat instead of the Upnp variable.
+			ChatServer.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
+			ChatClient.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
+		}
+		else
+		{
 			std::cout << "Fatal: Couldn't port forward via UPnP.\n";
+			return EXIT_FAILURE;
+		}
+
 	}
 
+	// Start the chat program.
+	// &&&&this should be 2 threads...
+	if (ChatServer.startServer() == EXIT_FAILURE)
+		return EXIT_FAILURE;
+	if (ChatClient.startClient() == EXIT_FAILURE)
+		return EXIT_FAILURE;
 
 	
 	
 	std::cout << "PAUSE...";
-	std::string pause = "";
+	std::string pause;
 	std::getline(std::cin, pause);
 	
 	/*
@@ -105,7 +132,7 @@ int main(int argc, char *argv[])
 	// Client
 	TCPConnection ClientLoopAttack;
 	ClientLoopAttack.giveIPandPort(
-		CLI.target_extrnl_ip_address,
+		CLI.target_ip_address,
 		CLI.target_port,
 		CLI.my_ext_ip_address,
 		CLI.my_ip_address,
@@ -116,7 +143,7 @@ int main(int argc, char *argv[])
 	// Server
 	TCPConnection ServerListen;
 	ServerListen.giveIPandPort(
-		CLI.target_extrnl_ip_address,
+		CLI.target_ip_address,
 		CLI.target_port,
 		CLI.my_ext_ip_address,
 		CLI.my_ip_address,
@@ -149,7 +176,7 @@ int main(int argc, char *argv[])
 	TCPConnection clientObj;
 	if (global_verbose == true)
 		std::cout << "CLIENT::";
-	clientObj.clientSetIpAndPort(CLI.target_extrnl_ip_address, CLI.target_port);
+	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
 	if (clientObj.initializeWinsock() == false)
 		return 1;
 	clientObj.ClientSetHints();
