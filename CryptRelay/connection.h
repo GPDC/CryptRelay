@@ -55,9 +55,9 @@ public:	// Anyone aware of the class TCPConnection will also be aware of these m
 	static int ret1, ret2, ret3;
 #endif//__linux__
 
-	static const int NOBODY_WON;
-	static const int SERVER_WON;
-	static const int CLIENT_WON;
+	static const int NOBODY_WON_old;
+	static const int SERVER_WON_old;
+	static const int CLIENT_WON_old;
 	static const std::string DEFAULT_PORT_TO_LISTEN;
 	static const std::string DEFAULT_IP_TO_LISTEN;
 

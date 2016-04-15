@@ -81,6 +81,8 @@ int main(int argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
+
+	// Ideally I wouldn't create this Upnp instance unless I am sure I am going to use upnp...
 	UPnP Upnp;
 	ChatProgram ChatServer;
 	ChatProgram ChatClient;
@@ -102,8 +104,61 @@ int main(int argc, char *argv[])
 			// also giving the TCP class the IPs and port gathered by
 			// the Upnp class.
 			// THIS SHOULD BE: if CLI.ipaddr or port w/e has something in it, then give that to Chat instead of the Upnp variable.
-			ChatServer.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
-			ChatClient.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
+
+			// should be:
+			// if (empty(CLI.target_ip_address) == false)
+			//     give it to ChatProgram
+			// else
+			//     take it from upnp
+
+			// Give to the ChatServer instance
+			if (empty(CLI.target_ip_address) == false)
+				ChatServer.target_external_ip = CLI.target_ip_address;
+
+			if (empty(CLI.target_port) == false)
+				ChatServer.target_external_port = CLI.target_port;
+
+			if (empty(CLI.my_ext_ip_address) == false)
+				ChatServer.my_external_ip = CLI.my_ext_ip_address;
+			else
+				ChatServer.my_external_ip = Upnp.my_external_ip;
+
+			if (empty(CLI.my_ip_address) == false)
+				ChatServer.my_local_ip = CLI.my_ip_address;
+			else
+				ChatServer.my_local_ip = Upnp.my_local_ip;
+
+			if (empty(CLI.my_host_port) == false)
+				ChatServer.my_local_port = CLI.my_host_port;
+			else
+				ChatServer.my_local_port = Upnp.my_internal_port;
+
+
+			// Give to the ChatClient instance
+			if (empty(CLI.target_ip_address) == false)
+				ChatClient.target_external_ip = CLI.target_ip_address;
+
+			if (empty(CLI.target_port) == false)
+				ChatClient.target_external_port = CLI.target_port;
+
+			if (empty(CLI.my_ext_ip_address) == false)
+				ChatClient.my_external_ip = CLI.my_ext_ip_address;
+			else
+				ChatClient.my_external_ip = Upnp.my_external_ip;
+
+			if (empty(CLI.my_ip_address) == false)
+				ChatClient.my_local_ip = CLI.my_ip_address;
+			else
+				ChatClient.my_local_ip = Upnp.my_local_ip;
+
+			if (empty(CLI.my_host_port) == false)
+				ChatClient.my_local_port = CLI.my_host_port;
+			else
+				ChatClient.my_local_port = Upnp.my_internal_port;
+
+
+			/*ChatServer.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
+			ChatClient.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);*/
 		}
 		else
 		{
@@ -113,29 +168,24 @@ int main(int argc, char *argv[])
 
 	}
 
-	//// Start the chat program.
-	//if (ChatServer.startServer() == EXIT_FAILURE)
-	//	return EXIT_FAILURE;
-	//if (ChatClient.startClient() == EXIT_FAILURE)
-	//	return EXIT_FAILURE;
-
-
-
+	// Start the chat program.
+	
 	// BEGIN THREAD RACE
 	ChatProgram::createStartServerThread(&ChatServer);			//<-----------------
-	ChatProgram::createClientRaceThread(&ChatClient);			//<----------------
+	ChatProgram::createStartClientThread(&ChatClient);			//<----------------
 
 	// Wait for 1 thread to finish
 #ifdef __linux__
+	pthread_join(ChatProgram::thread0, NULL);
 	pthread_join(ChatProgram::thread1, NULL);
-	//pthread_join(ChatProgram::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
 #endif//__linux__
 #ifdef _WIN32
 	WaitForMultipleObjects(
-		2,			//number of objects in array
-		ChatProgram::ghEvents,	//array of objects
-		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
-		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+			2,			// Number of objects in array
+			ChatProgram::ghEvents,	// Array of objects
+			true,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
+			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
+		);	
 #endif//_WIN32
 
 
@@ -223,24 +273,24 @@ int main(int argc, char *argv[])
 	int who_won = TCPConnection::global_winner;
 	if (global_verbose == true)
 	{
-		if (who_won == TCPConnection::CLIENT_WON)
+		if (who_won == TCPConnection::CLIENT_WON_old)
 			std::cout << "MAIN && Client thread is the winner!\n";
-		else if (who_won == TCPConnection::SERVER_WON)
+		else if (who_won == TCPConnection::SERVER_WON_old)
 			std::cout << "MAIN && Server thread is the winner!\n";
 		else
 			std::cout << "MAIN && There is no winner.\n";
 	}
 	
-	if (who_won == TCPConnection::NOBODY_WON) 
+	if (who_won == TCPConnection::NOBODY_WON_old) 
 	{
 		std::cout << "Error: Unexpected race result. Exiting\n";
 		return 1;
 	}
 
 	// Continue running the program for the thread that returned and won.
-	while (who_won == TCPConnection::CLIENT_WON || who_won == TCPConnection::SERVER_WON){
+	while (who_won == TCPConnection::CLIENT_WON_old || who_won == TCPConnection::SERVER_WON_old){
 		// If server won, then act as a server.
-		if (who_won == TCPConnection::SERVER_WON)
+		if (who_won == TCPConnection::SERVER_WON_old)
 		{ 
 			std::cout << "Connection established as the server.\n";
 			serverObj.closeThisSocket(serverObj.ListenSocket);	// No longer need listening socket since I only want to connect to 1 person at a time.
@@ -254,7 +304,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		// If client won, then act as a client
-		else if (who_won == TCPConnection::CLIENT_WON)
+		else if (who_won == TCPConnection::CLIENT_WON_old)
 		{
 			std::cout << "Connection established as the client.\n";
 			clientObj.clientCreateSendThread(&clientObj);
@@ -267,7 +317,7 @@ int main(int argc, char *argv[])
 			break;
 		}
 		// If nobody won, quit
-		else if (who_won == TCPConnection::NOBODY_WON) 
+		else if (who_won == TCPConnection::NOBODY_WON_old) 
 		{
 			std::cout << "ERROR: Unexpected doomsday scenario.\n";
 			std::cout << "ERROR: Shutting down.\n";

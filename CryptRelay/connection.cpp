@@ -77,9 +77,9 @@
 #endif//__linux__
 
 // Everything below are here because they are static(available to all instances of this class). 
-const int TCPConnection::NOBODY_WON = -30;
-const int TCPConnection::SERVER_WON = -7;
-const int TCPConnection::CLIENT_WON = -8;
+const int TCPConnection::NOBODY_WON_old = -30;
+const int TCPConnection::SERVER_WON_old = -7;
+const int TCPConnection::CLIENT_WON_old = -8;
 
 const std::string TCPConnection::DEFAULT_PORT_TO_LISTEN = "7172";			//currently, set this one to have the server listen on this port
 const int TCPConnection::DEFAULT_BUFLEN = 512;
@@ -87,7 +87,7 @@ const std::string TCPConnection::DEFAULT_IP_TO_LISTEN = "192.168.1.116";	//curre
 int TCPConnection::recvbuflen = DEFAULT_BUFLEN;
 char TCPConnection::recvbuf[DEFAULT_BUFLEN];
 
-int TCPConnection::global_winner = NOBODY_WON;
+int TCPConnection::global_winner = NOBODY_WON_old;
 SOCKET TCPConnection::globalSocket = INVALID_SOCKET;
 
 char globalvalue = 9;
@@ -161,29 +161,29 @@ TCPConnection::~TCPConnection()
 }
 
 // The main chat program function that houses all functionality for the chat program.
-bool TCPConnection::startChatProgram()
-{
-	TCPConnection serverObj;
-	TCPConnection clientObj;
-	// BEGIN THREAD RACE
-	createServerRaceThread(&serverObj);			//<-----------------
-	createClientRaceThread(&clientObj);			//<----------------
-
-
-	// Wait for 1 thread to finish
-#ifdef __linux__
-	pthread_join(TCPConnection::thread1, NULL);
-	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
-#endif//__linux__
-#ifdef _WIN32
-	WaitForMultipleObjects(
-		2,			//number of objects in array
-		TCPConnection::ghEvents,	//array of objects
-		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
-		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
-#endif//_WIN32
-
-}
+//bool TCPConnection::startChatProgram()
+//{
+//	TCPConnection serverObj;
+//	TCPConnection clientObj;
+//	// BEGIN THREAD RACE
+//	createServerRaceThread(&serverObj);			//<-----------------
+//	createClientRaceThread(&clientObj);			//<----------------
+//
+//
+//	// Wait for 1 thread to finish
+//#ifdef __linux__
+//	pthread_join(TCPConnection::thread1, NULL);
+//	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
+//#endif//__linux__
+//#ifdef _WIN32
+//	WaitForMultipleObjects(
+//		2,			//number of objects in array
+//		TCPConnection::ghEvents,	//array of objects
+//		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
+//		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
+//#endif//_WIN32
+//
+//}
 
 void TCPConnection::giveIPandPort(std::string target_extern_ip, std::string target_port_, std::string my_external_ip_address, std::string my_ip_address, std::string my_port)
 {
@@ -246,13 +246,14 @@ void TCPConnection::clientLoopAttackThread(void* instance)
 	// >= 1 would mean the socket is assigned a legitimate value.
 	while (connected_socket_stuff == INVALID_SOCKET)
 	{
-		if (global_winner == SERVER_WON)
+		if (global_winner == SERVER_WON_old)
 		{
 			if (global_verbose == true)
 			{
 				std::cout << "CTHREAD::Server won. Exiting thread.\n";
-				return;// true
+				
 			}
+			return;// true
 		}
 		connected_socket_stuff = self->connectToTarget(s);
 		if (connected_socket_stuff == false)
@@ -261,7 +262,7 @@ void TCPConnection::clientLoopAttackThread(void* instance)
 			continue;
 		else // must be true
 		{
-			global_winner = CLIENT_WON;
+			global_winner = CLIENT_WON_old;
 			return; // true
 		}
 		//Snooze.mySleep(1);// Might want to make several threads since it doesn't appear easy to sleep less than 1 ms?
@@ -340,7 +341,7 @@ void TCPConnection::serverCompetitionThread(void* instance)
 			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
 			return;
 		}
-		else if (self->global_winner == CLIENT_WON)
+		else if (self->global_winner == CLIENT_WON_old)
 		{
 			self->closeThisSocket(self->ListenSocket);
 			if (global_verbose == true)
@@ -366,7 +367,7 @@ void TCPConnection::serverCompetitionThread(void* instance)
 				std::cout << "accept must have been successful, setting globalwinner and globalsocket\n";
 			}
 			self->globalSocket = iFeedback;
-			self->global_winner = SERVER_WON;
+			self->global_winner = SERVER_WON_old;
 			self->closeThisSocket(self->ListenSocket);
 			return;
 		}
@@ -390,7 +391,7 @@ void TCPConnection::clientCompetitionThread(void* instance)
 		return; //1;
 
 	CrossPlatformSleep Sleeping;
-	while (global_winner != SERVER_WON && global_winner != CLIENT_WON)
+	while (global_winner != SERVER_WON_old && global_winner != CLIENT_WON_old)
 	{
 		int iFeedback;
 		if (global_verbose == true)
@@ -400,7 +401,7 @@ void TCPConnection::clientCompetitionThread(void* instance)
 			return; //0;
 		else if (iFeedback == INVALID_SOCKET)	// If it is just unable to connect, but doesn't error, then continue trying to connect.
 		{
-			if (global_winner == SERVER_WON)
+			if (global_winner == SERVER_WON_old)
 			{
 				if (global_verbose == true)
 				{
@@ -417,12 +418,12 @@ void TCPConnection::clientCompetitionThread(void* instance)
 		}
 		else	//connection is established, the client has won the competition.
 		{	
-			if (global_winner != SERVER_WON)		//make sure the server hasn't already won during the time it took to attempt a TCPConnection
+			if (global_winner != SERVER_WON_old)		//make sure the server hasn't already won during the time it took to attempt a TCPConnection
 			{	
 				std::cout << "CTHREAD :: ";
 				std::cout << "setting global values.\n";
 				globalSocket = iFeedback;
-				global_winner = CLIENT_WON;
+				global_winner = CLIENT_WON_old;
 				if (global_verbose == true)
 				{
 					std::cout << "CTHREAD :: " << global_winner << " is the winner.\n";

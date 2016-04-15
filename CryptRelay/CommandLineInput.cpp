@@ -20,25 +20,35 @@ CommandLineInput::~CommandLineInput()
 void CommandLineInput::helpAndReadMe()
 {
 
-	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4 -tp 7172\n";
+	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4 -tp 30001\n";
 	std::cout << "Proper format for a LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
 	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tp 30001 -mL 192.168.1.4 -mp 30001\n";
 	std::cout << "\n";
-	std::cout << "-h	help		Displays the readme\n";
-	std::cout << "-t	target		The target's IP address.\n";
-	std::cout << "-tp	targetport	The target's external port number.\n";
-	std::cout << "-mL	me		Your local IP address that you want to listen on.\n";
-	std::cout << "-mp	myport		Your port number that you want to listen on.\n";
-	std::cout << "-v	verbose		Displays a lot of text output on screen.\n";
-	std::cout << "-lan	LAN		Don't connect to the internet. Use LAN only.\n";
-	std::cout << "-spf	Show Port Forwards	Display the list of current port forwards on the router.\n";
-	std::cout << "-dpf	Delete Port Forward	Delete a specific port forward rule.\n";
-	std::cout << "         Format: cryptrelay.exe -dpf my_external_port protocol\n";
+	std::cout << "-h    help		Displays the readme\n";
+	std::cout << "-t    target		The target's IP address.\n";
+	std::cout << "-tp   targetport	The target's external port number.\n";
+	std::cout << "-mL   me		Your local IP address that you want to listen on.\n";
+	std::cout << "-mp   myport		Your port number that you want to listen on.\n";
+	std::cout << "-v    verbose		Displays a lot of text output on screen.\n";
+	std::cout << "-lan  LAN		Don't connect to the internet. Use LAN only.\n";
+	std::cout << "-spf  Show Port Forwards	Display the list of current port forwards\n";
+	std::cout << "      Format: cryptrelay.exe -dpf my_external_port protocol\n";
+	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
-	std::cout << "-f	file		The file, and location of the file you wish to xfer.\n";
+	std::cout << "-dpf  Delete Port Forward Delete a specific port forward rule.\n";
+	std::cout << "-f    file        The file, and location of the file you wish to xfer.\n";
 	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n\n\n";
 	return;
+}
+
+void CommandLineInput::Examples()
+{
+	std::cout << "\n# List of various examples:\n";
+	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
+	std::cout << "cryptrelay.exe -t 192.168.1.5 -tp 50302\n";
+	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
+
 }
 
 int CommandLineInput::getCommandLineInput(int argc, char* argv[])
@@ -135,6 +145,11 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					my_ext_ip_address = argv[i + 1];
 					++i;
 				}
+			}
+			else if (arg[i] == "--examples")
+			{
+				Examples();
+				return 0;
 			}
 			else if (arg[i] == "-v")
 			{

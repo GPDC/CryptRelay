@@ -214,7 +214,7 @@ int SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockadd
 }
 
 // For TCP use, not UDP
-SOCKET SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
+int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
@@ -232,33 +232,28 @@ SOCKET SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 	int errchk = connect(fd, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		int r = getError(errchk);
+		if (r == 10060)
+			return -10060; // -10060 is a timeout error.
 		std::cout << "Connect failed. Socket Error.\n";
 		myCloseSocket(fd);
 		return SOCKET_ERROR;
 	}
-	//myFreeAddrInfo(result);
-
-	if (fd == INVALID_SOCKET)
-	{
-		getError(errchk);
-		std::cout << "Connect Failed. Invalid socket.\n";
-		myCloseSocket(fd);
-		return INVALID_SOCKET;
-	}
 	else
 	{
-		std::cout << "Connection established.\n";
+		// Connection established
 		if (global_verbose == true)
-			std::cout << "Using socket ID: " << fd << "\n";
+			std::cout << "Connection established using socket ID: " << fd << "\n";
 		return fd;
 	}
+	//myFreeAddrInfo(result);
 }
 
 // TCP use, not UDP
 bool SocketClass::myListen(SOCKET fd)
 {
-	std::cout << "Listening on IP: " << "IP HERE" << " PORT: " << "PORTHERE...\n";
+	if (global_verbose == true)
+		std::cout << "listen() called.\n";
 	int errchk = listen(fd, SOMAXCONN);
 	if (errchk == SOCKET_ERROR)
 	{
@@ -300,13 +295,15 @@ SOCKET SocketClass::myAccept(SOCKET fd)
 	return accepted_socket;
 }
 
+// Using the given hints, ip addr, and port, it then gives you a pointer
+// to a linked list of on or more addrinfo structures and gives you the
+// pointer to it. The pointer address is located in whatever u gave it for ppresult.
+// This is not to be confused with the return value of the function.
 bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, const ADDRINFOA *phints, PADDRINFOA *ppresult)
 {
 	if (global_verbose == true)
 		std::cout << "getaddrinfo given: IP address and port... ";
-
-	// Using the given hints, ip addr, and port, it then makes(?) a new addrinfo instance and gives
-	// you the pointer to it. The pointer address is located in whatever u gave it for ppresult.
+	
 	int errchk = getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);
 	if (errchk != 0)
 	{
@@ -410,7 +407,8 @@ int SocketClass::getError(int errchk_number)
 
 #ifdef _WIN32
 	int errsv = WSAGetLastError();
-	if (errsv == 10060)	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
+	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
+	if (errsv == 10060)	// This doesn't seem like the best way to do this...
 		return errsv;
 
 	std::cout << "ERROR: " << "errchk ==" << " " <<  errchk_number << " " << "WSAERROR:" << " " << errsv << ".\n";

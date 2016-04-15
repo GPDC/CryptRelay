@@ -22,15 +22,18 @@ public:
 	std::string my_host_port;
 	std::string my_ext_ip_address;
 
-	struct UPnPDeleteSpecificPortForward
-	{
-		std::string extern_port;
-		std::string protocol;
-	};
+	///* currently unused */
+	//struct UPnPDeleteSpecificPortForward
+	//{
+	//	std::string extern_port;
+	//	std::string protocol;
+	//};
 
 protected:
 private:
+
 	void helpAndReadMe();
+	void Examples();
 };
 
 

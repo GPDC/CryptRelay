@@ -44,7 +44,6 @@ public:
 
 
 	SOCKET mySocket(int address_family, int type, int protocol);
-	SOCKET myConnect(SOCKET fd, const sockaddr* name, int name_len);
 	SOCKET myAccept(SOCKET fd);
 
 	// All the bool functions return false when there is an error. True if everything went fine.
@@ -56,6 +55,7 @@ public:
 	bool myGetAddrInfo(std::string target_ip, std::string target_port, const ADDRINFOA *phints, PADDRINFOA *ppresult);
 
 	int myinet_pton(int family, PCSTR ip_addr, PVOID paddr_buf);
+	int myConnect(SOCKET fd, const sockaddr* name, int name_len);
 	int mySend(SOCKET s, const char* buffer, int buffer_length, int flags);
 	int mySendTo(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
 	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
@@ -66,7 +66,11 @@ public:
 	void myFreeAddrInfo(PADDRINFOA pAddrInfo);
 
 	
-
+	// getError() 99% of cases you won't need to do anything with the return value.
+	//	the return value is just incase you want to do something specific with the
+	//	WSAGetLastError(), or errno, code. Example would be to check to see if
+	//	recvfrom() errored because of a timeout, not because of a real error.
+	int getError(int errchk_number);	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
 
 protected:
 private:
@@ -75,11 +79,7 @@ private:
 	WSADATA wsaData;			// for WSAStartup();
 #endif//_WIN32
 
-	// getError() 99% of cases you won't need to do anything with the return value.
-	//	the return value is just incase you want to do something specific with the
-	//	WSAGetLastError(), or errno, code. Example would be to check to see if
-	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError(int errchk_number);	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
+
 
 };
 
