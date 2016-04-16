@@ -2,13 +2,13 @@
 #include <stdio.h>
 #include <string>
 #include <WinSock2.h>
-#include <time.h>	// needed for localtime_x
+#include <time.h>	// needed for localtime_s and localtime_r
 #include <limits.h>	// macros for int, short, char, etc that are defined as their min/max values.
 
 #include "UPnP.h"
 #include "GlobalTypeHeader.h"
 
-//miniupnp
+//miniupnp library
 //#include "minixml.h"
 //#include "minissdpc.h"
 //#include "miniwget.h"
@@ -23,20 +23,8 @@
 
 #ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		// NEEDED for miniupnp library!!!
-#pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!!
+#pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!! I think this one is for linux too tho...
 #endif//_WIN32
-
-#ifdef _WIN32
-
-#define localtime_x localtime_s		// Making this cross platform
-
-#endif//_WIN32
-
-#ifdef __linux__
-
-#define localtime_x localtime_r		// Making this cross platform
-
-#endif//__linux__
 
 
 UPnP::UPnP()

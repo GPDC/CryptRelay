@@ -1,19 +1,29 @@
 // SocketClass.h
 
-// Purpose:
+// I'm really doubting the usefuless of a class like this.
+// I mean it does make the code smaller in chat_program
+// and therefore easier to skim over and see what is going on,
+// but it kinda seems silly. I don't know. I would like some
+// input from people on this.
+
+// Overview:
 // Purpose of this class is to place all sockets related things here, and take
 // the normal socket API (winsock, linux sockets) and provide
 // a slightly higher level function to replace them. The functions will include
 // these new features in order to reduce clutter in the rest of the program:
 // 1. Cross platform windows, linux.
-// 2. Super simple error checking and output to command prompt
+// 2. Super simple error checking and output to command prompt on error
 // 3. Close socket if error occured.
 // 4. if global_verbose == true, cout extra info to command prompt
+// 5. WSAStartup() is called in the constructor
+// 6. WSACleanup() is called in the deconstructor
+// Please note that means whoever is using this class will need to
+// call freeaddrinfo(struct addrinfo) when they need to.
 
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
 // fd stands for File Descriptor. It is linux's version of a SOCKET.
-// buf is buffer
+// buf is buffer. It is a place where information is stored for a short time.
 
 #ifndef SocketClass_h__
 #define SocketClass_h__
@@ -44,7 +54,7 @@ public:
 
 
 	SOCKET mySocket(int address_family, int type, int protocol);
-	SOCKET myAccept(SOCKET fd);
+	SOCKET __stdcall myAccept(SOCKET fd);
 
 	// All the bool functions return false when there is an error. True if everything went fine.
 	bool myWSAStartup();

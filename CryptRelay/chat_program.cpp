@@ -30,7 +30,9 @@
 #pragma comment(lib, "AdvApi32.lib")
 
 // HANDLE storage for threads
-HANDLE ChatProgram::ghEvents[3]{};
+HANDLE ChatProgram::ghEvents[2]{};
+
+HANDLE ChatProgram::ghEventsSend[1];
 #endif//_WIN32
 
 
@@ -59,8 +61,8 @@ ChatProgram::~ChatProgram()
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs other wise.
 	// Check comments in the myFreeAddrInfo() to see how its done.
-	if (result != nullptr)
-		SockStuff.myFreeAddrInfo(result);
+	//if (result != nullptr)
+	//	SockStuff.myFreeAddrInfo(result);
 }
 
 
@@ -193,6 +195,7 @@ void ChatProgram::startServerThread(void * instance)
 	int errchk;
 	while (1)
 	{
+		std::cout << "dbg Listen thread active...\n";
 		// Putting the socket into the array so select() can check it for readability
 		// Format is:  FD_SET(int fd, fd_set *FdSet);
 		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
@@ -223,16 +226,20 @@ void ChatProgram::startServerThread(void * instance)
 			if (global_verbose == true)
 				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
 
+			SOCKET accepted_socket;
 			// Accept the connection and create a new socket to communicate on.
-			if (errchk = self->SockStuff.myAccept(listen_socket) == false)
+			accepted_socket = self->SockStuff.myAccept(listen_socket);
+			if (accepted_socket == INVALID_SOCKET)
 				_endthread();
 			if (global_verbose == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
 
 			// Assigning global values to let the client thread know it should stop trying.
-			global_socket = errchk;
+			global_socket = accepted_socket;
 			global_winner = SERVER_WON;
 
+			if (global_verbose == true)
+				std::cout << "dbg closing socket after retrieving new one from accept()\n";
 			// Not using this socket anymore since we created a new socket after accept() ing the connection.
 			self->SockStuff.myCloseSocket(listen_socket);
 
@@ -241,11 +248,14 @@ void ChatProgram::startServerThread(void * instance)
 	}
 
 	// Looped checking for user input and sending it.
-	threadedLoopedSendMessages(instance);
+	createThreadedLoopedSendMessages(instance);
 
-	// Receive incoming messages
+	// Receive incoming messages (not threaded)
 	self->loopedReceiveMessages();
 
+
+	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
+	// this is so we can exit smoothly
 
 	_endthread();
 }
@@ -329,8 +339,9 @@ void ChatProgram::startClientThread(void * instance)
 	// the next address in the list.
 	int TIMEOUT_ERROR = -10060;
 	int r = INVALID_SOCKET;
-	while (global_winner != SERVER_WON && global_winner != CLIENT_WON)
+	while (1)
 	{
+		std::cout << "dbg client thread active...\n";
 		// Check to see if server has connected to someone
 		if (global_winner == SERVER_WON)
 		{
@@ -358,6 +369,7 @@ void ChatProgram::startClientThread(void * instance)
 		}
 		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
+			std::cout << "dbg not real error, timeout client connect\n";
 			self->SockStuff.myCloseSocket(s);
 			continue;
 		}
@@ -366,7 +378,7 @@ void ChatProgram::startClientThread(void * instance)
 			// Assigning global values to let the server thread know it should stop trying.
 			global_socket = s;
 			global_winner = CLIENT_WON;
-			_endthread();
+			break;
 		}
 		else
 		{
@@ -374,13 +386,23 @@ void ChatProgram::startClientThread(void * instance)
 			_endthread();
 		}
 	}
+
+
+	/*
+
+
+
 	// If we are here, we must be connected to someone.
 	char remote_host[NI_MAXHOST];
 	char remote_hosts_port[NI_MAXSERV];
 
+
+	
+
 	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
 	// will make it return the port instead of the service name.
 	int errchk = getnameinfo( (sockaddr*)self->result, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICSERV);
+	std::cout << "dbg getnameinfo() family = " << self->result->ai_family << "\n";
 	if (errchk != 0)
 	{
 		self->SockStuff.getError(errchk);
@@ -390,12 +412,21 @@ void ChatProgram::startClientThread(void * instance)
 	else
 		std::cout << "Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
 
+
+	*/
+
+
+
 	// Send messages inputted by user until there is an error or connection is closed.
 	createThreadedLoopedSendMessages(instance);
 
 	// Receive messages as until there is an error or connection is closed.
+	self->loopedReceiveMessages(/*remote_host*/);
 
-	self->loopedReceiveMessages(remote_host);
+
+	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
+	// this is so we can exit smoothly
+
 
 	// Exiting chat program
 	_endthread();
@@ -406,6 +437,36 @@ void ChatProgram::startClientThread(void * instance)
 // To find out who we were connected to, use getnameinfo()
 int ChatProgram::loopedReceiveMessages(const char* remote_host)
 {
+	/* TEMP SEND AUTO MSG **********************/
+
+	const char* sendbuf = "First message sent.";
+	std::string message_to_send = "Automated message sent from recv func.\n";
+
+	//send this message once
+	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
+	int wombocombo = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	if (wombocombo == SOCKET_ERROR)
+	{
+		SockStuff.getError(wombocombo);
+		std::cout << "send failed.\n";
+		SockStuff.myCloseSocket(global_socket);
+		//myWSACleanup();
+		//return false;
+	}
+	else
+	{
+		std::cout << "Message sent: " << sendbuf << "\n";
+		std::cout << "Bytes Sent: " << wombocombo << "\n";
+	}
+
+
+
+
+	/* TEMP SEND AUTO MSG *********************/
+
+
+
+
 	// Receive until the peer shuts down the connection
 	if (global_verbose == true)
 		std::cout << "Recv loop started...\n";
@@ -494,7 +555,7 @@ void ChatProgram::createThreadedLoopedSendMessages(void * instance)
 	//   if (thread_handle == -1L)
 	//		error stuff here;
 	uintptr_t thread_handle = _beginthread(threadedLoopedSendMessages, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEvents[2] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
+	ghEventsSend[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
 		int errsv = errno;
@@ -527,8 +588,35 @@ void ChatProgram::threadedLoopedSendMessages(void * instance)
 	}
 	ChatProgram* self = (ChatProgram*)instance;
 	int bytes;
-	std::string message_to_send;	// User's input is put in here
+	std::string message_to_send = "first sendmsg thread\n";	// User's input is put in here
 	const char* send_buf = "";
+
+
+
+	/* TEMP SEND AUTO MSG **********************/
+
+
+	//send this message once
+	send_buf = message_to_send.c_str();	//c_str converts from string to char *
+	int wombocombo = send(global_socket, send_buf, (int)strlen(send_buf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	if (wombocombo == SOCKET_ERROR)
+	{
+		self->SockStuff.getError(wombocombo);
+		std::cout << "send failed.\n";
+		self->SockStuff.myCloseSocket(global_socket);
+		//myWSACleanup();
+		//return false;
+	}
+	std::cout << "Message sent: " << send_buf << "\n";
+	if (global_verbose == true)
+		std::cout << "Bytes Sent: " << wombocombo << "\n";
+
+
+
+	/* TEMP SEND AUTO MSG *********************/
+
+
+
 
 	//ask & send the user's input the rest of the time.
 	while (1)

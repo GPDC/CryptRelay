@@ -89,11 +89,58 @@ int main(int argc, char *argv[])
 
 	if (CLI.use_lan_only == true)
 	{
+
+		// Give IP and port info to the ChatServer instance
+		if (empty(CLI.target_ip_address) == false)
+			ChatServer.target_external_ip = CLI.target_ip_address;
+
+		if (empty(CLI.target_port) == false)
+			ChatServer.target_external_port = CLI.target_port;
+
+		if (empty(CLI.my_ext_ip_address) == false)
+			ChatServer.my_external_ip = CLI.my_ext_ip_address;
+		else
+			ChatServer.my_external_ip = Upnp.my_external_ip;
+
+		if (empty(CLI.my_ip_address) == false)
+			ChatServer.my_local_ip = CLI.my_ip_address;
+		else
+			ChatServer.my_local_ip = Upnp.my_local_ip;
+
+		if (empty(CLI.my_host_port) == false)
+			ChatServer.my_local_port = CLI.my_host_port;
+		else
+			ChatServer.my_local_port = Upnp.my_internal_port;
+
+
+		// Give IP and port info to the ChatClient instance
+		if (empty(CLI.target_ip_address) == false)
+			ChatClient.target_external_ip = CLI.target_ip_address;
+
+		if (empty(CLI.target_port) == false)
+			ChatClient.target_external_port = CLI.target_port;
+
+		if (empty(CLI.my_ext_ip_address) == false)
+			ChatClient.my_external_ip = CLI.my_ext_ip_address;
+		else
+			ChatClient.my_external_ip = Upnp.my_external_ip;
+
+		if (empty(CLI.my_ip_address) == false)
+			ChatClient.my_local_ip = CLI.my_ip_address;
+		else
+			ChatClient.my_local_ip = Upnp.my_local_ip;
+
+		if (empty(CLI.my_host_port) == false)
+			ChatClient.my_local_port = CLI.my_host_port;
+		else
+			ChatClient.my_local_port = Upnp.my_internal_port;
+
+
 		// Giving the TCP class the user specified target ip and port
 		// also giving the TCP class the IPs and port gathered by
 		// the Upnp class.
-		ChatServer.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
-		ChatClient.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
+		//ChatServer.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
+		//ChatClient.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
 	}
 	else if (CLI.use_upnp == true)	// Checking to make sure user didn't turn off UPnP
 	{
@@ -111,7 +158,7 @@ int main(int argc, char *argv[])
 			// else
 			//     take it from upnp
 
-			// Give to the ChatServer instance
+			// Give IP and port info to the ChatServer instance
 			if (empty(CLI.target_ip_address) == false)
 				ChatServer.target_external_ip = CLI.target_ip_address;
 
@@ -134,7 +181,7 @@ int main(int argc, char *argv[])
 				ChatServer.my_local_port = Upnp.my_internal_port;
 
 
-			// Give to the ChatClient instance
+			// Give IP and port info to the ChatClient instance
 			if (empty(CLI.target_ip_address) == false)
 				ChatClient.target_external_ip = CLI.target_ip_address;
 
@@ -174,23 +221,23 @@ int main(int argc, char *argv[])
 	ChatProgram::createStartServerThread(&ChatServer);			//<-----------------
 	ChatProgram::createStartClientThread(&ChatClient);			//<----------------
 
-	// Wait for 1 thread to finish
+	// Wait for 2 threads to finish
 #ifdef __linux__
 	pthread_join(ChatProgram::thread0, NULL);
 	pthread_join(ChatProgram::thread1, NULL);
 #endif//__linux__
 #ifdef _WIN32
-	WaitForMultipleObjects(
-			2,			// Number of objects in array
+	int r = WaitForMultipleObjects(
+			(DWORD)2,	// Number of objects in array
 			ChatProgram::ghEvents,	// Array of objects
-			true,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
+			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
 			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
 		);	
 #endif//_WIN32
 
 
 
-
+	std::cout << "why\n";
 	
 	
 	std::cout << "PAUSE...";
@@ -233,6 +280,24 @@ int main(int argc, char *argv[])
 	// get ip address of the accepted connection
 	// if it isn't the one you were expecting, close the connection and listen for connections again
 	// else continue on as normal, starting the chat system or w/e is desired
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	/*
+
+
+
 
 	// Server startup sequence
 	TCPConnection serverObj;
@@ -346,6 +411,8 @@ int main(int argc, char *argv[])
 		INFINITE);	// Its going to wait this long, OR until all threads are finished, in order to continue.
 
 	*/
+
+
 
 	return 1;
 //===================================== End Chat Program =====================================

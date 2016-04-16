@@ -33,10 +33,15 @@ public:
 	static int ret2;			// Send()
 #endif //__linux__
 #ifdef _WIN32
-	static HANDLE ghEvents[3];	// i should be using vector of ghevents[] instead...
+	static HANDLE ghEvents[2];	// i should be using vector of ghevents[] instead...
 	// [0] == server
 	// [1] == client
-	// [2] == send()
+
+
+	// [2] == send()	//cancel this if ghEventsSend[1] is here
+
+
+	static HANDLE ghEventsSend[1];// [0] == send()
 #endif //_WIN32
 
 	// A global socket used by threads
@@ -52,7 +57,7 @@ public:
 	// If you want to give this class IP and port information, call this function.
 	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = default_port, std::string my_internal_port = default_port);
 
-
+	// IP and port information can be given to chat_program through these variables.
 	std::string target_external_ip;						// If the option to use LAN only == true, this is target's local ip
 	std::string target_external_port = default_port;	// If the option to use LAN only == true, this is target's local port
 	std::string my_external_ip;

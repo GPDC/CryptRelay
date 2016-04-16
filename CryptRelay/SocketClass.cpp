@@ -244,7 +244,7 @@ int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 		// Connection established
 		if (global_verbose == true)
 			std::cout << "Connection established using socket ID: " << fd << "\n";
-		return fd;
+		return 0;// Success
 	}
 	//myFreeAddrInfo(result);
 }
@@ -266,7 +266,7 @@ bool SocketClass::myListen(SOCKET fd)
 }
 
 // TCP use, not UDP
-SOCKET SocketClass::myAccept(SOCKET fd)
+SOCKET __stdcall SocketClass::myAccept(SOCKET fd)
 {
 #ifdef __linux__
 	socklen_t addr_size;
@@ -287,7 +287,7 @@ SOCKET SocketClass::myAccept(SOCKET fd)
 		getError(accepted_socket);
 		std::cout << "accept failed.\n";
 		myCloseSocket(fd);
-		return false;
+		return INVALID_SOCKET;
 	}
 	if (global_verbose == true)
 		std::cout << "Connected to " << ":" << "ip here, on socket ID: "<< accepted_socket << "\n";
