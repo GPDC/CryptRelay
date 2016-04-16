@@ -247,6 +247,8 @@ void ChatProgram::startServerThread(void * instance)
 		}
 	}
 
+	self->coutPeerIPAndPort(global_socket);
+
 	// Looped checking for user input and sending it.
 	createThreadedLoopedSendMessages(instance);
 
@@ -387,8 +389,24 @@ void ChatProgram::startClientThread(void * instance)
 		}
 	}
 
+	// Display who the user is connected with.
+	self->coutPeerIPAndPort(global_socket);
 
-	/*
+
+#if 0 // easy uncomment block
+	// Find out who you are connected to.
+	sockaddr PeerIPAndPortStorage;
+	int peer_ip_and_port_storage_len = sizeof(sockaddr);
+	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
+
+	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
+	int errchk = getpeername(global_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	if (errchk == -1)
+	{
+		self->SockStuff.getError(errchk);
+		std::cout << "getpeername() failed.\n";
+		// continuing, b/c this isn't a big problem.
+	}
 
 
 
@@ -396,13 +414,9 @@ void ChatProgram::startClientThread(void * instance)
 	char remote_host[NI_MAXHOST];
 	char remote_hosts_port[NI_MAXSERV];
 
-
-	
-
 	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
 	// will make it return the port instead of the service name.
-	int errchk = getnameinfo( (sockaddr*)self->result, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICSERV);
-	std::cout << "dbg getnameinfo() family = " << self->result->ai_family << "\n";
+	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICSERV);
 	if (errchk != 0)
 	{
 		self->SockStuff.getError(errchk);
@@ -412,8 +426,8 @@ void ChatProgram::startClientThread(void * instance)
 	else
 		std::cout << "Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
 
-
-	*/
+#endif //0 or 1
+	
 
 
 
@@ -640,4 +654,39 @@ void ChatProgram::threadedLoopedSendMessages(void * instance)
 	}
 
 	_endthread();
+}
+
+// Output to console the the peer's IP and port that you have connected to the peer with.
+void ChatProgram::coutPeerIPAndPort(SOCKET s)
+{
+	sockaddr PeerIPAndPortStorage;
+	int peer_ip_and_port_storage_len = sizeof(sockaddr);
+	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
+
+	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
+	int errchk = getpeername(s, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	if (errchk == -1)
+	{
+		SockStuff.getError(errchk);
+		std::cout << "getpeername() failed.\n";
+		// continuing, b/c this isn't a big problem.
+	}
+
+
+
+	// If we are here, we must be connected to someone.
+	char remote_host[NI_MAXHOST];
+	char remote_hosts_port[NI_MAXSERV];
+
+	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
+	// will make it return the port instead of the service name.
+	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICHOST);
+	if (errchk != 0)
+	{
+		SockStuff.getError(errchk);
+		std::cout << "getnameinfo() failed.\n";
+		// still going to continue the program, this isn't a big deal
+	}
+	else
+		std::cout << "Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
 }

@@ -72,6 +72,8 @@ private:
 	static void threadedLoopedSendMessages(void * instance);
 	int loopedReceiveMessages(const char* host = "Peer");
 
+	void coutPeerIPAndPort(SOCKET s);
+
 
 	// hints is used by getaddrinfo()
 	// once hints is given to getaddrinfo() it will return *result

@@ -397,7 +397,7 @@ int SocketClass::getError(int errchk_number)
 	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
 	if (errsv == 10060)	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
 		return errsv;
-	std::cout << "ERROR: " << "errchk ==" << " " << errchk_number << " " << "ERRNO:" << " " << errsv << ".\n";
+	std::cout << "ERRNO: " << errsv << ".\n";
 	if (errsv == 10013)
 	{
 		std::cout << "Permission Denied.\n";
@@ -411,7 +411,7 @@ int SocketClass::getError(int errchk_number)
 	if (errsv == 10060)	// This doesn't seem like the best way to do this...
 		return errsv;
 
-	std::cout << "ERROR: " << "errchk ==" << " " <<  errchk_number << " " << "WSAERROR:" << " " << errsv << ".\n";
+	std::cout << "WSAERROR: " << errsv << ".\n";
 	if (errsv == 10013)
 		std::cout << "Permission Denied.\n";
 
