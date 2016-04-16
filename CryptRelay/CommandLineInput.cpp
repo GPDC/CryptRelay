@@ -48,6 +48,8 @@ void CommandLineInput::Examples()
 	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tp 50302\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
+	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tp 50451 -mL 192.168.1.3 -mp 30456\n";
+	std::cout << "\n";
 
 }
 

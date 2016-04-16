@@ -68,8 +68,8 @@ protected:
 private:
 	SocketClass SockStuff;
 
-	static void createThreadedLoopedSendMessages(void * instance);
-	static void threadedLoopedSendMessages(void * instance);
+	static void createLoopedSendMessagesThread(void * instance);
+	static void loopedSendMessagesThread(void * instance);
 	int loopedReceiveMessages(const char* host = "Peer");
 
 	void coutPeerIPAndPort(SOCKET s);

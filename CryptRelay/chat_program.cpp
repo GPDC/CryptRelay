@@ -59,10 +59,10 @@ ChatProgram::~ChatProgram()
 {
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
-	// Making sure we never freeaddrinfo twice. Ugly bugs other wise.
+	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	// Check comments in the myFreeAddrInfo() to see how its done.
-	//if (result != nullptr)
-	//	SockStuff.myFreeAddrInfo(result);
+	if (result != nullptr)
+		SockStuff.myFreeAddrInfo(result);
 }
 
 
@@ -151,7 +151,7 @@ void ChatProgram::startServerThread(void * instance)
 
 	memset(&self->hints, 0, sizeof(self->hints));
 	// These are the settings for the connection
-	self->hints.ai_family = AF_INET;			//ipv4
+	self->hints.ai_family = AF_INET;		//ipv4
 	self->hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
 	self->hints.ai_flags = AI_PASSIVE;		// Let anyone connect, not just a specific IP address
 	self->hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
@@ -247,10 +247,11 @@ void ChatProgram::startServerThread(void * instance)
 		}
 	}
 
+	// Display who the user has connected to.
 	self->coutPeerIPAndPort(global_socket);
 
 	// Looped checking for user input and sending it.
-	createThreadedLoopedSendMessages(instance);
+	createLoopedSendMessagesThread(instance);
 
 	// Receive incoming messages (not threaded)
 	self->loopedReceiveMessages();
@@ -392,47 +393,8 @@ void ChatProgram::startClientThread(void * instance)
 	// Display who the user is connected with.
 	self->coutPeerIPAndPort(global_socket);
 
-
-#if 0 // easy uncomment block
-	// Find out who you are connected to.
-	sockaddr PeerIPAndPortStorage;
-	int peer_ip_and_port_storage_len = sizeof(sockaddr);
-	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
-
-	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
-	int errchk = getpeername(global_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
-	if (errchk == -1)
-	{
-		self->SockStuff.getError(errchk);
-		std::cout << "getpeername() failed.\n";
-		// continuing, b/c this isn't a big problem.
-	}
-
-
-
-	// If we are here, we must be connected to someone.
-	char remote_host[NI_MAXHOST];
-	char remote_hosts_port[NI_MAXSERV];
-
-	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
-	// will make it return the port instead of the service name.
-	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICSERV);
-	if (errchk != 0)
-	{
-		self->SockStuff.getError(errchk);
-		std::cout << "getnameinfo() failed.\n";
-		// still going to continue the program, this isn't a big deal
-	}
-	else
-		std::cout << "Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
-
-#endif //0 or 1
-	
-
-
-
 	// Send messages inputted by user until there is an error or connection is closed.
-	createThreadedLoopedSendMessages(instance);
+	createLoopedSendMessagesThread(instance);
 
 	// Receive messages as until there is an error or connection is closed.
 	self->loopedReceiveMessages(/*remote_host*/);
@@ -451,32 +413,29 @@ void ChatProgram::startClientThread(void * instance)
 // To find out who we were connected to, use getnameinfo()
 int ChatProgram::loopedReceiveMessages(const char* remote_host)
 {
-	/* TEMP SEND AUTO MSG **********************/
-
-	const char* sendbuf = "First message sent.";
-	std::string message_to_send = "Automated message sent from recv func.\n";
+	
+#if 1 /* TEMP SEND AUTO MSG **********************/
+	const char* sendbuf = nullptr;
+	std::string message_to_send = "This is an automated message from my receive loop.\n";
 
 	//send this message once
-	sendbuf = message_to_send.c_str();	//c_str converts from string to char *
-	int wombocombo = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	sendbuf = message_to_send.c_str();
+	int wombocombo = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
 	if (wombocombo == SOCKET_ERROR)
 	{
 		SockStuff.getError(wombocombo);
 		std::cout << "send failed.\n";
 		SockStuff.myCloseSocket(global_socket);
-		//myWSACleanup();
-		//return false;
+		//return;
 	}
-	else
-	{
-		std::cout << "Message sent: " << sendbuf << "\n";
-		std::cout << "Bytes Sent: " << wombocombo << "\n";
-	}
+	//else
+	//{
+	//	std::cout << "dbg Message sent: " << sendbuf << "\n";
+	//	std::cout << "dbg Bytes Sent: " << wombocombo << "\n";
+	//}
 
-
-
-
-	/* TEMP SEND AUTO MSG *********************/
+#endif 1 /* TEMP SEND AUTO MSG *********************/
+	
 
 
 
@@ -524,7 +483,7 @@ int ChatProgram::loopedReceiveMessages(const char* remote_host)
 			std::cout << "\n";
 
 			if (global_verbose == true)
-				printf("Bytes recvd: %d\n", bytes);
+				std::cout << "dbg Bytes recvd: " << bytes << "\n";
 		}
 		else if (bytes == 0)
 		{
@@ -546,12 +505,12 @@ int ChatProgram::loopedReceiveMessages(const char* remote_host)
 }
 
 
-void ChatProgram::createThreadedLoopedSendMessages(void * instance)
+void ChatProgram::createLoopedSendMessagesThread(void * instance)
 {
 	if (global_verbose == true)
 		std::cout << "Starting client thread.\n";
 #ifdef __linux__
-	ret2 = pthread_create(&thread2, NULL, threadedLoopedSendMessages, instance);
+	ret2 = pthread_create(&thread2, NULL, loopedSendMessagesThread, instance);
 	if (ret2)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
@@ -568,7 +527,7 @@ void ChatProgram::createThreadedLoopedSendMessages(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
-	uintptr_t thread_handle = _beginthread(threadedLoopedSendMessages, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+	uintptr_t thread_handle = _beginthread(loopedSendMessagesThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEventsSend[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
@@ -593,7 +552,7 @@ void ChatProgram::createThreadedLoopedSendMessages(void * instance)
 #endif//_WIN32
 }
 
-void ChatProgram::threadedLoopedSendMessages(void * instance)
+void ChatProgram::loopedSendMessagesThread(void * instance)
 {
 	if (instance == NULL)
 	{
@@ -602,32 +561,26 @@ void ChatProgram::threadedLoopedSendMessages(void * instance)
 	}
 	ChatProgram* self = (ChatProgram*)instance;
 	int bytes;
-	std::string message_to_send = "first sendmsg thread\n";	// User's input is put in here
+	std::string message_to_send = "Nothing.\n";
+#if 1	/* TEMP SEND AUTO MSG **********************/
+	message_to_send = "This is an automated message from my send loop.\n";
 	const char* send_buf = "";
 
-
-
-	/* TEMP SEND AUTO MSG **********************/
-
-
 	//send this message once
-	send_buf = message_to_send.c_str();	//c_str converts from string to char *
-	int wombocombo = send(global_socket, send_buf, (int)strlen(send_buf), 0);	//sendbuf is the message being sent. send() returns the total number of bytes sent
+	send_buf = message_to_send.c_str();
+	int wombocombo = send(global_socket, send_buf, (int)strlen(send_buf), 0);
 	if (wombocombo == SOCKET_ERROR)
 	{
 		self->SockStuff.getError(wombocombo);
 		std::cout << "send failed.\n";
 		self->SockStuff.myCloseSocket(global_socket);
-		//myWSACleanup();
-		//return false;
+		//return;
 	}
-	std::cout << "Message sent: " << send_buf << "\n";
+	/*std::cout << "dbg Message sent: " << send_buf << "\n";
 	if (global_verbose == true)
-		std::cout << "Bytes Sent: " << wombocombo << "\n";
+		std::cout << "dbg Bytes Sent: " << wombocombo << "\n";*/
 
-
-
-	/* TEMP SEND AUTO MSG *********************/
+#endif	/* TEMP SEND AUTO MSG *********************/
 
 
 
@@ -650,7 +603,7 @@ void ChatProgram::threadedLoopedSendMessages(void * instance)
 		}
 		std::cout << "You: "<< send_buf << "\n";
 		if (global_verbose == true)
-			std::cout << "Bytes Sent: " << bytes << "\n";
+			std::cout << "dbg Bytes Sent: " << bytes << "\n";
 	}
 
 	_endthread();
@@ -688,5 +641,5 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 		// still going to continue the program, this isn't a big deal
 	}
 	else
-		std::cout << "Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
+		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
 }

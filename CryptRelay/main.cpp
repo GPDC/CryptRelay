@@ -83,13 +83,12 @@ int main(int argc, char *argv[])
 	//===================================== Starting Chat Program =====================================
 
 	// Ideally I wouldn't create this Upnp instance unless I am sure I am going to use upnp...
-	UPnP Upnp;
+	UPnP* Upnp = nullptr;
 	ChatProgram ChatServer;
 	ChatProgram ChatClient;
 
 	if (CLI.use_lan_only == true)
 	{
-
 		// Give IP and port info to the ChatServer instance
 		if (empty(CLI.target_ip_address) == false)
 			ChatServer.target_external_ip = CLI.target_ip_address;
@@ -99,18 +98,12 @@ int main(int argc, char *argv[])
 
 		if (empty(CLI.my_ext_ip_address) == false)
 			ChatServer.my_external_ip = CLI.my_ext_ip_address;
-		else
-			ChatServer.my_external_ip = Upnp.my_external_ip;
 
 		if (empty(CLI.my_ip_address) == false)
 			ChatServer.my_local_ip = CLI.my_ip_address;
-		else
-			ChatServer.my_local_ip = Upnp.my_local_ip;
 
 		if (empty(CLI.my_host_port) == false)
 			ChatServer.my_local_port = CLI.my_host_port;
-		else
-			ChatServer.my_local_port = Upnp.my_internal_port;
 
 
 		// Give IP and port info to the ChatClient instance
@@ -122,42 +115,19 @@ int main(int argc, char *argv[])
 
 		if (empty(CLI.my_ext_ip_address) == false)
 			ChatClient.my_external_ip = CLI.my_ext_ip_address;
-		else
-			ChatClient.my_external_ip = Upnp.my_external_ip;
 
 		if (empty(CLI.my_ip_address) == false)
 			ChatClient.my_local_ip = CLI.my_ip_address;
-		else
-			ChatClient.my_local_ip = Upnp.my_local_ip;
 
 		if (empty(CLI.my_host_port) == false)
 			ChatClient.my_local_port = CLI.my_host_port;
-		else
-			ChatClient.my_local_port = Upnp.my_internal_port;
-
-
-		// Giving the TCP class the user specified target ip and port
-		// also giving the TCP class the IPs and port gathered by
-		// the Upnp class.
-		//ChatServer.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
-		//ChatClient.giveIPandPort(CLI.target_ip_address, CLI.my_ext_ip_address, CLI.my_ip_address, CLI.target_port, CLI.my_host_port);
 	}
-	else if (CLI.use_upnp == true)	// Checking to make sure user didn't turn off UPnP
+	else if (CLI.use_upnp == true)
 	{
+		Upnp = new UPnP;
 		// If UPnP is working, start the chat program using that knowledge.
-		if (Upnp.startUPnP() == true)
+		if (Upnp->startUPnP() == true)
 		{
-			// Giving the TCP class the user specified target ip and port
-			// also giving the TCP class the IPs and port gathered by
-			// the Upnp class.
-			// THIS SHOULD BE: if CLI.ipaddr or port w/e has something in it, then give that to Chat instead of the Upnp variable.
-
-			// should be:
-			// if (empty(CLI.target_ip_address) == false)
-			//     give it to ChatProgram
-			// else
-			//     take it from upnp
-
 			// Give IP and port info to the ChatServer instance
 			if (empty(CLI.target_ip_address) == false)
 				ChatServer.target_external_ip = CLI.target_ip_address;
@@ -168,17 +138,17 @@ int main(int argc, char *argv[])
 			if (empty(CLI.my_ext_ip_address) == false)
 				ChatServer.my_external_ip = CLI.my_ext_ip_address;
 			else
-				ChatServer.my_external_ip = Upnp.my_external_ip;
+				ChatServer.my_external_ip = Upnp->my_external_ip;
 
 			if (empty(CLI.my_ip_address) == false)
 				ChatServer.my_local_ip = CLI.my_ip_address;
 			else
-				ChatServer.my_local_ip = Upnp.my_local_ip;
+				ChatServer.my_local_ip = Upnp->my_local_ip;
 
 			if (empty(CLI.my_host_port) == false)
 				ChatServer.my_local_port = CLI.my_host_port;
 			else
-				ChatServer.my_local_port = Upnp.my_internal_port;
+				ChatServer.my_local_port = Upnp->my_internal_port;
 
 
 			// Give IP and port info to the ChatClient instance
@@ -191,18 +161,17 @@ int main(int argc, char *argv[])
 			if (empty(CLI.my_ext_ip_address) == false)
 				ChatClient.my_external_ip = CLI.my_ext_ip_address;
 			else
-				ChatClient.my_external_ip = Upnp.my_external_ip;
+				ChatClient.my_external_ip = Upnp->my_external_ip;
 
 			if (empty(CLI.my_ip_address) == false)
 				ChatClient.my_local_ip = CLI.my_ip_address;
 			else
-				ChatClient.my_local_ip = Upnp.my_local_ip;
+				ChatClient.my_local_ip = Upnp->my_local_ip;
 
 			if (empty(CLI.my_host_port) == false)
 				ChatClient.my_local_port = CLI.my_host_port;
 			else
-				ChatClient.my_local_port = Upnp.my_internal_port;
-
+				ChatClient.my_local_port = Upnp->my_internal_port;
 
 			/*ChatServer.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
 			ChatClient.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);*/
@@ -212,7 +181,6 @@ int main(int argc, char *argv[])
 			std::cout << "Fatal: Couldn't port forward via UPnP.\n";
 			return EXIT_FAILURE;
 		}
-
 	}
 
 	// Start the chat program.
@@ -233,186 +201,14 @@ int main(int argc, char *argv[])
 			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
 			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
 		);	
-#endif//_WIN32
-
-
-
-	std::cout << "why\n";
+#endif//_WIN32	
 	
-	
+
 	std::cout << "PAUSE...";
 	std::string pause;
 	std::getline(std::cin, pause);
 	
-	/*
-	std::cout << "Welcome to the chat program. Version: 0.5.0\n"; // Somewhat arbitrary version number usage at the moment :)
-
-	// Client
-	TCPConnection ClientLoopAttack;
-	ClientLoopAttack.giveIPandPort(
-		CLI.target_ip_address,
-		CLI.target_port,
-		CLI.my_ext_ip_address,
-		CLI.my_ip_address,
-		CLI.my_host_port
-	);
-	ClientLoopAttack.threadEntranceClientLoopAttack(&ClientLoopAttack);
-
-	// Server
-	TCPConnection ServerListen;
-	ServerListen.giveIPandPort(
-		CLI.target_ip_address,
-		CLI.target_port,
-		CLI.my_ext_ip_address,
-		CLI.my_ip_address,
-		CLI.my_host_port
-		);
-	//ServerListen.threadEntranceServer(&ServerListen);
-
-	std::cout << "PAUSE...";
-	pause = "";
-	std::getline(std::cin, pause);
-
-	*/
-
-
-	// accept incoming connection
-	// get ip address of the accepted connection
-	// if it isn't the one you were expecting, close the connection and listen for connections again
-	// else continue on as normal, starting the chat system or w/e is desired
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	/*
-
-
-
-
-	// Server startup sequence
-	TCPConnection serverObj;
-	if (global_verbose == true)
-		std::cout << "SERVER::";
-	serverObj.serverSetIpAndPort(CLI.my_ip_address, CLI.my_host_port);
-	if (serverObj.initializeWinsock() == false)
-		return 1;
-	serverObj.ServerSetHints();
-
-	// Client startup sequence
-	TCPConnection clientObj;
-	if (global_verbose == true)
-		std::cout << "CLIENT::";
-	clientObj.clientSetIpAndPort(CLI.target_ip_address, CLI.target_port);
-	if (clientObj.initializeWinsock() == false)
-		return 1;
-	clientObj.ClientSetHints();
-
-	// BEGIN THREAD RACE
-	serverObj.createServerRaceThread(&serverObj);			//<-----------------
-	clientObj.createClientRaceThread(&clientObj);			//<----------------
-
-	// Wait for 1 thread to finish
-#ifdef __linux__
-	pthread_join(TCPConnection::thread1, NULL);
-	//pthread_join(TCPConnection::thread2, NULL);				//TEMPORARILY IGNORED, not that i want to wait for both anyways, just any 1 thread.
-#endif//__linux__
-#ifdef _WIN32
-	WaitForMultipleObjects(
-		2,			//number of objects in array
-		TCPConnection::ghEvents,	//array of objects
-		FALSE,		//wait for all objects if it is set to TRUE, otherwise FALSE means it waits for any one object to finish. return value indicates the finisher.
-		INFINITE);	//its going to wait this long, OR until all threads are finished, in order to continue.
-#endif//_WIN32
-
-	// Display the winning thread
-	int who_won = TCPConnection::global_winner;
-	if (global_verbose == true)
-	{
-		if (who_won == TCPConnection::CLIENT_WON_old)
-			std::cout << "MAIN && Client thread is the winner!\n";
-		else if (who_won == TCPConnection::SERVER_WON_old)
-			std::cout << "MAIN && Server thread is the winner!\n";
-		else
-			std::cout << "MAIN && There is no winner.\n";
-	}
-	
-	if (who_won == TCPConnection::NOBODY_WON_old) 
-	{
-		std::cout << "Error: Unexpected race result. Exiting\n";
-		return 1;
-	}
-
-	// Continue running the program for the thread that returned and won.
-	while (who_won == TCPConnection::CLIENT_WON_old || who_won == TCPConnection::SERVER_WON_old){
-		// If server won, then act as a server.
-		if (who_won == TCPConnection::SERVER_WON_old)
-		{ 
-			std::cout << "Connection established as the server.\n";
-			serverObj.closeThisSocket(serverObj.ListenSocket);	// No longer need listening socket since I only want to connect to 1 person at a time.
-			serverObj.serverCreateSendThread(&serverObj);
-			if (serverObj.receiveUntilShutdown() == false)
-				return 1;
-
-			//shutdown
-			if (serverObj.shutdownConnection(serverObj.globalSocket) == false)
-				return 1;
-			break;
-		}
-		// If client won, then act as a client
-		else if (who_won == TCPConnection::CLIENT_WON_old)
-		{
-			std::cout << "Connection established as the client.\n";
-			clientObj.clientCreateSendThread(&clientObj);
-			if (clientObj.receiveUntilShutdown() == false)
-				return 1;
-
-			// Shutdown
-			if (clientObj.shutdownConnection(clientObj.globalSocket) == false)
-				return 1;
-			break;
-		}
-		// If nobody won, quit
-		else if (who_won == TCPConnection::NOBODY_WON_old) 
-		{
-			std::cout << "ERROR: Unexpected doomsday scenario.\n";
-			std::cout << "ERROR: Shutting down.\n";
-			//clientObj.myWSACleanup();
-			//serverObj.myWSACleanup();
-			return 1;
-		}
-		else 
-		{
-			std::cout << "ERROR: Shutting down. The impossible is possible.\n";
-			//clientObj.myWSACleanup();
-			//serverObj.myWSACleanup();
-			return 1;
-		}
-	}
-	std::cout << "beep boop - beep boop. while loop finished or false\n";
-	std::cout << "Program exit.\n\n";
-
-	/*
-
-	// Wait until all threads are finished
-	WaitForMultipleObjects(
-		1,			// Number of objects in array
-		ghEvents,	// Array of objects
-		TRUE,		// Wait for all objects
-		INFINITE);	// Its going to wait this long, OR until all threads are finished, in order to continue.
-
-	*/
-
-
+	delete Upnp;
 
 	return 1;
 //===================================== End Chat Program =====================================
