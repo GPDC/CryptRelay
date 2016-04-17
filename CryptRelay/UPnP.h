@@ -36,9 +36,9 @@ public:
 	UPnP();
 	~UPnP();
 
-	bool startUPnP();
 	void standaloneGetListOfPortForwards();		// Incase user just wants to access the list of port forwards
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
+	bool autoAddPortForwardRule();
 
 	// These are in public because connection class will
 	// want to know what the user's IP and ports are.
@@ -49,12 +49,11 @@ public:
 	
 protected:
 private:
-	void findUPnPDevices();
-	void findValidIGD();
+	void findUPnPDevices();				// core function for doing anything in upnp
+	void findValidIGD();				// core function for doing anything in upnp
 	void displayInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
-	void autoAddPortForwardRule();
 	void autoDeletePortForwardRule();
 
 	SocketClass SockStuff;

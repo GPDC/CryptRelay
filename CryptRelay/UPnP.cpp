@@ -57,33 +57,6 @@ UPnP::~UPnP()
 }
 
 
-bool UPnP::startUPnP()
-{
-	// Enable socket use on Windows
-	//SockStuff.myWSAStartup();
-
-	// Find UPnP devices on the local network
-	findUPnPDevices();
-
-	// Find a valid IGD based off the list filled out by findUPnPDevices()
-	findValidIGD();
-
-	// Displays various extra information gathered through UPnP
-	if (global_verbose == true)
-		displayInformation();
-		
-	// Get list of currently mapped ports for the IGD and output to console.
-	if (global_verbose == true)
-		getListOfPortForwards();
-
-	// Add a port forwarding rule.
-	// Must have called findValidIGD() first to get
-	// your internal IP address, and to have an IGD to talk to.
-	autoAddPortForwardRule();
-
-	return 1;// Success
-}
-
 // This is for when the user simply wants a list of all the
 // port forwards currently on his router, not starting 
 // the chat program or anything else.
@@ -406,8 +379,32 @@ void UPnP::getListOfPortForwards()
 // Adds a new port forwarding rule.
 // Must have called findValidIGD() first to get
 // your internal IP address, and to have an IGD to talk to.
-void UPnP::autoAddPortForwardRule()
+bool UPnP::autoAddPortForwardRule()
 {
+
+	// Enable socket use on Windows
+	//SockStuff.myWSAStartup();		// commented out, this is done in SocketClass constructor
+
+	// Find UPnP devices on the local network
+	findUPnPDevices();
+
+	// Find a valid IGD based off the list filled out by findUPnPDevices()
+	findValidIGD();
+
+	// Displays various extra information gathered through UPnP
+	if (global_verbose == true)
+		displayInformation();
+
+	// Get list of currently mapped ports for the IGD and output to console.
+	if (global_verbose == true)
+		getListOfPortForwards();
+
+	/******** Now automatically add a new port forward rule ********/
+
+	// Add a port forwarding rule.
+	// Must have called findValidIGD() first to get
+	// your internal IP address, and to have an IGD to talk to.
+
 
 	// Information necessary for UPNP_AddPortMapping()
 	bool try_again = false;
@@ -555,6 +552,8 @@ void UPnP::autoAddPortForwardRule()
 				my_external_ip, my_external_port.c_str(), protocol, intClient, intPort, duration);
 		}
 	}
+
+	return true; // Success
 }
 
 // Deletes the port forwarding rule created by
