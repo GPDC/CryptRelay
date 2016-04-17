@@ -7,6 +7,5 @@ CryptRelay utilizes UPnP (Universal Plug and Play) to automatically port forward
 Crypt relay was programmed in Netbeans IDE 8.1 when using Linux, and Microsoft Visual Studio 2015  when using Windows.
 C++14.
 
-External Libraries Used:
-
+External Libraries Used:\n
 miniupnp v1.9 - LICENSE here - for help building this library on Windows, please look at README_miniupnp.md
