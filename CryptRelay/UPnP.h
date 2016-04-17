@@ -12,6 +12,7 @@
 // Internal / local ip address: the ip address that anyone on your LAN will see you connecting from.
 // Internal port: the port that anyone on your LAN will see you connecting from.
 
+
 // Three important steps in order to doing anything with UPnP:
 // 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
 //	  SockStuff.myWSAStartup();
@@ -23,6 +24,14 @@
 //	  findValidIGD();
 //
 // 4. Now you can do whatever else you want.
+
+
+// List of things that need to be freed after being done with UPnP:
+//
+// 1. freeUPNPDevlist(struct UPNPDev*)  frees the UPNPDev structure.
+//
+// 2. FreeUPNPUrls(struct UPNPUrls)  frees the UPNPUrls structure.
+
 
 #ifndef UPnP_h__
 #define UPnP_h__
@@ -59,7 +68,7 @@ private:
 	SocketClass SockStuff;
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
-	// Must call freeUPNPDevlist() to free allocated memory
+	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory
 	UPNPDev* UpnpDevicesList = nullptr;			
 
 	// findValidIGD() stores the IGD's urls here. Example: a url to control the device.

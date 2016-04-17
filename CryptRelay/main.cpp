@@ -69,6 +69,101 @@
 
 bool global_verbose = false;
 
+// IP and port information will only be stored if there is actually
+// something in the strings inside the CommandLineInput class
+// first argument CommandLineInput* CLI, is where the IP and Port
+// information will be pulled from.
+// second argument ChatProgram* instance, is where the IP and Port
+// information will be stored.
+void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance);
+void upnpGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance, UPnP* UpnpInstance);
+
+void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
+{
+	// Give IP and port info to the ChatServer instance
+	if (empty(CLI->target_ip_address) == false)
+		ChatServerInstance->target_external_ip = CLI->target_ip_address;
+
+	if (empty(CLI->target_port) == false)
+		ChatServerInstance->target_external_port = CLI->target_port;
+
+	if (empty(CLI->my_ext_ip_address) == false)
+		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
+
+	if (empty(CLI->my_ip_address) == false)
+		ChatServerInstance->my_local_ip = CLI->my_ip_address;
+
+	if (empty(CLI->my_host_port) == false)
+		ChatServerInstance->my_local_port = CLI->my_host_port;
+
+
+	// Give IP and port info to the ChatClient instance
+	if (empty(CLI->target_ip_address) == false)
+		ChatClientInstance->target_external_ip = CLI->target_ip_address;
+
+	if (empty(CLI->target_port) == false)
+		ChatClientInstance->target_external_port = CLI->target_port;
+
+	if (empty(CLI->my_ext_ip_address) == false)
+		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
+
+	if (empty(CLI->my_ip_address) == false)
+		ChatClientInstance->my_local_ip = CLI->my_ip_address;
+
+	if (empty(CLI->my_host_port) == false)
+		ChatClientInstance->my_local_port = CLI->my_host_port;
+}
+
+// The user's IP and port input will always be used over the IP and port that the UPnP
+// class tried to give.
+void upnpGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance, UPnP* UpnpInstance)
+{
+	// Give IP and port info to the ChatServer instance
+	if (empty(CLI->target_ip_address) == false)
+		ChatServerInstance->target_external_ip = CLI->target_ip_address;
+
+	if (empty(CLI->target_port) == false)
+		ChatServerInstance->target_external_port = CLI->target_port;
+
+	if (empty(CLI->my_ext_ip_address) == false)
+		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
+	else
+		ChatServerInstance->my_external_ip = UpnpInstance->my_external_ip;
+
+	if (empty(CLI->my_ip_address) == false)
+		ChatServerInstance->my_local_ip = CLI->my_ip_address;
+	else
+		ChatServerInstance->my_local_ip = UpnpInstance->my_local_ip;
+
+	if (empty(CLI->my_host_port) == false)
+		ChatServerInstance->my_local_port = CLI->my_host_port;
+	else
+		ChatServerInstance->my_local_port = UpnpInstance->my_internal_port;
+
+
+	// Give IP and port info to the ChatClient instance
+	if (empty(CLI->target_ip_address) == false)
+		ChatClientInstance->target_external_ip = CLI->target_ip_address;
+
+	if (empty(CLI->target_port) == false)
+		ChatClientInstance->target_external_port = CLI->target_port;
+
+	if (empty(CLI->my_ext_ip_address) == false)
+		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
+	else
+		ChatClientInstance->my_external_ip = UpnpInstance->my_external_ip;
+
+	if (empty(CLI->my_ip_address) == false)
+		ChatClientInstance->my_local_ip = CLI->my_ip_address;
+	else
+		ChatClientInstance->my_local_ip = UpnpInstance->my_local_ip;
+
+	if (empty(CLI->my_host_port) == false)
+		ChatClientInstance->my_local_port = CLI->my_host_port;
+	else
+		ChatClientInstance->my_local_port = UpnpInstance->my_internal_port;
+}
+
 int main(int argc, char *argv[])
 {
 	int errchk = 0;
@@ -82,45 +177,14 @@ int main(int argc, char *argv[])
 
 	//===================================== Starting Chat Program =====================================
 
-	// Ideally I wouldn't create this Upnp instance unless I am sure I am going to use upnp...
-	UPnP* Upnp = nullptr;
+	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
 	ChatProgram ChatServer;
 	ChatProgram ChatClient;
 
 	if (CLI.use_lan_only == true)
 	{
-		// Give IP and port info to the ChatServer instance
-		if (empty(CLI.target_ip_address) == false)
-			ChatServer.target_external_ip = CLI.target_ip_address;
-
-		if (empty(CLI.target_port) == false)
-			ChatServer.target_external_port = CLI.target_port;
-
-		if (empty(CLI.my_ext_ip_address) == false)
-			ChatServer.my_external_ip = CLI.my_ext_ip_address;
-
-		if (empty(CLI.my_ip_address) == false)
-			ChatServer.my_local_ip = CLI.my_ip_address;
-
-		if (empty(CLI.my_host_port) == false)
-			ChatServer.my_local_port = CLI.my_host_port;
-
-
-		// Give IP and port info to the ChatClient instance
-		if (empty(CLI.target_ip_address) == false)
-			ChatClient.target_external_ip = CLI.target_ip_address;
-
-		if (empty(CLI.target_port) == false)
-			ChatClient.target_external_port = CLI.target_port;
-
-		if (empty(CLI.my_ext_ip_address) == false)
-			ChatClient.my_external_ip = CLI.my_ext_ip_address;
-
-		if (empty(CLI.my_ip_address) == false)
-			ChatClient.my_local_ip = CLI.my_ip_address;
-
-		if (empty(CLI.my_host_port) == false)
-			ChatClient.my_local_port = CLI.my_host_port;
+		// Give IP and port info to the ChatServer and ChatClient instance
+		lanGiveIPAndPort(&CLI, &ChatServer, &ChatClient);
 	}
 	else if (CLI.use_upnp == true)
 	{
@@ -128,53 +192,8 @@ int main(int argc, char *argv[])
 		// If UPnP is working, start the chat program using that knowledge.
 		if (Upnp->autoAddPortForwardRule == true)
 		{
-			// Give IP and port info to the ChatServer instance
-			if (empty(CLI.target_ip_address) == false)
-				ChatServer.target_external_ip = CLI.target_ip_address;
-
-			if (empty(CLI.target_port) == false)
-				ChatServer.target_external_port = CLI.target_port;
-
-			if (empty(CLI.my_ext_ip_address) == false)
-				ChatServer.my_external_ip = CLI.my_ext_ip_address;
-			else
-				ChatServer.my_external_ip = Upnp->my_external_ip;
-
-			if (empty(CLI.my_ip_address) == false)
-				ChatServer.my_local_ip = CLI.my_ip_address;
-			else
-				ChatServer.my_local_ip = Upnp->my_local_ip;
-
-			if (empty(CLI.my_host_port) == false)
-				ChatServer.my_local_port = CLI.my_host_port;
-			else
-				ChatServer.my_local_port = Upnp->my_internal_port;
-
-
-			// Give IP and port info to the ChatClient instance
-			if (empty(CLI.target_ip_address) == false)
-				ChatClient.target_external_ip = CLI.target_ip_address;
-
-			if (empty(CLI.target_port) == false)
-				ChatClient.target_external_port = CLI.target_port;
-
-			if (empty(CLI.my_ext_ip_address) == false)
-				ChatClient.my_external_ip = CLI.my_ext_ip_address;
-			else
-				ChatClient.my_external_ip = Upnp->my_external_ip;
-
-			if (empty(CLI.my_ip_address) == false)
-				ChatClient.my_local_ip = CLI.my_ip_address;
-			else
-				ChatClient.my_local_ip = Upnp->my_local_ip;
-
-			if (empty(CLI.my_host_port) == false)
-				ChatClient.my_local_port = CLI.my_host_port;
-			else
-				ChatClient.my_local_port = Upnp->my_internal_port;
-
-			/*ChatServer.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);
-			ChatClient.giveIPandPort(CLI.target_ip_address, Upnp.my_external_ip, Upnp.my_local_ip, CLI.target_port, Upnp.my_internal_port);*/
+			// Give IP and port info to the ChatServer and ChatClient instance
+			upnpGiveIPAndPort(&CLI, &ChatServer, &ChatClient, Upnp);
 		}
 		else
 		{
