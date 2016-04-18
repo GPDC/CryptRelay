@@ -45,6 +45,7 @@ public:
 	UPnP();
 	~UPnP();
 
+	void standaloneShowInformation();
 	void standaloneGetListOfPortForwards();		// Incase user just wants to access the list of port forwards
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
 	bool autoAddPortForwardRule();
@@ -52,7 +53,7 @@ public:
 	// These are in public because connection class will
 	// want to know what the user's IP and ports are.
 	char my_local_ip[64] = { 0 };				// findValidIGD() fills this out with your local ip addr
-	char my_external_ip[40] = { 0 };		// displayInformation() fills this out
+	char my_external_ip[40] = { 0 };		// showInformation() fills this out
 	std::string my_internal_port;					// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	std::string my_external_port;					// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	
@@ -60,7 +61,7 @@ protected:
 private:
 	void findUPnPDevices();				// core function for doing anything in upnp
 	void findValidIGD();				// core function for doing anything in upnp
-	void displayInformation();
+	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
 	void autoDeletePortForwardRule();

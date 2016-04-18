@@ -195,14 +195,20 @@ int main(int argc, char *argv[])
 	ChatProgram ChatServer;
 	ChatProgram ChatClient;
 
-	if (CLI.get_list_of_port_forwards == true)
+	if (CLI.show_info_upnp == true)
+	{
+		Upnp = new UPnP;
+		Upnp->standaloneShowInformation();
+		return EXIT_SUCCESS;
+	}
+	else if (CLI.get_list_of_port_forwards == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneGetListOfPortForwards();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	if (CLI.delete_this_specific_port_forward == true)
+	else if (CLI.delete_this_specific_port_forward == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneDeleteThisSpecificPortForward(
@@ -212,7 +218,7 @@ int main(int argc, char *argv[])
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	if (CLI.use_lan_only == true)
+	else if (CLI.use_lan_only == true)
 	{
 		// Give IP and port info to the ChatServer and ChatClient instance
 		lanGiveIPAndPort(&CLI, &ChatServer, &ChatClient);

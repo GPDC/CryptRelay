@@ -18,9 +18,11 @@ CommandLineInput::~CommandLineInput()
 
 void CommandLineInput::helpAndReadMe()
 {
-
-	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4 -tp 30001\n";
-	std::cout << "Proper format for a LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
+	// 80 chars is width of console
+	std::cout << "\n";
+	std::cout << "--------------------------------------------------------------------------------";
+	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4\n";
+	std::cout << "Format for LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
 	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tp 30001 -mL 192.168.1.4 -mp 30001\n";
 	std::cout << "\n";
 	std::cout << "-h    help        Displays the readme\n";
@@ -34,11 +36,15 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "      Format: cryptrelay.exe -spf my_external_port protocol\n";
 	std::cout << "-dpf  Delete Port Forward Delete a specific port forward rule.\n";
 	std::cout << "      Format: cryptrelay.exe -dpf my_external_port protocol\n";
+	std::cout << "-si   Show Info   Displays external & local ip, and some UPnP info.\n";
 	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f    file       The file, and location of the file you wish to xfer.\n";
-	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n\n\n";
+	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n";
+	std::cout << "--------------------------------------------------------------------------------";
+	std::cout << "\n";
+	std::cout << "\n";
 }
 
 void CommandLineInput::Examples()
@@ -178,6 +184,10 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
 				return 0;							// exit program even though this is not a failure.
+			}
+			else if (arg[i] == "-si")
+			{
+				show_info_upnp = true;
 			}
 			else if (arg[i] == "-f")
 			{

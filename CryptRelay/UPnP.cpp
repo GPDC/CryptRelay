@@ -185,7 +185,7 @@ void UPnP::findValidIGD()
 // Connection status, uptime, last connection error
 // Time started
 // Max bitrates
-void UPnP::displayInformation()
+void UPnP::showInformation()
 {
 	char connection_type[64];
 	char status[64];
@@ -241,12 +241,14 @@ void UPnP::displayInformation()
 			printf(" (%u.%u Mbps)", bitrate_down / 1000000, (bitrate_down / 100000) % 10);
 		else if (bitrate_down >= 1000)
 			printf(" (%u Kbps)", bitrate_down / 1000);
+		std::cout << "\n";
 
-		printf("   MaxBitRateUp %u bps", bitrate_up);
+		printf("MaxBitRateUp    : %u bps", bitrate_up);
 		if (bitrate_up >= 1000000)
 			printf(" (%u.%u Mbps)", bitrate_up / 1000000, (bitrate_up / 100000) % 10);
 		else if (bitrate_up >= 1000)
-			printf(" (%u Kbps)\n", bitrate_up / 1000);
+			printf(" (%u Kbps)", bitrate_up / 1000);
+		std::cout << "\n";
 	}
 
 	// Get external IP address
@@ -264,6 +266,19 @@ void UPnP::displayInformation()
 	// my_local_ip is actually retrieved by findValidIGD()
 	if (my_local_ip[0] != 0)
 		std::cout << "Your local LAN IP: " << my_local_ip << "\n\n";
+}
+
+void UPnP::standaloneShowInformation()
+{
+
+	// Find UPnP devices on the local network
+	findUPnPDevices();
+
+	// Find valid IGD based off the list returned by upnpDiscover()
+	findValidIGD();
+
+	// Output information to the console
+	showInformation();
 }
 
 // Given the amount of uptime, calculate the time at which
@@ -393,7 +408,7 @@ bool UPnP::autoAddPortForwardRule()
 
 	// Displays various extra information gathered through UPnP
 	if (global_verbose == true)
-		displayInformation();
+		showInformation();
 
 	// Get list of currently mapped ports for the IGD and output to console.
 	if (global_verbose == true)
