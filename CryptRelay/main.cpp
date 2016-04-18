@@ -135,6 +135,12 @@ void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, Ch
 // class tried to give.
 void upnpGiveIPAndPort(CommandLineInput* CLI, UPnP* UpnpInstance, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
 {
+	// If the user inputted values at the command line interface
+	// designated for IP and / or port, we will take those values
+	// and give them to the chat program.
+	// Otherwise, we will just take the IP and Port that
+	// the UPnP class has gathered / made.
+
 	// Give IP and port info to the ChatServer instance
 	if (empty(CLI->target_ip_address) == false)
 		ChatServerInstance->target_external_ip = CLI->target_ip_address;
