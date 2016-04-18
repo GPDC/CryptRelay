@@ -47,26 +47,62 @@ IPAddress::~IPAddress()
 {
 }
 
-bool IPAddress::isIPV4FormatCorrect(char* ipaddress)
+bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 {
-	bool is_format_good = false;
+	std::string ipaddress = ipaddr;
 	if (global_verbose == true)
-	{
 		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
-	}
-	
-	// Check if the formatting for the IP address is correct
-	is_format_good = checkFormat(ipaddress);
 
-	// If the format is correct then go ahead and give main the target IP string so it can be used.
-	if (is_format_good == true)
+	// Check if the formatting for the IP address is correct
+	int period_count = 0;
+	int start = 0;
+	int end = 0;
+
+	for (unsigned int c = 0; c < ipaddress.size(); c++)
 	{
-		return true;
+		//checking for ascii 0-9 and '.'   ... if it isn't any of those, then it sends the user to try again with different input.
+		//grouping together multiple OR statements or AND statements with parenthesis makes them group up into a single BOOL statement.
+		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
+		{
+			std::cout << "Only numbers and periods allowed.\n";
+			return false;
+		}
+	}
+
+	for (int i = 0; i < 4; i++)
+	{
+		end = findNextPeriod(ipaddress, start);
+		if (end == BAD_FORMAT)
+		{
+			return false;
+		}
+		if (end != BAD_FORMAT && end != -1)
+		{
+			period_count++;
+		}
+		if (end == -1)
+		{
+			end = ipaddress.size();
+		}
+		if (checkSubnetRange(ipaddress, start, end) == false)
+		{
+			return false;
+		}
+		//back to the future
+		start = end + 1;
+		if (end == ipaddress.size())
+		{
+			break;
+		}
+	}
+
+	if (period_count != 3)
+	{
+		return false;
 	}
 	else
 	{
-		std::cout << "Bad IP address format.\n\n";
-		return false;
+		return true;
 	}
 }
 
@@ -156,59 +192,10 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	return true;
 }
 
-
-bool IPAddress::checkFormat(std::string ipaddress)
+// This function shouldn't exist, it should be placed inside isIPV4FormatCorrect()
+bool IPAddress::checkIPAddrFormat(std::string ipaddress)
 {
-	int period_count = 0;
-	int start = 0;
-	int end = 0;
 
-	for (unsigned int c = 0; c < ipaddress.size(); c++)
-	{
-		//checking for ascii 0-9 and '.'   ... if it isn't any of those, then it sends the user to try again with different input.
-		//grouping together multiple OR statements or AND statements with parenthesis makes them group up into a single BOOL statement.
-		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
-		{
-			std::cout << "Only numbers and periods allowed.\n";
-			return false;
-		}
-	}
-
-	for (int i = 0; i < 4; i++)
-	{
-		end = findNextPeriod(ipaddress, start);
-		if (end == BAD_FORMAT)
-		{
-			return false;
-		}
-		if (end != BAD_FORMAT && end != -1)
-		{
-			period_count++;
-		}
-		if (end == -1)
-		{
-			end = ipaddress.size();
-		}
-		if (checkSubnetRange(ipaddress, start, end) == false)
-		{
-			return false;
-		}
-		//back to the future
-		start = end + 1;
-		if (end == ipaddress.size())
-		{
-			break;
-		}
-	}
-
-	if (period_count != 3)
-	{
-		return false;
-	}
-	else
-	{
-		return true;
-	}
 }
 
 bool IPAddress::isPortFormatCorrect(char* port)

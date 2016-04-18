@@ -96,7 +96,10 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk == false)
+				{
+					std::cout << "Bad IP address format.\n\n";
 					return 0;
+				}
 				else
 				{
 					target_ip_address = argv[i + 1];
@@ -164,11 +167,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "-spf")
 			{
 				get_list_of_port_forwards = true;
-
-
-				//UPnP Upnp;
-				//Upnp.standaloneGetListOfPortForwards();
-				return 0; // exit program even though this is not a failure.
+				return 0;							// exit program even though this is not a failure.
 			}
 			else if (arg[i] == "-dpf" && i < arg_size - 2)
 			{
@@ -176,13 +175,9 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				delete_this_specific_port_forward_port = i + 1;
 				delete_this_specific_port_forward_protocol = i + 2;
 
-				//UPnP Upnp;
-				//Upnp.standaloneDeleteThisSpecificPortForward(argv[i + 1], argv[i + 2]);
-				return 0; // exit program even though this is not a failure.
+				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
-				// pls fix this. I should not be calling functions right here because
-				// we might not be done parsing the command line input! This function should
-				// only be called after we are done parsing.
+				return 0;							// exit program even though this is not a failure.
 			}
 			else if (arg[i] == "-f")
 			{
