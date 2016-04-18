@@ -192,11 +192,6 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	return true;
 }
 
-// This function shouldn't exist, it should be placed inside isIPV4FormatCorrect()
-bool IPAddress::checkIPAddrFormat(std::string ipaddress)
-{
-
-}
 
 bool IPAddress::isPortFormatCorrect(char* port)
 {
