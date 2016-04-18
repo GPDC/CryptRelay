@@ -1,20 +1,13 @@
 
 //main.cpp
+
 //Program name: CryptRelay
 //Formatting guide: Located at the bottom of main.cpp
 
-// Windows might be blocking me from sending packets with spoofed source IPs. My google-fu is failing me; hard to find answer.
-// I don't think Linux would block it, but if it does, it can be changed!
 
 //TODO:
-//nat traversal
 //encryption
-//add port checking in FormatCheck.cpp
-//create a file in the same folder cryptrelay.exe is in and place whatever the user inputted for -m and -mp inside there.
-//	^this is so the user will not have to specify their IP and port to listen on _every_single_time.
-//when person specifies a port to listen on, maybe should check if that port is currently being used by some other program?
 //output what IP and port you are listening on
-//output the IP and port of the person you connected to.
 //fix chat output issue when someone sends you a message while you are typing
 //In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,
 //	and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
@@ -226,11 +219,13 @@ int main(int argc, char *argv[])
 	}
 	else if (CLI.use_upnp_to_connect_to_peer == true)
 	{
-		Upnp = new UPnP;
-		// If UPnP is working, start the chat program using that knowledge.
+		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
+
+		// If UPnP is working, add a port forward rule so we can connect to a peer
 		if (Upnp->autoAddPortForwardRule() == true)
 		{
-			// Give IP and port info to the ChatServer and ChatClient instance
+			// Give IP and port info gathered from the command line and from
+			// the UPnP class to the ChatServer and ChatClient instance
 			upnpGiveIPAndPort(&CLI, Upnp, &ChatServer, &ChatClient);
 		}
 		else
@@ -240,13 +235,14 @@ int main(int argc, char *argv[])
 		}
 	}
 
-	// Start the chat program.
+	// Actually starting the chat program now that we have all of the
+	// needed information gathered and stored.
 	
 	// BEGIN THREAD RACE
 	ChatProgram::createStartServerThread(&ChatServer);			//<-----------------
 	ChatProgram::createStartClientThread(&ChatClient);			//<----------------
 
-	// Wait for 2 threads to finish
+	// Wait for 2 ChatServer and ChatClient threads to finish
 #ifdef __linux__
 	pthread_join(ChatProgram::thread0, NULL);
 	pthread_join(ChatProgram::thread1, NULL);
@@ -259,13 +255,9 @@ int main(int argc, char *argv[])
 			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
 		);	
 #endif//_WIN32	
-	
 
-	std::cout << "PAUSE...";
-	std::string pause;
-	std::getline(std::cin, pause);
 	
-	delete Upnp;
+	delete Upnp;	// deltag:9940
 
 	return 1;
 //===================================== End Chat Program =====================================

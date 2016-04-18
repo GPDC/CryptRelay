@@ -55,7 +55,7 @@ void CommandLineInput::Examples()
 int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
-	//	 but for now this is simple and easy to read/understand, so its nice.
+	// but for now this is simple and easy to read/understand, so its nice.
 	int err_chk = 0;
 
 	std::vector<std::string> arg;

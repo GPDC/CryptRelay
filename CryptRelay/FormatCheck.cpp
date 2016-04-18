@@ -10,6 +10,15 @@
 //can interact with the variables that don't have safety checks. The attacker would have to have some access to this computer, and at that point, everything is compromised anyways.
 //Regardless, I would still like to create safety checks for this class. However I will do this after the connect class has been created and is working.
 
+
+// Overview:
+// This class's purpose is to check the format of things. Examples are
+// IP addresses and ports. This is to make sure the user isn't providing
+// some wierd / wrong input.
+
+// Terminology:
+//
+
 #ifdef __linux__
 #include <iostream>
 #include <vector>

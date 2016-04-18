@@ -1,4 +1,14 @@
 //CommandLineInput.h
+
+// Overview:
+// The purpose of this class is to parse command line input.
+
+// Terminology:
+//
+
+
+
+
 #ifndef CommandLineInput_h___
 #define CommandLineInput_h___
 #include <string>
