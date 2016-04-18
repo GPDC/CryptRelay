@@ -3,29 +3,8 @@ I wrote this out while trying to get it build this myself and ran into several p
 
 how to build miniupnp for Windows / this tutorial was done with miniupnp 1.9, visual studio 2015, and Windows 7
 
--extract zip to your mingw bin. move all contents of the miniupnp folder to the mingw bin folder.
-
-
-
-/* Project: miniupnp
- * http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
- * Author: Thomas Bernard
- * Copyright (c) 2005-2009 Thomas Bernard
- * This software is subjects to the conditions detailed
- * in the LICENCE file provided within this distribution */
-#ifndef __MINIUPNPCSTRINGS_H__
-#define __MINIUPNPCSTRINGS_H__
-
-#define OS_STRING "Windows/7.0.0000"
-#define MINIUPNPC_VERSION_STRING "1.9"
-
-#endif 
-
-
-
 
 ********** Building Microsoft Visual Studio 2015 *************
-OK actual way:
 
 1. create a txt file and rename it to miniupnpcstrings.h
 
