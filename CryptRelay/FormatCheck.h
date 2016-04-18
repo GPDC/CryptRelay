@@ -15,7 +15,6 @@ public:
 
 protected:
 private:
-	bool checkIPAddrFormat(std::string targetip_address);
 	bool checkSubnetRange(std::string target_ipaddress, int start, int end);
 	int findNextPeriod(std::string target_ipaddress, int start);
 };
