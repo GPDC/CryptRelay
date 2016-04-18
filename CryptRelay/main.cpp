@@ -206,6 +206,7 @@ int main(int argc, char *argv[])
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneGetListOfPortForwards();
+		delete Upnp;
 		return EXIT_SUCCESS;
 	}
 	if (CLI.delete_this_specific_port_forward == true)
@@ -215,6 +216,7 @@ int main(int argc, char *argv[])
 				CLI.delete_this_specific_port_forward_port.c_str(),
 				CLI.delete_this_specific_port_forward_protocol.c_str()
 			);
+		delete Upnp;
 		return EXIT_SUCCESS;
 	}
 	if (CLI.use_lan_only == true)

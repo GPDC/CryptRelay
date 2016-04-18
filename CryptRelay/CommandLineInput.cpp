@@ -37,7 +37,6 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
-
 	std::cout << "-f    file       The file, and location of the file you wish to xfer.\n";
 	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n\n\n";
 }
