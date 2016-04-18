@@ -13,8 +13,12 @@ public:
 	
 	int getCommandLineInput(int argc, char* argv[]);
 
-	bool use_lan_only = false;	// default is false;
-	bool use_upnp = true;	// default is true;
+	bool get_list_of_port_forwards = false;
+	bool delete_this_specific_port_forward = false;
+	std::string delete_this_specific_port_forward_port;
+	std::string delete_this_specific_port_forward_protocol;
+	bool use_lan_only = false;
+	bool use_upnp_to_connect_to_peer = true;	// ChatProgram will always want to use upnp unless the user makes this false
 
 	std::string target_ip_address;
 	std::string target_port;

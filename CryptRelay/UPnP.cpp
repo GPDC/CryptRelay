@@ -93,11 +93,11 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	findValidIGD();
 
 	int r = UPNP_DeletePortMapping(
-		Urls.controlURL,
-		IGDData.first.servicetype,
-		extern_port,
-		protocol,
-		0
+			Urls.controlURL,
+			IGDData.first.servicetype,
+			extern_port,
+			protocol,
+			0
 		);
 	if (r != UPNPCOMMAND_SUCCESS)
 	{

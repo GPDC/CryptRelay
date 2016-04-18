@@ -40,7 +40,6 @@
 
 #include <pthread.h>	//<process.h>
 
-#include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "chat_program.h"
@@ -57,7 +56,6 @@
 
 #include <process.h>	//<pthread.h>
 
-#include "connection.h"
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "SocketClass.h"
@@ -204,12 +202,27 @@ int main(int argc, char *argv[])
 	ChatProgram ChatServer;
 	ChatProgram ChatClient;
 
+	if (CLI.get_list_of_port_forwards == true)
+	{
+		Upnp = new UPnP;
+		Upnp->standaloneGetListOfPortForwards();
+		return EXIT_SUCCESS;
+	}
+	if (CLI.delete_this_specific_port_forward == true)
+	{
+		Upnp = new UPnP;
+		Upnp->standaloneDeleteThisSpecificPortForward(
+				CLI.delete_this_specific_port_forward_port.c_str(),
+				CLI.delete_this_specific_port_forward_protocol.c_str()
+			);
+		return EXIT_SUCCESS;
+	}
 	if (CLI.use_lan_only == true)
 	{
 		// Give IP and port info to the ChatServer and ChatClient instance
 		lanGiveIPAndPort(&CLI, &ChatServer, &ChatClient);
 	}
-	else if (CLI.use_upnp == true)
+	else if (CLI.use_upnp_to_connect_to_peer == true)
 	{
 		Upnp = new UPnP;
 		// If UPnP is working, start the chat program using that knowledge.
