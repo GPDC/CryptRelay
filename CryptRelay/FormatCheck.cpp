@@ -50,6 +50,7 @@ IPAddress::~IPAddress()
 bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 {
 	std::string ipaddress = ipaddr;
+
 	if (global_verbose == true)
 		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
 
@@ -60,8 +61,10 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 
 	for (unsigned int c = 0; c < ipaddress.size(); c++)
 	{
-		//checking for ascii 0-9 and '.'   ... if it isn't any of those, then it sends the user to try again with different input.
-		//grouping together multiple OR statements or AND statements with parenthesis makes them group up into a single BOOL statement.
+		// Checking for ascii 0-9 and '.'   ... if it isn't any of those, then it
+		// sends the user to try again with different input.
+		// Grouping together multiple OR statements or AND statements with
+		// parenthesis makes them group up into a single BOOL statement.
 		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
 		{
 			std::cout << "Only numbers and periods allowed.\n";
@@ -111,7 +114,9 @@ int IPAddress::findNextPeriod(std::string ipaddress, int start)
 {
 	int size_of_ip_address = ipaddress.size();
 	int period_location = -1;
-	// If it isn't the starting subnet, then give it a +1 or else it will always find the next period where the last period was.
+
+	// If it isn't the starting subnet, then give it a +1 or else it
+	// will always find the next period where the last period was.
 	if (start > 0)
 	{
 		start = start + 1;
@@ -125,7 +130,6 @@ int IPAddress::findNextPeriod(std::string ipaddress, int start)
 		{
 			if (global_verbose == true)
 				std::cout << "2 periods in a row detected.\n";
-			// Return false
 			return BAD_FORMAT;
 		}
 
@@ -155,7 +159,8 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 {
 	int subnet_array_count = end - start;
 
-	//add protection for arrays going out of bounds, and check for invalid IP address at the same time
+	// Add protection for arrays going out of bounds, and
+	// check for invalid IP address at the same time
 	if (subnet_array_count > 3 || subnet_array_count < 1)
 	{
 		std::cout << "Subnet out of range\n";
@@ -172,14 +177,15 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 		subnet_array[i] = ipaddress[last_period] - 48;
 	}
 
-	//the subnet was broken apart into individual single digit numbers. now put them back together using multiplication.
+	// The subnet was broken apart into individual single digit numbers.
+	// Now put them back together using multiplication.
 	int total = 0;
 	for (int i = 0; i < subnet_array_count; i++)
 	{
 		total = (total * 10) + subnet_array[i];
 	}
 
-	//check for valid subnet range.
+	// Check for valid subnet range.
 	if (global_verbose == true)
 	{
 		std::cout << "Subnet addition total = " << total << "\n";
@@ -228,11 +234,6 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	{
 		std::cout << "Port number is too large. Exiting.\n";
 		return false;
-	}
-	else
-	{
-		return true;
-		// return total;	// could return total and never have to bother converting port string to int ever again.
 	}
 
 	return true;
