@@ -434,10 +434,7 @@ bool UPnP::autoAddPortForwardRule()
 	bool try_again = false;
 	const int try_again_count_limit = 20;
 	int try_again_count = try_again_count_limit;				// Limiting the number of attempts to make this work in certain fail cases.
-	//unsigned short i_internal_port = 30001;						// Some devices require that the internal and external ports must be the same.
-	//unsigned short i_external_port = 30001;						// Some devices require that the internal and external ports must be the same.
 	const char * description_of_port_forward_entry = "CryptRelay";	// Describe what the port forward entry is for.
-	//protocol = "TCP";											// TCP, UDP?
 
 	// Amount of time (seconds) that the ports will be forwarded for. "0" == infinite.
 	// Some NATs only allow a lease time of "0".
@@ -595,7 +592,7 @@ void UPnP::autoDeletePortForwardRule()
 
 
 	if (global_verbose == true)
-		std::cout << "Deleting port forward rule...\n";
+		std::cout << "Automatically deleting port forward rule...\n";
 
 	// Delete the port forward rule
 	int r = UPNP_DeletePortMapping(

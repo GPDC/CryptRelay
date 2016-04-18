@@ -80,6 +80,7 @@ private:
 	IGDdatas IGDData;					
 
 	// These are assigned in the constructor and used in addPortForwardRule().
+	// They are potentially re-assigned in autoAddPortForwardRule().
 	// my_external_port and protocol are used in autoDeletePortForwardRule()
 	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
 	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
