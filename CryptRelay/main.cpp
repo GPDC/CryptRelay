@@ -207,7 +207,7 @@ int main(int argc, char *argv[])
 	{
 		Upnp = new UPnP;
 		// If UPnP is working, start the chat program using that knowledge.
-		if (Upnp->autoAddPortForwardRule == true)
+		if (Upnp->autoAddPortForwardRule() == true)
 		{
 			// Give IP and port info to the ChatServer and ChatClient instance
 			upnpGiveIPAndPort(&CLI, Upnp, &ChatServer, &ChatClient);
