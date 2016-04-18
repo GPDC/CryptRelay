@@ -60,7 +60,7 @@ public:
 protected:
 private:
 	void findUPnPDevices();				// core function for doing anything in upnp
-	void findValidIGD();				// core function for doing anything in upnp
+	bool findValidIGD();				// core function for doing anything in upnp
 	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);

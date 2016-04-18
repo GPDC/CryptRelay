@@ -69,7 +69,8 @@ void UPnP::standaloneGetListOfPortForwards()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	findValidIGD();
+	if (findValidIGD() == false)
+		return;
 
 	// Display the list of port forwards
 	getListOfPortForwards();
@@ -90,7 +91,8 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	findValidIGD();
+	if (findValidIGD() == false)
+		return;
 
 	int r = UPNP_DeletePortMapping(
 			Urls.controlURL,
@@ -144,7 +146,7 @@ void UPnP::findUPnPDevices()
 // After doing that it fills out struct UPNPUrls Urls and struct IGDdatas IGDDatas
 // with information about the device and urls necessary to control it.
 // This is generally the second step of the 2 important steps. The first step is to findUPnPDevices().
-void UPnP::findValidIGD()
+bool UPnP::findValidIGD()
 {
 	// Looks at the list of UPnP devices returned by upnpDiscover() to determine if one is a valid IGD
 	int r = UPNP_GetValidIGD(
@@ -154,7 +156,12 @@ void UPnP::findValidIGD()
 				my_local_ip,
 				sizeof(my_local_ip)
 		);
-	if (r)
+	if (r == 0)
+	{
+		std::cout << "No valid IGD found.\n";
+		return;
+	}
+	else
 	{
 		if (global_verbose == true)
 		{
@@ -275,7 +282,8 @@ void UPnP::standaloneShowInformation()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	findValidIGD();
+	if (findValidIGD() == false)
+		return;
 
 	// Output information to the console
 	showInformation();
@@ -404,7 +412,8 @@ bool UPnP::autoAddPortForwardRule()
 	findUPnPDevices();
 
 	// Find a valid IGD based off the list filled out by findUPnPDevices()
-	findValidIGD();
+	if (findValidIGD() == false)
+		return;
 
 	// Displays various extra information gathered through UPnP
 	if (global_verbose == true)
