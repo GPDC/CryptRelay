@@ -1,4 +1,4 @@
-This is a rough, rambling, first draft for building miniupnp 1.9
+﻿This is a rough, rambling, first draft for building miniupnp 1.9
 I wrote this out while trying to get it build this myself and ran into several problems. Everything below is the method that worked for me.
 
 how to build miniupnp for Windows / this tutorial was done with miniupnp 1.9, visual studio 2015, and Windows 7
@@ -85,3 +85,22 @@ I had visual studio warn me that .pdb files were missing when I built my project
 deleting the miniupnp library, extracting it, and building it all over again. This time it was only built as
 a static library (/MT), (/MTd) instead of building it as non-static and a static.
 This may not be the actualy solution / reason for the warnings, but it got it to work for me.
+
+
+
+
+****** to include / link in Netbeans 8.1 ************
+
+To build in a linux environment (not Netbeans!)
+1. navigate to miniupnp-1.9 folder
+2. in the command line type: make
+	or gmake, depending on what you have
+
+
+To include in Netbeans:
+
+1. File->project properties-> build-> c++ compiler-> include directories-> navigate to miniupnp-1.9 folder and select the folder.
+
+2. File-> project properties-> build-> linker-> additional library dependencies-> navigate to miniupnp-1.9 folder and select the folder.
+
+3. File->Project properties->build->linker->libaries->Add Library File-> navigate to the miniupnp-1.9 folder, and select the libminiupnpc.a file.

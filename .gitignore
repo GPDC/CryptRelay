@@ -27,3 +27,7 @@ libupnp-1.6.19/
 miniupnpc-1.9/
 miniupnpc-1.9 Backup no static linking/
 miniupnpc-1.9 Backup with static linking/
+/CryptRelay/build/
+/CryptRelay/dist/
+CryptRelay/.dep.inc
+CryptRelay/nbproject/

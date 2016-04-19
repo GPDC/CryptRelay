@@ -54,7 +54,7 @@ public:
 
 
 	SOCKET mySocket(int address_family, int type, int protocol);
-	SOCKET __stdcall myAccept(SOCKET fd);
+	SOCKET myAccept(SOCKET fd);
 
 	// All the bool functions return false when there is an error. True if everything went fine.
 	bool myWSAStartup();
@@ -62,18 +62,18 @@ public:
 	bool myBind(SOCKET fd, const sockaddr *name, int name_len);
 	bool myShutdown(SOCKET fd, int operation);
 	bool myListen(SOCKET fd);
-	bool myGetAddrInfo(std::string target_ip, std::string target_port, const ADDRINFOA *phints, PADDRINFOA *ppresult);
+	bool myGetAddrInfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	int myinet_pton(int family, PCSTR ip_addr, PVOID paddr_buf);
+	int myinet_pton(int family, char * ip_addr, void * paddr_buf);
 	int myConnect(SOCKET fd, const sockaddr* name, int name_len);
 	int mySend(SOCKET s, const char* buffer, int buffer_length, int flags);
 	int mySendTo(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
 	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
-	int	myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, int *from_len);
+	ssize_t myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
 	void myCloseSocket(SOCKET fd);
 	void myWSACleanup();
-	void myFreeAddrInfo(PADDRINFOA pAddrInfo);
+	void myFreeAddrInfo(addrinfo* pAddrInfo);
 
 	
 	// getError() 99% of cases you won't need to do anything with the return value.

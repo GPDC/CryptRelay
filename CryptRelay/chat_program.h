@@ -17,6 +17,13 @@
 #include <string>
 #include "SocketClass.h"
 
+#ifdef _WIN32
+#define THREAD_RETURN void
+#endif//_WIN32
+#ifdef __linux__
+#define THREAD_RETURN void*
+#endif//__linux__
+
 class ChatProgram
 {
 public:
@@ -28,9 +35,9 @@ public:
 	static pthread_t thread0;	// Server
 	static pthread_t thread1;	// Client
 	static pthread_t thread2;	// Send()
-	static int ret0;			// Server
-	static int ret1;			// Client
-	static int ret2;			// Send()
+	static int ret0;	// Server
+	static int ret1;	// Client
+	static int ret2;	// Send()
 #endif //__linux__
 #ifdef _WIN32
 	static HANDLE ghEvents[2];	// i should be using vector of ghevents[] instead...
@@ -69,10 +76,12 @@ private:
 	SocketClass SockStuff;
 
 	static void createLoopedSendMessagesThread(void * instance);
-	static void loopedSendMessagesThread(void * instance);
+	static THREAD_RETURN loopedSendMessagesThread(void * instance);
 	int loopedReceiveMessages(const char* host = "Peer");
 
 	void coutPeerIPAndPort(SOCKET s);
+        
+        void exitThread(void* ptr);
 
 
 	// hints is used by getaddrinfo()
@@ -89,8 +98,8 @@ private:
 	static const std::string default_port;	
 
 	// Server and Client threads
-	static void startServerThread(void * instance);
-	static void startClientThread(void * instance);
+	static THREAD_RETURN startServerThread(void * instance);
+	static THREAD_RETURN startClientThread(void * instance);
 
 	// Variables necessary for determining who won the connection race
 	static const int SERVER_WON;
