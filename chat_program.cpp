@@ -67,7 +67,7 @@ SOCKET ChatProgram::global_socket;
 
 ChatProgram::ChatProgram()
 {
-
+	result = nullptr;
 }
 ChatProgram::~ChatProgram()
 {

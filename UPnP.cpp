@@ -1,11 +1,12 @@
 #ifdef __linux__
 #include <string.h> //memset
 #include <errno.h>
-
 #endif//__linux__
+
 #ifdef _WIN32
 #include <WinSock2.h>
 #endif//_WIN32
+
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -192,6 +193,8 @@ bool UPnP::findValidIGD()
 			}
 		}
 	}
+
+	return true;
 }
 
 // Display Information such as:
