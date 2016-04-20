@@ -85,3 +85,27 @@ I had visual studio warn me that .pdb files were missing when I built my project
 deleting the miniupnp library, extracting it, and building it all over again. This time it was only built as
 a static library (/MT), (/MTd) instead of building it as non-static and a static.
 This may not be the actualy solution / reason for the warnings, but it got it to work for me.
+
+
+
+
+
+
+********** Linking / including in Netbeans 8.1*******
+
+For building in a linux environment ( not Netbeans!):
+1. Navigate to the miniupnp folder you extracted.
+
+2. type in the command line: make
+	or it could be: gmake
+	it depends on what you have.
+
+
+Once it is built you will want to include it in your program:
+
+1. File -> project properties -> build-> compiler-> c++ compiler -> include directories -> navigate to and select the miniupnp-1.9 folder.
+
+2. File -> project properties -> build-> Linker-> Additional Library Directories -> navigate to and select the miniupnp-1.9 folder.
+
+
+
