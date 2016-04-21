@@ -41,12 +41,13 @@
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
 
-#define THREAD_RETURN_VALUE return
-
 // HANDLE storage for threads
-HANDLE ChatProgram::ghEvents[2]{};
+HANDLE ChatProgram::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
+									// [0] == server
+									// [1] == client
 
-HANDLE ChatProgram::ghEventsSend[1];
+// for the loopedSendMessagesThread()
+HANDLE ChatProgram::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
 
 
@@ -529,7 +530,7 @@ int ChatProgram::loopedReceiveMessages(const char* remote_host)
 	} while (bytes > 0);
 
 	// Should ever get here, but if it did, then the connection was closed normally.
-	std::cout << "receiveMessage() impossible area.\n";	// Incase I messed something up, i'll know!
+	std::cout << "receiveMessage() impossible area.\n";	// In case I messed something up, i'll know!
 	return EXIT_SUCCESS;
 }
 

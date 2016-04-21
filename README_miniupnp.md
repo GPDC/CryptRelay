@@ -1,4 +1,4 @@
-This is a rough, rambling, first draft for building miniupnp 1.9
+﻿This is a rough, rambling, first draft for building miniupnp 1.9
 I wrote this out while trying to get it build this myself and ran into several problems. Everything below is the method that worked for me.
 
 how to build miniupnp for Windows / this tutorial was done with miniupnp 1.9, visual studio 2015, and Windows 7
@@ -97,6 +97,7 @@ This may not be the actualy solution / reason for the warnings, but it got it to
 
 
 ****** to include / link in Netbeans 8.1 ************
+I DO NOT RECOMMEND USING NETBEANS, atleast from my experience in Debian Linux.
 
 To build in a linux environment (not Netbeans!)
 1. navigate to miniupnp-1.9 folder
@@ -111,3 +112,30 @@ To include in Netbeans:
 2. File-> project properties-> build-> linker-> additional library dependencies-> navigate to miniupnp-1.9 folder and select the folder.
 
 3. File->Project properties->build->linker->libaries->Add Library File-> navigate to the miniupnp-1.9 folder, and select the libminiupnpc.a file.
+
+
+
+
+******** to include / link in Eclipse 3.8.1 *********
+
+I'm going to tell you places to store it and access it based on how I have it set up on my computer.
+
+Extract the miniupnpc-1.9.tar.gz into your lib section of your workspace. On my computer it is:   /home/myusername/workspace/lib/
+Use this if you don't know how (making sure to replace myusername with your username): sudo tar xvzf miniupnpc-1.9.tar.gz -C /home/myusername/workspace/lib/
+
+Then when you are in that miniupnp-1.9 folder inside a terminal, type sudo make
+
+# Now inside the Eclipse IDE we include and link the library:
+1. project properties-> c/c++build-> settings-> gcc c++ compiler-> includes->include paths (-l)-> click the add new button and navigate to and select the miniupnpc-1.9 folder.
+
+2. project properties->c/c++build->settings-> GCC C++ Linker->Libraries-> 
+	in the Libraries (-l) section put this:
+	miniupnpc		//PLEASE NOTE: this does not say libminiupnpc
+				//Nor does it say libminiupnpc.a nor libminiupnpc.so
+				//Nor miniupnpc.a or .so
+				//In order to link to a library, you must not mention the
+				// 'lib' prefix on the file.
+				// so libminiupnpc should be mentioned as miniupnpc
+				// And don't mention any extension such as .a or .so
+
+2.1 in the Libraries search path (-L) section navigate to your miniupnpc-1.9 folder and select it.

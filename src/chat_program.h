@@ -17,12 +17,6 @@
 #include <string>
 #include "SocketClass.h"
 
-#ifdef _WIN32
-#define THREAD_RETURN void
-#endif//_WIN32
-#ifdef __linux__
-#define THREAD_RETURN void*
-#endif//__linux__
 
 class ChatProgram
 {
