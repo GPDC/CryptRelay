@@ -1,0 +1,15 @@
+# Todo:
+encryption
+output what IP and port the user is listening on (server)
+allow the user to exit the program by typing:  exit()  or something similiar
+
+
+# Critical Errors:
+
+
+# Non-critical errors:
+localtime_r is erroring.
+
+
+# Odd behavior:
+select() is not waiting the 2 seconds it should be (LINUX). It not waiting at all.

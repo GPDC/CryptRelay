@@ -51,6 +51,8 @@ If you were getting linker errors the cause might have been the two missing #pra
 2. in project settings, Linker -> Input -> Additional Dependencies -> miniupnpc-1.9\msvc\Release\miniupnpc.lib
 	please note that it needs to be a full path to the miniupnpc.lib. Feel free to use macros. Macros not shown in example:
 	c:\dev\workspace\myproject\miniupnpc-1.9\msvc\Release\miniupnpc.lib
+example macro:
+	$(ProjectDir)..\miniupnpc-1.9\msvc\Release\miniupnpc.lib
 
 3. in project settings, C/C++ -> Preprocessor -> Preprocessor Definitions -> STATICLIB
 	please note we are just adding STATICLIB to the list of whatever is currently there. Don't delete everything in there.
@@ -58,11 +60,16 @@ If you were getting linker errors the cause might have been the two missing #pra
 4. in project settings, VC++ Directories -> Include Directories -> \miniupnpc-1.9
 	please note that it needs to be a full path to the folder. Feel free to use macros. Macros not shown in example:
 	C:\dev\workspace\myproject\miniupnpc-1.9
+example macro:
+	$(ProjectDir)..\miniupnpc-1.9
 
-5. in project settings, VC++ Directories -> Include Directories -> \miniupnpc-1.9
+
+5. in project settings, VC++ Directories -> Library Directories -> \miniupnpc-1.9
 	please note that it needs to be a full path to the folder. Feel free to use macros. Macros not shown in example:
 	C:\dev\workspace\myproject\miniupnpc-1.9\msvc\Release
-
+example macro:
+	$(ProjectDir)..\miniupnpc-1.9\msvc\Release
+	
 6. Set your configuration to Debug and do steps 1 through 5 all over again, but replaces any mention of "Release" with "Debug".
 	Make sure you changed the additional dependencies directory paths to have debug in it too.
 
@@ -88,24 +95,18 @@ This may not be the actualy solution / reason for the warnings, but it got it to
 
 
 
+****** to include / link in Netbeans 8.1 ************
+
+To build in a linux environment (not Netbeans!)
+1. navigate to miniupnp-1.9 folder
+2. in the command line type: make
+	or gmake, depending on what you have
 
 
+To include in Netbeans:
 
-********** Linking / including in Netbeans 8.1*******
+1. File->project properties-> build-> c++ compiler-> include directories-> navigate to miniupnp-1.9 folder and select the folder.
 
-For building in a linux environment ( not Netbeans!):
-1. Navigate to the miniupnp folder you extracted.
+2. File-> project properties-> build-> linker-> additional library dependencies-> navigate to miniupnp-1.9 folder and select the folder.
 
-2. type in the command line: make
-	or it could be: gmake
-	it depends on what you have.
-
-
-Once it is built you will want to include it in your program:
-
-1. File -> project properties -> build-> compiler-> c++ compiler -> include directories -> navigate to and select the miniupnp-1.9 folder.
-
-2. File -> project properties -> build-> Linker-> Additional Library Directories -> navigate to and select the miniupnp-1.9 folder.
-
-
-
+3. File->Project properties->build->linker->libaries->Add Library File-> navigate to the miniupnp-1.9 folder, and select the libminiupnpc.a file.

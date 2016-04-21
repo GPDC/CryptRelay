@@ -8,18 +8,10 @@
 
 *.tlog
 
-/CryptRelay/Debug/
-
-/CryptRelay/Release/
-
-/Debug/
-/Release/
-
-/CryptRelay/x64/
-
-/x64/
-
-/CryptRelay/CryptRelay.vcxproj.user
+**/Debug/
+**/Release/
+**/x64/
+**/CryptRelay.vcxproj.user
 
 gsoap-2.8/
 pjproject-2.4.5/
@@ -27,3 +19,6 @@ libupnp-1.6.19/
 miniupnpc-1.9/
 miniupnpc-1.9 Backup no static linking/
 miniupnpc-1.9 Backup with static linking/
+
+
+.gitattributes
