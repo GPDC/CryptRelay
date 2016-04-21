@@ -1,4 +1,4 @@
-*.sdf
+﻿*.sdf
 
 *.suo
 
@@ -21,3 +21,5 @@ miniupnpc-1.9 Backup no static linking/
 miniupnpc-1.9 Backup with static linking/
 
 .gitattributes
+
+.~lock.*

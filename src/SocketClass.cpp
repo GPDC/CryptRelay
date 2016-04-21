@@ -45,6 +45,9 @@
 #define SD_BOTH			0x02			// ^
 #endif//__linux__
 
+#ifdef __linux__
+#define WSAETIMEDOUT 10060	// possibly temporary... myRecvFrom() isn't being used?
+#endif//__linux__
 
 SocketClass::SocketClass()
 {

@@ -1,4 +1,5 @@
-﻿File->new->C++ project->
+﻿#DEPRECATED, TO BE DELETED. REPLACED BY: README_eclipse.md and README_miniupnp.md
+File->new->C++ project->
 Poject Name: CryptRelay
 Project type: Empty project
 Toolchain: Linux GCC
@@ -56,7 +57,7 @@ Now you will probably get an error something like this:
 
 To fix this we must go to   run->run configurations-> c/c++ Application-> your project name here-> look over to the right and click on the Main tab → go to the second line below where it says Project:-> click browse button, and select your project folder. Hit apply.
 
-Make sure verything was done for release and for debug configurations
+Make sure everything was done for release and for debug configurations
 
 
 finally we do a clean and build for the index and the project. To do the index,
