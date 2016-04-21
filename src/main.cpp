@@ -6,17 +6,15 @@
 
 
 //TODO:
-//encryption
 //output what IP and port you are listening on
 //fix chat output issue when someone sends you a message while you are typing
 //In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,
 //	and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
-//ipv6
 
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
 							// build-> linker-> libraries->
 #include <iostream>
-#include <string.h>
+#include <string>
 #include <vector>
 
 #include <unistd.h>
@@ -27,15 +25,13 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <cerrno>
-//#include <libupnp>	// Window's <UPnP.h>
-
 #include <arpa/inet.h>
-#include <signal.h>
 
 #include <pthread.h>	//<process.h>
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
+#include "SocketClass.h"
 #include "chat_program.h"
 
 #include "UPnP.h"
@@ -45,8 +41,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+
 #include <WS2tcpip.h>
-#include <UPnP.h>		// linux's libupnp??
 
 #include <process.h>	//<pthread.h>
 

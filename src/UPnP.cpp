@@ -461,7 +461,7 @@ bool UPnP::autoAddPortForwardRule()
 
 	// Amount of time (seconds) that the ports will be forwarded for. "0" == infinite.
 	// Some NATs only allow a lease time of "0".
-	char * lease_duration = "57600";	// 57600 == 16 hrs
+	const char * lease_duration = "57600";	// 57600 == 16 hrs
 	
 	// Add the port forwarding rule
 	do
