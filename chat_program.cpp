@@ -1,6 +1,8 @@
 // chat_program.cpp
 #ifdef __linux__
 #include <iostream>		// cout
+#include <string>
+#include <string.h> //memset
 #include <pthread.h>	// <process.h>  multithreading
 
 #include "chat_program.h"
@@ -21,13 +23,25 @@
 #ifdef __linux__
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
 #define SOCKET_ERROR	(-1)			// I belive this was just because linux didn't already have a SOCKET_ERROR macro.
+#define THREAD_RETURN_VALUE return NULL
 #endif // __linux__
+
+#ifdef __linux__
+	pthread_t ChatProgram::thread0 = 0;	// Server
+	pthread_t ChatProgram::thread1 = 0;	// Client
+	pthread_t ChatProgram::thread2 = 0;	// Send()
+	int ChatProgram::ret0 = 0;	// Server
+	int ChatProgram::ret1 = 0;	// Client
+        int ChatProgram::ret2 = 0;	// Send()
+#endif //__linux__
 
 #ifdef _WIN32
 // These are needed for Windows sockets
 #pragma comment(lib, "Ws2_32.lib") //tell the linker that Ws2_32.lib file is needed.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+
+#define THREAD_RETURN_VALUE return
 
 // HANDLE storage for threads
 HANDLE ChatProgram::ghEvents[2]{};
@@ -53,7 +67,7 @@ SOCKET ChatProgram::global_socket;
 
 ChatProgram::ChatProgram()
 {
-
+	result = nullptr;
 }
 ChatProgram::~ChatProgram()
 {
@@ -80,15 +94,15 @@ void ChatProgram::giveIPandPort(std::string target_extrnl_ip_address, std::strin
 	// If empty == true
 	//		user must not have desired their own custom
 	//		ports / IPs. Therefore, we leave it as is a.k.a. default value.
-	if (empty(target_extrnl_ip_address) == false)
+	if (target_extrnl_ip_address.empty() == false)
 		target_external_ip = target_extrnl_ip_address;
-	if (empty(target_port) == false)
+	if (target_port.empty() == false)
 		target_external_port = target_port;
-	if (empty(my_ext_ip) == false)
+	if (my_ext_ip.empty() == false)
 		my_external_ip = my_ext_ip;
-	if (empty(my_internal_ip) == false)
+	if (my_internal_ip.empty() == false)
 		my_local_ip = my_internal_ip;
-	if (empty(my_internal_port) == false)
+	if (my_internal_port.empty() == false)
 		my_local_port = my_internal_port;
 }
 
@@ -140,12 +154,12 @@ void ChatProgram::createStartServerThread(void * instance)
 #endif//_WIN32
 }
 
-void ChatProgram::startServerThread(void * instance)
+THREAD_RETURN ChatProgram::startServerThread(void * instance)
 {
 	if (instance == NULL)
 	{
 		std::cout << "startServerThread() thread instance NULL\n";
-		return;
+		THREAD_RETURN_VALUE;
 	}
 	ChatProgram * self = (ChatProgram*)instance;
 
@@ -160,24 +174,24 @@ void ChatProgram::startServerThread(void * instance)
 	// Now we use result instead of hints.
 	// Remember we are only listening as the server, so put in local IP:port
 	if (self->SockStuff.myGetAddrInfo(self->my_local_ip, self->my_local_port, &self->hints, &self->result) == false)
-		_endthread();
+		self->exitThread(nullptr);
 
 	// Create socket
 	SOCKET listen_socket = self->SockStuff.mySocket(self->result->ai_family, self->result->ai_socktype, self->result->ai_protocol);
 	if (listen_socket == INVALID_SOCKET)
-		_endthread();
+		self->exitThread(nullptr);
 	else if (listen_socket == SOCKET_ERROR)
-		_endthread();
+		self->exitThread(nullptr);
 
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
 	if (self->SockStuff.myBind(listen_socket, self->result->ai_addr, self->result->ai_addrlen) == false)
-		_endthread();
+		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
 	if (self->SockStuff.myListen(listen_socket) == false)
-		_endthread();
+		self->exitThread(nullptr);
 
 
 	// Needed to provide a time to select()
@@ -210,7 +224,7 @@ void ChatProgram::startServerThread(void * instance)
 			std::cout << "startServerThread() select Error.\n";
 			self->SockStuff.myCloseSocket(listen_socket);
 			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
-			_endthread();
+			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
 		{
@@ -219,7 +233,7 @@ void ChatProgram::startServerThread(void * instance)
 			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
 			}
-			_endthread();
+			self->exitThread(nullptr);
 		}
 		else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
 		{
@@ -230,7 +244,7 @@ void ChatProgram::startServerThread(void * instance)
 			// Accept the connection and create a new socket to communicate on.
 			accepted_socket = self->SockStuff.myAccept(listen_socket);
 			if (accepted_socket == INVALID_SOCKET)
-				_endthread();
+				self->exitThread(nullptr);
 			if (global_verbose == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
 
@@ -260,7 +274,7 @@ void ChatProgram::startServerThread(void * instance)
 	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
 	// this is so we can exit smoothly
 
-	_endthread();
+	self->exitThread(nullptr);
 }
 
 void ChatProgram::createStartClientThread(void * instance)
@@ -310,14 +324,15 @@ void ChatProgram::createStartClientThread(void * instance)
 #endif//_WIN32
 }
 
-void ChatProgram::startClientThread(void * instance)
+THREAD_RETURN ChatProgram::startClientThread(void * instance)
 {
+    	ChatProgram* self = (ChatProgram*)instance;
 	if (instance == NULL)
 	{
 		std::cout << "startClientThread() thread instance NULL\n";
-		_endthread();
+		self->exitThread(nullptr);
 	}
-	ChatProgram* self = (ChatProgram*)instance;
+
 
 	// These are the settings for the connection
 	memset(&self->hints, 0, sizeof(self->hints));
@@ -328,7 +343,7 @@ void ChatProgram::startClientThread(void * instance)
 	// Place target ip and port, and hints about the connection type into a linked list named addrinfo *result
 	// Now we use result instead of hints.
 	if (self->SockStuff.myGetAddrInfo(self->target_external_ip, self->target_external_port, &self->hints, &self->result) == false)
-		_endthread();
+		self->exitThread(nullptr);
 	
 	std::cout << "Attempting to connect...\n";
 
@@ -352,7 +367,7 @@ void ChatProgram::startClientThread(void * instance)
 			{
 				std::cout << "Server won. Exiting thread.\n";
 			}
-			_endthread();
+			self->exitThread(nullptr);
 		}
 
 		// Create socket
@@ -360,7 +375,7 @@ void ChatProgram::startClientThread(void * instance)
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
-			_endthread();
+			self->exitThread(nullptr);
 		}
 
 		// Attempt to connect to target
@@ -368,7 +383,7 @@ void ChatProgram::startClientThread(void * instance)
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
-			_endthread();
+			self->exitThread(nullptr);
 		}
 		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
@@ -386,7 +401,7 @@ void ChatProgram::startClientThread(void * instance)
 		else
 		{
 			std::cout << "Unkown ERROR. connect()\n";
-			_endthread();
+			self->exitThread(nullptr);
 		}
 	}
 
@@ -405,7 +420,7 @@ void ChatProgram::startClientThread(void * instance)
 
 
 	// Exiting chat program
-	_endthread();
+	self->exitThread(nullptr);
 }
 
 // remote_host is /* optional */    default == "Peer".
@@ -414,7 +429,7 @@ void ChatProgram::startClientThread(void * instance)
 int ChatProgram::loopedReceiveMessages(const char* remote_host)
 {
 	
-#if 1 /* TEMP SEND AUTO MSG **********************/
+#if 1// TEMP SEND AUTO MSG
 	const char* sendbuf = nullptr;
 	std::string message_to_send = "This is an automated message from my receive loop.\n";
 
@@ -434,7 +449,7 @@ int ChatProgram::loopedReceiveMessages(const char* remote_host)
 	//	std::cout << "dbg Bytes Sent: " << wombocombo << "\n";
 	//}
 
-#endif 1 /* TEMP SEND AUTO MSG *********************/
+#endif//1 TEMP SEND AUTO MSG
 	
 
 
@@ -552,12 +567,12 @@ void ChatProgram::createLoopedSendMessagesThread(void * instance)
 #endif//_WIN32
 }
 
-void ChatProgram::loopedSendMessagesThread(void * instance)
+THREAD_RETURN ChatProgram::loopedSendMessagesThread(void * instance)
 {
 	if (instance == NULL)
 	{
 		std::cout << "Instance was NULL.\n";
-		return;
+		THREAD_RETURN_VALUE;
 	}
 	ChatProgram* self = (ChatProgram*)instance;
 	int bytes;
@@ -606,14 +621,19 @@ void ChatProgram::loopedSendMessagesThread(void * instance)
 			std::cout << "dbg Bytes Sent: " << bytes << "\n";
 	}
 
-	_endthread();
+	self->exitThread(nullptr);
 }
 
 // Output to console the the peer's IP and port that you have connected to the peer with.
 void ChatProgram::coutPeerIPAndPort(SOCKET s)
 {
 	sockaddr PeerIPAndPortStorage;
+#ifdef _WIN32
 	int peer_ip_and_port_storage_len = sizeof(sockaddr);
+#endif//_WIN32
+#ifdef __linux__
+        socklen_t peer_ip_and_port_storage_len = sizeof(sockaddr);
+#endif//__linux__
 	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
 
 	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
@@ -643,3 +663,14 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 	else
 		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
 }
+
+// Cross platform windows and linux thread exiting
+    void ChatProgram::exitThread(void* ptr)
+    {
+#ifdef _WIN32
+        _endthread();
+#endif//_WIN32
+#ifdef __linux
+       pthread_exit(ptr); // Not wanting to return anything, just exit
+#endif//__linux__
+    }

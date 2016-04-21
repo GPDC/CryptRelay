@@ -14,6 +14,7 @@
 //ipv6
 
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
+// build-> linker-> libraries->
 #include <iostream>
 #include <string.h>
 #include <vector>
@@ -37,7 +38,7 @@
 #include "CommandLineInput.h"
 #include "chat_program.h"
 
-#include "UPnP.h
+#include "UPnP.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -57,6 +58,10 @@
 #include "UPnP.h"
 #endif//_WIN32
 
+
+#ifdef __linux__
+#define FALSE 0
+#endif//__linux__
 
 bool global_verbose = false;
 
@@ -89,36 +94,36 @@ void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, Ch
 	// and give them to the chat program.
 
 	// Give IP and port info to the ChatServer instance
-	if (empty(CLI->target_ip_address) == false)
+	if (CLI->target_ip_address.empty() == false)
 		ChatServerInstance->target_external_ip = CLI->target_ip_address;
 
-	if (empty(CLI->target_port) == false)
+	if (CLI->target_port.empty() == false)
 		ChatServerInstance->target_external_port = CLI->target_port;
 
-	if (empty(CLI->my_ext_ip_address) == false)
+	if (CLI->my_ext_ip_address.empty() == false)
 		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
 
-	if (empty(CLI->my_ip_address) == false)
+	if (CLI->my_ip_address.empty() == false)
 		ChatServerInstance->my_local_ip = CLI->my_ip_address;
 
-	if (empty(CLI->my_host_port) == false)
+	if (CLI->my_host_port.empty() == false)
 		ChatServerInstance->my_local_port = CLI->my_host_port;
 
 
 	// Give IP and port info to the ChatClient instance
-	if (empty(CLI->target_ip_address) == false)
+	if (CLI->target_ip_address.empty() == false)
 		ChatClientInstance->target_external_ip = CLI->target_ip_address;
 
-	if (empty(CLI->target_port) == false)
+	if (CLI->target_port.empty() == false)
 		ChatClientInstance->target_external_port = CLI->target_port;
 
-	if (empty(CLI->my_ext_ip_address) == false)
+	if (CLI->my_ext_ip_address.empty() == false)
 		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
 
-	if (empty(CLI->my_ip_address) == false)
+	if (CLI->my_ip_address.empty() == false)
 		ChatClientInstance->my_local_ip = CLI->my_ip_address;
 
-	if (empty(CLI->my_host_port) == false)
+	if (CLI->my_host_port.empty() == false)
 		ChatClientInstance->my_local_port = CLI->my_host_port;
 }
 
@@ -133,46 +138,46 @@ void upnpGiveIPAndPort(CommandLineInput* CLI, UPnP* UpnpInstance, ChatProgram* C
 	// the UPnP class has gathered / made.
 
 	// Give IP and port info to the ChatServer instance
-	if (empty(CLI->target_ip_address) == false)
+	if (CLI->target_ip_address.empty() == false)
 		ChatServerInstance->target_external_ip = CLI->target_ip_address;
 
-	if (empty(CLI->target_port) == false)
+	if (CLI->target_port.empty() == false)
 		ChatServerInstance->target_external_port = CLI->target_port;
 
-	if (empty(CLI->my_ext_ip_address) == false)
+	if (CLI->my_ext_ip_address.empty() == false)
 		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
 	else
 		ChatServerInstance->my_external_ip = UpnpInstance->my_external_ip;
 
-	if (empty(CLI->my_ip_address) == false)
+	if (CLI->my_ip_address.empty() == false)
 		ChatServerInstance->my_local_ip = CLI->my_ip_address;
 	else
 		ChatServerInstance->my_local_ip = UpnpInstance->my_local_ip;
 
-	if (empty(CLI->my_host_port) == false)
+	if (CLI->my_host_port.empty() == false)
 		ChatServerInstance->my_local_port = CLI->my_host_port;
 	else
 		ChatServerInstance->my_local_port = UpnpInstance->my_internal_port;
 
 
 	// Give IP and port info to the ChatClient instance
-	if (empty(CLI->target_ip_address) == false)
+	if (CLI->target_ip_address.empty() == false)
 		ChatClientInstance->target_external_ip = CLI->target_ip_address;
 
-	if (empty(CLI->target_port) == false)
+	if (CLI->target_port.empty() == false)
 		ChatClientInstance->target_external_port = CLI->target_port;
 
-	if (empty(CLI->my_ext_ip_address) == false)
+	if (CLI->my_ext_ip_address.empty() == false)
 		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
 	else
 		ChatClientInstance->my_external_ip = UpnpInstance->my_external_ip;
 
-	if (empty(CLI->my_ip_address) == false)
+	if (CLI->my_ip_address.empty() == false)
 		ChatClientInstance->my_local_ip = CLI->my_ip_address;
 	else
 		ChatClientInstance->my_local_ip = UpnpInstance->my_local_ip;
 
-	if (empty(CLI->my_host_port) == false)
+	if (CLI->my_host_port.empty() == false)
 		ChatClientInstance->my_local_port = CLI->my_host_port;
 	else
 		ChatClientInstance->my_local_port = UpnpInstance->my_internal_port;
@@ -250,8 +255,12 @@ int main(int argc, char *argv[])
 
 	// Wait for 2 ChatServer and ChatClient threads to finish
 #ifdef __linux__
-	pthread_join(ChatProgram::thread0, NULL);
-	pthread_join(ChatProgram::thread1, NULL);
+	int pret = pthread_join(ChatProgram::thread0, NULL);
+            if (pret)
+                std::cout << "error";
+	pret = pthread_join(ChatProgram::thread1, NULL);
+            if (pret)
+                std::cout << "error";
 #endif//__linux__
 #ifdef _WIN32
 	int r = WaitForMultipleObjects(

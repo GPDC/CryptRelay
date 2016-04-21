@@ -36,6 +36,7 @@
 #pragma comment(lib, "Ws2_32.lib")		//tell the linker that Ws2_32.lib file is needed.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+#define EWOULDBLOCK WSAETIMEDOUT
 #endif//_WIN32
 
 #ifdef __linux__
@@ -44,6 +45,7 @@
 #define SD_RECEIVE      0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
 #define SD_SEND         0x01			// ^
 #define SD_BOTH			0x02			// ^
+#define WSAETIMEDOUT EAGAIN // for linux it could be eitehr EAGAIN or EWOULDBLOCK, need to check for both...
 #endif//__linux__
 
 
@@ -183,15 +185,15 @@ int SocketClass::myRecv(SOCKET s, char* buf, int buf_len, int flags)
 	return errchk; // Number of bytes received
 }
 
-int SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, int *from_len)
+ssize_t SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len)
 {
 	if (global_verbose == true)
 		std::cout << "Waiting to receive a msg...\n";
-	int errchk = recvfrom(s, buf, buf_len, flags, from, from_len);
+	ssize_t errchk = recvfrom(s, buf, buf_len, flags, from, from_len);// changed from int to ssize_t
 	if (errchk == SOCKET_ERROR)
 	{
 		int saved_errno = getError(errchk);
-		if (saved_errno == WSAETIMEDOUT)
+		if (saved_errno == WSAETIMEDOUT || saved_errno == EWOULDBLOCK)
 		{
 			std::cout << "Finished receiving messages.\n";
 			return WSAETIMEDOUT;
@@ -266,7 +268,7 @@ bool SocketClass::myListen(SOCKET fd)
 }
 
 // TCP use, not UDP
-SOCKET __stdcall SocketClass::myAccept(SOCKET fd)
+SOCKET SocketClass::myAccept(SOCKET fd)
 {
 #ifdef __linux__
 	socklen_t addr_size;
@@ -299,12 +301,12 @@ SOCKET __stdcall SocketClass::myAccept(SOCKET fd)
 // to a linked list of on or more addrinfo structures and gives you the
 // pointer to it. The pointer address is located in whatever u gave it for ppresult.
 // This is not to be confused with the return value of the function.
-bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, const ADDRINFOA *phints, PADDRINFOA *ppresult)
+bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult)
 {
 	if (global_verbose == true)
 		std::cout << "getaddrinfo given: IP address and port... ";
 	
-	int errchk = getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);
+	int errchk = getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);    //added & too ppresult on linux
 	if (errchk != 0)
 	{
 		getError(errchk);;
@@ -321,7 +323,7 @@ bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, 
 // paddr_buf would be something like this:
 // struct sockaddr_in storage;
 // so it would be:  myinet_pton(AF_INET, "192.168.1.1", &storage.sin_addr);
-int SocketClass::myinet_pton(int family, PCSTR ip_addr, PVOID paddr_buf)
+int SocketClass::myinet_pton(int family, char* ip_addr, void* paddr_buf)
 {
 	int errchk = inet_pton(family, ip_addr,paddr_buf);
 	if (errchk == 0)
@@ -374,7 +376,7 @@ void SocketClass::myWSACleanup()
 #endif//_WIN32
 }
 
-void SocketClass::myFreeAddrInfo(PADDRINFOA pAddrInfo)
+void SocketClass::myFreeAddrInfo(addrinfo* pAddrInfo)
 {
 	freeaddrinfo(pAddrInfo);
 

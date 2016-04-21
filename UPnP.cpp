@@ -1,7 +1,16 @@
+#ifdef __linux__
+#include <string.h> //memset
+#include <errno.h>
+#endif//__linux__
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#endif//_WIN32
+
 #include <iostream>
 #include <stdio.h>
 #include <string>
-#include <WinSock2.h>
+
 #include <time.h>	// needed for localtime_s and localtime_r
 #include <limits.h>	// macros for int, short, char, etc that are defined as their min/max values.
 
@@ -159,7 +168,7 @@ bool UPnP::findValidIGD()
 	if (r == 0)
 	{
 		std::cout << "No valid IGD found.\n";
-		return;
+		return false;
 	}
 	else
 	{
@@ -184,6 +193,8 @@ bool UPnP::findValidIGD()
 			}
 		}
 	}
+
+	return true;
 }
 
 // Display Information such as:
@@ -295,7 +306,6 @@ void UPnP::displayTimeStarted(u_int uptime)
 {
 	char am_pm[] = "AM";
 	char timebuf[26];
-	errno_t err;
 	time_t TimeNow, TimeStarted;
 	
 	// Get and place the current time inside TimeNow
@@ -308,28 +318,41 @@ void UPnP::displayTimeStarted(u_int uptime)
 	tm StorageForLocalTimeData;	// localtime_s() and localtime_r() store time data in here.
 	memset(&StorageForLocalTimeData, 0, sizeof(StorageForLocalTimeData));
 #ifdef _WIN32
+        errno_t err;
 	err = localtime_s(&StorageForLocalTimeData, &TimeNow);
 	if (err)
 		std::cout << "Invalid argument to localtime_s.";
 #endif//_WIN32
 #ifdef __linux__
-	err = localtime_r(TimeNow, &StorageForLocalTimeData);
+        tm* err;
+	err = localtime_r(&TimeNow, &StorageForLocalTimeData);
 	if (err)
 		std::cout << "Invalid argument to localtime_r.";
 #endif//__linux__
 
 	if (StorageForLocalTimeData.tm_hour > 12)				// Set up extension. 
-		strcpy_s(am_pm, sizeof(am_pm), "PM");
+                memcpy(am_pm, "PM", sizeof(am_pm) );
+		//strcpy_s(am_pm, sizeof(am_pm), "PM");
 	if (StorageForLocalTimeData.tm_hour > 12)				// Convert from 24-hour 
 		StorageForLocalTimeData.tm_hour -= 12;				// to 12-hour clock. 
 	if (StorageForLocalTimeData.tm_hour == 0)				// Set hour to 12 if midnight.
 		StorageForLocalTimeData.tm_hour = 12;
 
-	// Convert to an ASCII representation. 
+	// Convert to an ASCII representation.
+#ifdef _WIN32
 	err = asctime_s(timebuf, 26, &StorageForLocalTimeData);
 	if (err)
 		printf("Invalid argument to asctime_s.");
-
+#endif//_WIN32
+        
+        /*
+#ifdef __linux__
+        err = asctime_r(timebuf, &StorageForLocalTimeData);// asctime can be overflowed. do not use.
+	if (err)
+		printf("Invalid argument to asctime_r.");
+#endif//__linux__
+        */
+        
 	// Output to console
 	std::cout << "Time started    : ";
 	printf("%.19s %s\n", timebuf, am_pm);				// %.19s just means that it will print out a max of 19 chars
@@ -413,7 +436,7 @@ bool UPnP::autoAddPortForwardRule()
 
 	// Find a valid IGD based off the list filled out by findUPnPDevices()
 	if (findValidIGD() == false)
-		return;
+		return false;
 
 	// Displays various extra information gathered through UPnP
 	if (global_verbose == true)

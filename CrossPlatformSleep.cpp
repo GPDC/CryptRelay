@@ -1,6 +1,9 @@
-#include <ws2tcpip.h>	// So an int can be passed to Sleep()
-
 #include "CrossPlatformSleep.h"
+
+#ifdef _WIN32
+#include <ws2tcpip.h>	// So an int can be passed to Sleep()
+#endif//_WIN32
+
 
 
 // Milliseconds only. xplatform windows & linux
