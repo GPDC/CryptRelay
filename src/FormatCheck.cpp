@@ -66,7 +66,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	// Check if the formatting for the IP address is correct
 	int period_count = 0;
 	int start = 0;
-	int end = 0;
+	long long end = 0;
 
 	for (unsigned int c = 0; c < ipaddress.size(); c++)
 	{
@@ -102,7 +102,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		}
 		//back to the future
 		start = end + 1;
-		if (end == ipaddress.size())
+		if (end == (long long)ipaddress.size())
 		{
 			break;
 		}
