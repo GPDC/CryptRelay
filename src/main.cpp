@@ -5,7 +5,9 @@
 
 //Formatting guide: Located at the bottom of main.cpp
 
-
+//solve chat output while typing msg problem by forcing a getline for whatever is currently typed out when
+// the user receives()? and then once its done recving and displaying that message, cout the getlined message back to console to make it look like everything
+// is normal. I mean an issue would still occur with not being able to delete your msg that got getlined, but this could be a quick band-aid.
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
 							// build-> linker-> libraries->
 #include <iostream>
