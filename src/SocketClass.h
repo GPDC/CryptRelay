@@ -44,7 +44,7 @@
 
 
 #ifdef __linux__
-typedef u_int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
+typedef int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
 #define BYTE_SIZE ssize_t// because myRecvFrom needs to return ssize_t on linux, and int on win
 #endif//__linux__
 
