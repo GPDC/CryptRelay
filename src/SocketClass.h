@@ -23,7 +23,14 @@
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
 // fd stands for File Descriptor. It is linux's version of a SOCKET.
-// buf is buffer. It is a place where information is stored for a short time.
+// On windows, a SOCKET handle may have any value between 0 to the maximum size of
+//  and unsigned integer -1. In other words: 0 to INVALID_SOCKET. This means
+//  (~0) is not a value that will ever be assigned as a valid socket. That is why
+//  INVALID_SOCKET is defined as (~0) and is returned from various function calls
+//  to tell the programmer that something went wrong.
+//  On linux it returns -1 for an invalid socket instead of (~0) because SOCKET is
+//  defined as an int on linux, and valid SOCKETs will only be positive.
+// buf is buffer. It is a place where information is stored for a time.
 
 #ifndef SocketClass_h__
 #define SocketClass_h__

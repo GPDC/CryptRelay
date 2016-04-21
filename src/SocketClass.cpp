@@ -38,11 +38,11 @@
 #pragma comment(lib, "AdvApi32.lib")
 #endif//_WIN32
 #ifdef __linux__
-#define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
 #define SOCKET_ERROR	(-1)			// I belive this was just because linux didn't already have a SOCKET_ERROR macro.
-#define SD_RECEIVE      0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
-#define SD_SEND         0x01			// ^
-#define SD_BOTH			0x02			// ^
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH			SHUT_RDWR//0x02			// ^
 #endif//__linux__
 
 #ifdef __linux__
