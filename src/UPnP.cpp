@@ -45,6 +45,8 @@ UPnP::UPnP()
 	//
 	i_internal_port = 30248;			// Some devices require that the internal and external ports must be the same.
 	i_external_port = 30248;			// Some devices require that the internal and external ports must be the same.
+
+	// mm i don't like this being here
 	my_internal_port = std::to_string(i_internal_port);
 	my_external_port = std::to_string(i_external_port);
 }

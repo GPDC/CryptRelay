@@ -58,11 +58,14 @@
 
 bool global_verbose = false;
 
+
+void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
+
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
 // /* to */ ChatProgram* ChatServerInstance
 // /* to */ ChatProgram* ChatClientInstance
-void lanGiveIPAndPort(
+void cliGivesIPAndPortToChatProgram(
 		CommandLineInput* CLI,
 		ChatProgram* ChatServerInstance,
 		ChatProgram* ChatClientInstance
@@ -73,14 +76,25 @@ void lanGiveIPAndPort(
 // /* from */ UPnP* UpnpInstance
 // /* to */ ChatProgram* ChatServerInstance
 // /* to */ ChatProgram* ChatClientInstance
-void upnpGiveIPAndPort(
+void upnpGivesIPAndPortToChatProgram(
 		CommandLineInput* CLI,
 		UPnP* UpnpInstance,
 		ChatProgram* ChatServerInstance,
 		ChatProgram* ChatClientInstance
 	);
 
-void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
+
+void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
+{
+	// Give Port that was supplied by the user to the UPnP class
+	if (CLI->my_host_port.empty() == false)
+	{
+		UpnpInstance->my_internal_port = CLI->my_host_port;
+		UpnpInstance->my_external_port = CLI->my_host_port;
+	}
+}
+
+void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -122,7 +136,7 @@ void lanGiveIPAndPort(CommandLineInput* CLI, ChatProgram* ChatServerInstance, Ch
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
 // class tried to give.
-void upnpGiveIPAndPort(CommandLineInput* CLI, UPnP* UpnpInstance, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
+void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -219,18 +233,22 @@ int main(int argc, char *argv[])
 	else if (CLI.use_lan_only == true)
 	{
 		// Give IP and port info to the ChatServer and ChatClient instance
-		lanGiveIPAndPort(&CLI, &ChatServer, &ChatClient);
+		cliGivesIPAndPortToChatProgram(&CLI, &ChatServer, &ChatClient);
 	}
 	else if (CLI.use_upnp_to_connect_to_peer == true)
 	{
 		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
+
+		// Give the user's inputted port to the UPnP Class
+		// so that it will port forward what he wanted.
+		cliGivesPortToUPnP(&CLI, Upnp);
 
 		// If UPnP is working, add a port forward rule so we can connect to a peer
 		if (Upnp->autoAddPortForwardRule() == true)
 		{
 			// Give IP and port info gathered from the command line and from
 			// the UPnP class to the ChatServer and ChatClient instance
-			upnpGiveIPAndPort(&CLI, Upnp, &ChatServer, &ChatClient);
+			upnpGivesIPAndPortToChatProgram(&CLI, Upnp, &ChatServer, &ChatClient);
 		}
 		else
 		{
