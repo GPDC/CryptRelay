@@ -71,6 +71,9 @@ ChatProgram::ChatProgram()
 }
 ChatProgram::~ChatProgram()
 {
+	// Giving this a try, shutdown the connection even if ctrl-c is hit?
+	SockStuff.myShutdown(global_socket, SD_BOTH);
+
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.

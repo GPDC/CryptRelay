@@ -24,6 +24,7 @@
     <ClInclude Include="..\src\CrossPlatformSleep.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
+    <ClInclude Include="..\src\port_knock.h" />
     <ClInclude Include="..\src\SocketClass.h" />
     <ClInclude Include="..\src\UPnP.h" />
   </ItemGroup>
@@ -33,6 +34,7 @@
     <ClCompile Include="..\src\CrossPlatformSleep.cpp" />
     <ClCompile Include="..\src\FormatCheck.cpp" />
     <ClCompile Include="..\src\main.cpp" />
+    <ClCompile Include="..\src\port_knock.cpp" />
     <ClCompile Include="..\src\SocketClass.cpp" />
     <ClCompile Include="..\src\UPnP.cpp" />
   </ItemGroup>

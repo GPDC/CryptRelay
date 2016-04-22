@@ -98,6 +98,7 @@ bool SocketClass::mySetSockOpt(SOCKET sock, int level, int option_name, const ch
 	return true;
 }
 
+// Create a socket. Returns INVALID_SOCKET on error.
 SOCKET SocketClass::mySocket(int address_family, int socket_type, int protocol)
 {
 	if (global_verbose == true)
@@ -232,7 +233,7 @@ BYTE_SIZE SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, s
 }
 
 // For TCP use, not UDP
-int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
+int SocketClass::myConnect(SOCKET fd, const sockaddr* ai_addr_name, int ai_addr_name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
@@ -247,7 +248,7 @@ int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
 
 	// Connect to server
-	int errchk = connect(fd, name, name_len);	// Returns 0 on success
+	int errchk = connect(fd, ai_addr_name, ai_addr_name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
 		int r = getError(errchk);
@@ -354,6 +355,8 @@ int SocketClass::myinet_pton(int family, char* ip_addr, void* paddr_buf)
 }
 
 // Shuts down the current connection that is active on the given socket.
+// The shutdown operation is one of three macros.
+// SD_RECEIVE, SD_SEND, SD_BOTH.
 bool SocketClass::myShutdown(SOCKET fd, int operation)
 {
 	std::cout << "Shutting down the connection... ";

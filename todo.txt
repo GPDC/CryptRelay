@@ -17,12 +17,17 @@ bool isPortOpen(port)
 	set sockaddr_in port to port;
 	SOCKET s = socket();
 	if (no error)
-		return = true
+		continue;
 	else if (INVALID_SOCKET)
 	{
 		closeSocket();
 		return false;
 	{
+	connect();
+	if (error)
+		return false;
+	else
+		return true;
 }
 
 # Non-critical errors:

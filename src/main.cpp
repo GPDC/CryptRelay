@@ -59,6 +59,7 @@
 bool global_verbose = false;
 
 
+// Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
 
 // Gives IP and Port information to the Chat Program.
@@ -83,7 +84,7 @@ void upnpGivesIPAndPortToChatProgram(
 		ChatProgram* ChatClientInstance
 	);
 
-
+// Give user supplied port to the UPnP class
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 {
 	// Give Port that was supplied by the user to the UPnP class
