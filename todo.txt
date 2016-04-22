@@ -1,9 +1,10 @@
 ﻿# Todo:
-encryption
-output what IP and port the user is listening on (server)
-allow the user to exit the program by typing:  exit()  or something similiar
-In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
-Fix chat output issue when someone sends you a message while you are typing
+-encryption
+-output what IP and port the user is listening on (server)
+-allow the user to exit the program by typing:  exit()  or something similiar
+-In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
+-Fix chat output issue when someone sends you a message while you are typing
+-fixed select() timeout issue, but select() should be replaced by poll() and WSAPoll()
 
 # Critical Errors:
 
@@ -13,4 +14,4 @@ localtime_r is erroring.
 
 
 # Odd behavior:
-select() is not waiting the 2 seconds it should be (LINUX). It not waiting at all. Therefore it goes through the loop extremely fast
+

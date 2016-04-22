@@ -1,7 +1,7 @@
-﻿This guide was created in Debian Linux and Eclipse 3.8.1
+﻿# This guide was created in Debian Linux and Eclipse 3.8.1
 Want to use Eclipse to build / make changes to CryptRelay? This is the README for you.
 
-If you are new to programming on linux you might need to download and install a couple packages that contain some tools / libraries:
+# If you are new to programming on linux you might need to download and install a couple packages that contain some tools / libraries:
 sudo apt-get install build-essential
 Want to know what separate packages make up the build-essential package? Type:
 gedit /usr/share/doc/build-essential/essential-packages-list

@@ -207,11 +207,12 @@ void ChatProgram::startServerThread(void * instance)
 	memset(&TimeValue, 0, sizeof(TimeValue));
 
 	// Used by select(). It makes it wait for x amount of time to wait for a readable socket to appear.
-	TimeValue.tv_usec = 500'000; // 1 million microseconds = 1 second
+	TimeValue.tv_sec = 5;
+	//TimeValue.tv_usec = 500'000; // 1 million microseconds = 1 second
 
 	// This struct contains the array of sockets that select() will check for readability
-	fd_set FdSet;
-	memset(&FdSet, 0, sizeof(FdSet));
+	fd_set ReadSet;
+	memset(&ReadSet, 0, sizeof(ReadSet));
 
 	// loop check for incoming connections
 	int errchk;
@@ -219,12 +220,13 @@ void ChatProgram::startServerThread(void * instance)
 	{
 		std::cout << "dbg Listen thread active...\n";
 		// Putting the socket into the array so select() can check it for readability
-		// Format is:  FD_SET(int fd, fd_set *FdSet);
+		// Format is:  FD_SET(int fd, fd_set *ReadSet);
 		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
-		FD_SET(listen_socket, &FdSet);
-
+		FD_ZERO(&ReadSet);
+		FD_SET(listen_socket, &ReadSet);
+		TimeValue.tv_sec = 2;	// This has to be in this loop! Linux resets this value every time select() times out.
 		// select() returns the number of handles that are ready and contained in the fd_set structure
-		errchk = select(listen_socket + 1, &FdSet, NULL, NULL, &TimeValue);
+		errchk = select(listen_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 
 		if (errchk == SOCKET_ERROR)
 		{
