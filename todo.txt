@@ -5,6 +5,7 @@
 -In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
 -Fix chat output issue when someone sends you a message while you are typing
 -fixed select() timeout issue, but select() should be replaced by poll() and WSAPoll()
+-file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
 
 # Critical Errors:
 
