@@ -66,8 +66,6 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 		return false;
 	}
 
-	sockaddr_in LocalHostSin;
-
 	SOCKET s = SocketStuff.mySocket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
 	if (s == INVALID_SOCKET)
 	{
