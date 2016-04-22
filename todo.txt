@@ -8,7 +8,7 @@
 -file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
 
 # Critical Errors:
-
+if multiple CryptRelay programs are trying to run on the same computer, then only one of them will work. The other will fail 10048 because the address && port is already in use. To solve this, need to check to see if the port that the program is going to use is free or not on the computer. -- check if port is open before doing upnp port forwarding, so the upnp can port forward to the correct port.
 
 # Non-critical errors:
 localtime_r is erroring.

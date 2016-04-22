@@ -43,8 +43,8 @@ UPnP::UPnP()
 	memset(&IGDData, 0, sizeof(IGDData));
 
 	//
-	i_internal_port = 30001;			// Some devices require that the internal and external ports must be the same.
-	i_external_port = 30001;			// Some devices require that the internal and external ports must be the same.
+	i_internal_port = 30248;			// Some devices require that the internal and external ports must be the same.
+	i_external_port = 30248;			// Some devices require that the internal and external ports must be the same.
 	my_internal_port = std::to_string(i_internal_port);
 	my_external_port = std::to_string(i_external_port);
 }
@@ -501,8 +501,8 @@ bool UPnP::autoAddPortForwardRule()
 					// It is safe to roll over the max since it is unsigned and it is handled correctly;
 					if ( (i_internal_port == USHRT_MAX) && (i_external_port == USHRT_MAX) )
 					{
-						i_internal_port += 30001;	// arbitrary number to start trying again with.
-						i_external_port += 30001;	// arbitrary number to start trying again with.
+						i_internal_port += 30248;	// arbitrary number to start trying again with.
+						i_external_port += 30248;	// arbitrary number to start trying again with.
 					}
 
 					++i_internal_port;

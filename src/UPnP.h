@@ -82,6 +82,8 @@ private:
 	// These are assigned in the constructor and used in addPortForwardRule().
 	// They are potentially re-assigned in autoAddPortForwardRule().
 	// my_external_port and protocol are used in autoDeletePortForwardRule()
+	// These ports will be used in the ChatProgram unless the user specified
+	// their own desired ports in the command line arguments list.
 	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
 	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
 	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.

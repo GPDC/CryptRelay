@@ -23,6 +23,7 @@
 #include <iostream>
 #include <vector>
 
+// are these really needed here? pls check on linux
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -49,6 +50,10 @@
 #define MAX_PORT_LENGTH 5
 #define MAX_PORT_NUMBER 65535		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
 
+#ifndef INET_ADDRSTRLEN
+#define INET_ADDRSTRLEN 15			// max size of ipv4 address / ipv6 is 45
+#endif//INET_ADDRSTRLEN
+
 IPAddress::IPAddress()
 {
 }
@@ -59,6 +64,14 @@ IPAddress::~IPAddress()
 bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 {
 	std::string ipaddress = ipaddr;
+	int ipaddress_size = ipaddress.size();
+
+	// If the string is too big to be an IPV4 address
+	if (ipaddress_size > INET_ADDRSTRLEN)
+	{
+		std::cout << "IPV4 address is too big to be valid.\n";
+		return false;
+	}
 
 	if (global_verbose == true)
 		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
@@ -66,9 +79,9 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	// Check if the formatting for the IP address is correct
 	int period_count = 0;
 	int start = 0;
-	long long end = 0;
+	int end = 0;
 
-	for (unsigned int c = 0; c < ipaddress.size(); c++)
+	for (int c = 0; c < ipaddress_size; c++)
 	{
 		// Checking for ascii 0-9 and '.'   ... if it isn't any of those, then it
 		// sends the user to try again with different input.
@@ -94,7 +107,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		}
 		if (end == -1)
 		{
-			end = ipaddress.size();
+			end = ipaddress_size;
 		}
 		if (checkSubnetRange(ipaddress, start, end) == false)
 		{
@@ -102,7 +115,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		}
 		//back to the future
 		start = end + 1;
-		if (end == (long long)ipaddress.size())
+		if (end == ipaddress_size)
 		{
 			break;
 		}
