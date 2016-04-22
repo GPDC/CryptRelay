@@ -1,7 +1,7 @@
 //port_knock.h
+// ummmm not sure why I've put this inside CryptRelay... ******* PENDING DELETION *******
 
 // Overview:
-// ummmm not sure why I've put this inside CryptRelay...
 // This class deals with all checks for open ports and closed ports.
 
 #ifndef port_knock_h__

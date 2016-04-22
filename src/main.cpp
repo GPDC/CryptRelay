@@ -32,7 +32,6 @@
 #include "chat_program.h"
 
 #include "UPnP.h"
-#include "port_knock.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -50,7 +49,6 @@
 #include "chat_program.h"
 
 #include "UPnP.h"
-#include "port_knock.h"
 #endif//_WIN32
 
 
