@@ -233,7 +233,7 @@ BYTE_SIZE SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, s
 }
 
 // For TCP use, not UDP
-int SocketClass::myConnect(SOCKET fd, const sockaddr* ai_addr_name, int ai_addr_name_len)
+int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
@@ -248,7 +248,7 @@ int SocketClass::myConnect(SOCKET fd, const sockaddr* ai_addr_name, int ai_addr_
 	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
 
 	// Connect to server
-	int errchk = connect(fd, ai_addr_name, ai_addr_name_len);	// Returns 0 on success
+	int errchk = connect(fd, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
 		int r = getError(errchk);

@@ -501,7 +501,7 @@ bool UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// It is safe to roll over the max since it is unsigned and it is handled correctly;
-					if ( (i_internal_port == USHRT_MAX) && (i_external_port == USHRT_MAX) )
+					if ( (i_internal_port == USHRT_MAX) || (i_external_port == USHRT_MAX) )
 					{
 						i_internal_port += 30248;	// arbitrary number to start trying again with.
 						i_external_port += 30248;	// arbitrary number to start trying again with.
@@ -526,8 +526,8 @@ bool UPnP::autoAddPortForwardRule()
 				{
 					if (global_verbose == true)
 						std::cout << "External and internal ports must match. Improvising...\n";
-					i_internal_port = 30001;
-					i_external_port = 30001;
+					i_internal_port = 30223;	// arbitrary number to start trying again with.
+					i_external_port = 30223;	// arbitrary number to start trying again with.
 					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
 					try_again = true;
 

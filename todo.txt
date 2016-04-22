@@ -9,26 +9,8 @@
 
 # Critical Errors:
 -if multiple CryptRelay programs are trying to run on the same computer, then only one of them will work. The other will fail 10048 because the address && port is already in use. To solve this, need to check to see if the port that the program is going to use is free or not on the computer. -- check if port is open before doing upnp port forwarding, so the upnp can port forward to the correct port.
-sudo example inside the SocketClass:
-bool isPortOpen(port)
-{
-	set hints;
-	set sockaddr_in address to localhost;
-	set sockaddr_in port to port;
-	SOCKET s = socket();
-	if (no error)
-		continue;
-	else if (INVALID_SOCKET)
-	{
-		closeSocket();
-		return false;
-	{
-	connect();
-	if (error)
-		return false;
-	else
-		return true;
-}
+check to see if bind() returned WSA 10048 addr already in use. If that is the case then tell the user to change the port b/c it is in use right now.
+OR could check if use_upnp == true, then have server_thread_error_code = 10048; if server_thread_error_code == 10048, delete Upnp instance, create new instance, and port forward again, this time with a +1 port. This would be needed instead of just +1ing the port number when doing bind() in the ChatProgram class because the port forward on the NAT has to match.
 
 # Non-critical errors:
 localtime_r is erroring.

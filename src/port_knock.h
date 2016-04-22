@@ -1,5 +1,13 @@
+//port_knock.h
+
+// Overview:
+// ummmm not sure why I've put this inside CryptRelay...
+// This class deals with all checks for open ports and closed ports.
+
 #ifndef port_knock_h__
 #define port_knock_h__
+
+#include "CommandLineInput.h"
 
 class PortKnock
 {

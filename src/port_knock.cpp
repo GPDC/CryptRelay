@@ -1,3 +1,5 @@
+//port_knock.cpp
+
 #ifdef __linux__
 #include <iostream>
 
@@ -51,6 +53,9 @@ PortKnock::~PortKnock()
 // Very simple checking of 1 port. Not for checking many ports quickly.
 bool PortKnock::isPortOpen(std::string ip, std::string port)
 {
+	if (global_verbose == true)
+		std::cout << "Checking to see if port is open...\n";
+
 	SocketClass SocketStuff;
 	addrinfo hints;
 	addrinfo* result = nullptr;
@@ -84,7 +89,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 	else
 	{
-		SocketStuff.myShutdown(s, SD_BOTH);	// Shutting it down b/c we want it to be available to use.
+		SocketStuff.myShutdown(s, SD_BOTH);
 		SocketStuff.myCloseSocket(s);
 		return true;
 	}

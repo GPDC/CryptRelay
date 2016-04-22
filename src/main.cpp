@@ -32,6 +32,7 @@
 #include "chat_program.h"
 
 #include "UPnP.h"
+#include "port_knock.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -49,6 +50,7 @@
 #include "chat_program.h"
 
 #include "UPnP.h"
+#include "port_knock.h"
 #endif//_WIN32
 
 
@@ -58,6 +60,7 @@
 
 bool global_verbose = false;
 
+void changePortIfClosed(CommandLineInput* CLI);
 
 // Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
@@ -83,6 +86,8 @@ void upnpGivesIPAndPortToChatProgram(
 		ChatProgram* ChatServerInstance,
 		ChatProgram* ChatClientInstance
 	);
+
+
 
 // Give user supplied port to the UPnP class
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
@@ -233,6 +238,13 @@ int main(int argc, char *argv[])
 	}
 	else if (CLI.use_lan_only == true)
 	{
+		// The user MUST supply a local ip address when using the lan only option.
+		if (CLI.my_ip_address.empty() == true)
+		{
+			std::cout << "ERROR: No local ip address supplied.\n";
+			return EXIT_FAILURE;
+		}
+
 		// Give IP and port info to the ChatServer and ChatClient instance
 		cliGivesIPAndPortToChatProgram(&CLI, &ChatServer, &ChatClient);
 	}

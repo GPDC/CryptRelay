@@ -1,4 +1,12 @@
 //FormatCheck.h
+
+// Overview:
+// Purpose is for checking for proper format on a given thing.
+//  Examples: checking for proper IPv4 format, IPv6, Port number
+//  is in a valid range and has numbers, etc. This is generally
+//  to make sure the user isn't providing wierd input, and to
+//  let the user know if he is.
+
 #ifndef FormatCheck_h__
 #define FormatCheck_h__
 #include <string>
