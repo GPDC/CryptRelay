@@ -653,7 +653,7 @@ void ChatProgram::loopedSendMessagesThread(void * instance)
 			self->SockStuff.myCloseSocket(global_socket);
 			break;
 		}
-		std::cout << "You: "<< send_buf << "\n";
+		std::cout << "Me: "<< send_buf << "\n";
 		if (global_verbose == true)
 			std::cout << "dbg Bytes Sent: " << bytes << "\n";
 	}

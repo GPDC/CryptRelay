@@ -23,13 +23,13 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "-------------------------------------------------------------------------------\n";	//79 dashes + a new line character
 	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4\n";
 	std::cout << "Format for LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
-	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tp 30001 -mL 192.168.1.4 -mP 30001\n";
+	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mL 192.168.1.4 -mP 30001\n";
 	std::cout << "\n";
 	std::cout << "-h    help        Displays the readme\n";
 	std::cout << "-t    target      The target's IP address.\n";
-	std::cout << "-tp   targetport  The target's external port number.\n";
-	std::cout << "-mL   me          Your local IP address that you want to listen on.\n";
-	std::cout << "-mP   myport      Your port number that you want to listen on.\n";
+	std::cout << "-tP   targetport  The target's external port number.\n";
+	std::cout << "-mL   me          My local IP address that you want to listen on.\n";
+	std::cout << "-mP   myport      My port number that you want to listen on.\n";
 	std::cout << "-v    verbose     Displays a lot of text output on screen.\n";
 	std::cout << "-lan  LAN         Don't connect to the internet. Use LAN only.\n";
 	std::cout << "-spf  Show Port Forwards Shows the list of current port forwards\n";
@@ -51,9 +51,9 @@ void CommandLineInput::Examples()
 {
 	std::cout << "\n# List of various examples:\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
-	std::cout << "cryptrelay.exe -t 192.168.1.5 -tp 50302\n";
+	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
-	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tp 50451 -mL 192.168.1.3 -mP 30456\n";
+	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tP 50451 -mL 192.168.1.3 -mP 30456\n";
 	std::cout << "\n";
 
 }
@@ -112,7 +112,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;	// Because we already took the information from i + 1, there is no need to check what i + 1 is, so we skip it by doing ++i;
 				}
 			}
-			else if (arg[i] == "-tp" && i < arg_size - 1)
+			else if (arg[i] == "-tP" && i < arg_size - 1)
 			{
 				err_chk = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk == false)
