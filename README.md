@@ -9,8 +9,8 @@ Written for C++14.
 #External Libraries
 miniupnp v1.9 - LICENSE here
 
-# Building External Libaries
-Please read the respective README_librarynamehere.md files to see how to build for each library.
+# Building and implementing external libaries
+Please read the respective README_librarynamehere.md files to see how to build and implement the library into your IDE.
 
 For example, for help building the miniupnp library with Microsoft Visual Studio 2015, or with Eclipse 3.8.1, please read the README_miniupnp.md.
 
