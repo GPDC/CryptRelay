@@ -1,4 +1,4 @@
-﻿# This guide was created in Debian Linux and Eclipse 3.8.1
+# This guide was created for use w/ Debian Linux & Eclipse 3.8.1
 Want to use Eclipse to build / make changes to CryptRelay? This is the README for you.
 
 # If you are new to programming on linux you might need to download and install a couple packages that contain some tools / libraries:
@@ -57,7 +57,7 @@ Now you will probably get an error something like this:
 	 Path for project must have only one segment
 
 // This part needs to be re-written
-To fix this we must go to   run->run configurations-> c/c++ Application-> your project name here-> look over to the right and click on the Main tab → go to the second line below where it says Project:-> click browse button, and select your project folder. Hit apply.
+To fix this we must go to   run->run configurations-> c/c++ Application-> your project name here-> look over to the right and click on the Main tab ? go to the second line below where it says Project:-> click browse button, and select your project folder. Hit apply.
 Continued next page...
 Make sure everything was done for release AND also for debug configurations
 
