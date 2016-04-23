@@ -4,6 +4,14 @@
 // This is the area where the high level functionality for the chat program is located.
 // It relies on SocketClass to perform anything that deals with Sockets or fd's
 
+// Warnings:
+// This source file expects any input that is given to it has already been checked
+//  for safety and validity. For example if a user supplies a port, then
+//  this source file will expect the port will be >= 0, and <= 65535.
+//  As with an IP address it will expect it to be valid input, however it doesn't
+//  expect you to have checked to see if there is a host at that IP address
+//  before giving it to this source file.
+
 // Terminology:
 // Socket is an end-point that is defined by an IP-address and port.
 //   A socket is just an integer with a number assigned to it.

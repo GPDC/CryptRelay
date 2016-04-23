@@ -1,4 +1,3 @@
-
 //main.cpp
 
 //Program name: CryptRelay
@@ -8,6 +7,19 @@
 //solve chat output while typing msg problem by forcing a getline for whatever is currently typed out when
 // the user receives()? and then once its done recving and displaying that message, cout the getlined message back to console to make it look like everything
 // is normal. I mean an issue would still occur with not being able to delete your msg that got getlined, but this could be a quick band-aid.
+
+
+// Overview:
+// This is where the program starts.
+
+// Warnings:
+// This source file expects any input that is given to it has already been checked
+//  for safety and validity. For example if a user supplies a port, then
+//  this source file will expect the port will be >= 0, and <= 65535.
+//  As with an IP address it will expect it to be valid input, however it doesn't
+//  expect you to have checked to see if there is a host at that IP address
+//  before giving it to this source file.
+
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
 							// build-> linker-> libraries->
 #include <iostream>
@@ -240,7 +252,7 @@ int main(int argc, char *argv[])
 		// The user MUST supply a local ip address when using the lan only option.
 		if (CLI.my_ip_address.empty() == true)
 		{
-			std::cout << "ERROR: No local ip address supplied.\n";
+			std::cout << "ERROR: User didn't specify his local IP address.\n";
 			return EXIT_FAILURE;
 		}
 
@@ -282,9 +294,11 @@ int main(int argc, char *argv[])
 			PortKnock PortTest;
 			const int IN_USE = 1;
 			int my_port_int = 0;
+			const int ATTEMPT_COUNT = 20;
 
-			// Only checking 20 times / 20 different ports
-			for (int i = 0; i < 20; ++i)
+			// Only checking ATTEMPT_COUNT times.
+			// Only assigning a new port number ATTEMPT_COUNT times.
+			for (int i = 0; i < ATTEMPT_COUNT; ++i)
 			{
 				if (i == 19)
 				{
@@ -295,16 +309,18 @@ int main(int argc, char *argv[])
 				if (PortTest.isLocalPortInUse(Upnp->my_internal_port, Upnp->my_local_ip) == IN_USE)
 				{
 					// Port is in use, lets try again with port++
-					std::cout << "Port: " << Upnp->i_internal_port << " is already in use.\n";
-					my_port_int = Upnp->i_internal_port;
-					++my_port_int;
-					Upnp->i_internal_port = my_port_int;
+					std::cout << "Port: " << Upnp->my_internal_port << " is already in use.\n";
+					my_port_int = stoi(Upnp->my_internal_port);
+					if (my_port_int < USHRT_MAX)
+						++my_port_int;
+					else
+						my_port_int = 30152; // Arbitrary number given b/c the port num was too big.
 					Upnp->my_internal_port = std::to_string(my_port_int);
-					std::cout << "Trying with Port: " << Upnp->my_internal_port << " instead.\n\n";
+					std::cout << "Trying port: " << Upnp->my_internal_port << " instead.\n\n";
 				}
 				else
 				{
-					if (i != 0)// if i != 0, then there must be a new port number.
+					if (i != 0)// if i != 0, then there must must have assigned a new port number.
 					{
 						std::cout << "Now using Port: " << Upnp->my_internal_port << " as my local port.\n";
 						std::cout << "This is because the default port was already in use\n\n";

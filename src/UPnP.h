@@ -4,13 +4,22 @@
 // This class uses the miniupnp library from http://miniupnp.free.fr/
 // Handles all things related to UPnP.
 
+// Warnings:
+// This source file expects any input that is given to it has already been checked
+//  for safety and validity. For example if a user supplies a port, then
+//  this source file will expect the port will be >= 0, and <= 65535.
+//  As with an IP address it will expect it to be valid input, however it doesn't
+//  expect you to have checked to see if there is a host at that IP address
+//  before giving it to this source file.
+
+
 // Terminology:
 // UPnP: Universal Plug and Play
 // IGD: Internet Gateway Device
 // External IP addr: the ip address that anyone on the internet will see you connecting from.
 // External port: the port that anyone on the internet will see you connecting from.
 // Internal / local ip address: the ip address that anyone on your LAN will see you connecting from.
-// Internal port: the port that anyone on your LAN will see you connecting from.
+// Internal / local port: the port that anyone on your LAN will see you connecting from.
 
 
 // Important steps list:
@@ -65,17 +74,8 @@ public:
 	// want to know what the user's IP and ports are.
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
 	char my_external_ip[40] = { 0 };	// showInformation() fills this out
-	std::string my_internal_port;		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	std::string my_external_port;		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-
-
-	// These are assigned in the constructor and used in addPortForwardRule().
-	// They are potentially re-assigned in standaloneAutoAddPortForwardRule().
-	// my_external_port and protocol are used in autoDeletePortForwardRule()
-	// These ports will be used in the ChatProgram unless the user specified
-	// their own desired ports in the command line arguments list.
-	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
-	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
+	std::string my_internal_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string my_external_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	
 protected:
 private:
@@ -98,9 +98,11 @@ private:
 	// findValidIGD() stores data here for the IGD.
 	IGDdatas IGDData;					
 
-
 	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
 
+	// If this is true, then the deconstructor will delete the port forward
+	// entry that was automatically added using autoAddPortForwardRule()
+	bool port_forward_automatically_added = false;
 };
 
 #endif//UPnP_h__
