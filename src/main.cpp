@@ -30,6 +30,7 @@
 #include "CommandLineInput.h"
 #include "SocketClass.h"
 #include "chat_program.h"
+#include "port_knock.h"
 
 #include "UPnP.h"
 #endif//__linux__
@@ -47,6 +48,7 @@
 #include "CommandLineInput.h"
 #include "SocketClass.h"
 #include "chat_program.h"
+#include "port_knock.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -58,7 +60,6 @@
 
 bool global_verbose = false;
 
-void changePortIfClosed(CommandLineInput* CLI);
 
 // Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
@@ -249,12 +250,71 @@ int main(int argc, char *argv[])
 	else if (CLI.use_upnp_to_connect_to_peer == true)
 	{
 		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
+							// If I could make this a plug-in or something of the sort to automatically
+							// add tags to everything or keep track of it, that would be pretty cool.
 
 		// Give the user's inputted port to the UPnP Class
 		// so that it will port forward what he wanted.
 		cliGivesPortToUPnP(&CLI, Upnp);
 
-		// If UPnP is working, add a port forward rule so we can connect to a peer
+
+		// in order to check if port is open (atleast in this upnp related function)
+		// these must be done first:
+		// 1. UPNP find devices
+		// 2. UPNP find valid IGD
+		// 
+		// Do the port checking here
+		//
+		// 3. UPNP Port forward
+
+		Upnp->findUPnPDevices();
+
+		if (Upnp->findValidIGD() == false)
+			return EXIT_FAILURE;
+
+		// Checking to see if the user inputted a port number.
+		// If he didn't, then he probably doesn't care, and just
+		// wants whatever port can be given to him; therefore
+		// we will +1 the port each time isLocalPortInUse() returns
+		// true, and then try checking again.
+		if (CLI.my_host_port.empty() == true)
+		{
+			PortKnock PortTest;
+			const int IN_USE = 1;
+			int my_port_int = 0;
+
+			// Only checking 20 times / 20 different ports
+			for (int i = 0; i < 20; ++i)
+			{
+				if (i == 19)
+				{
+					std::cout << "Error: After " << i << " attempts, no available port could be found for the purpose of listening.\n";
+					std::cout << "Please specify the port on which you wish to listen for incomming connections by using -mP.\n";
+					return EXIT_FAILURE;
+				}
+				if (PortTest.isLocalPortInUse(Upnp->my_internal_port, Upnp->my_local_ip) == IN_USE)
+				{
+					// Port is in use, lets try again with port++
+					std::cout << "Port: " << Upnp->my_internal_port << " is already in use.\n";
+					my_port_int = stoi(Upnp->my_internal_port);
+					++my_port_int;
+					Upnp->my_internal_port = std::to_string(my_port_int);
+					std::cout << "Trying with Port: " << Upnp->my_internal_port << " instead.\n";
+				}
+				else
+				{
+					if (i != 0)
+					{
+						std::cout << "Now using Port: " << Upnp->my_internal_port << " as my local port.\n";
+						std::cout << "This is because the default port was already in use\n";
+					}
+					break;// Port is not in use.
+				}
+			}
+		}
+
+		// Add a port forward rule so we can connect to a peer, and if that
+		// succeeded, then give info to the ChatProgram.
 		if (Upnp->autoAddPortForwardRule() == true)
 		{
 			// Give IP and port info gathered from the command line and from

@@ -42,6 +42,12 @@ public:
 	static HANDLE ghEventsSend[1];// [0] == send()
 #endif //_WIN32
 
+	// If something errors in the server thread, sometimes we
+	// might want to do something with that information.
+	// 0 == no error, 0 == no function was given.
+	static int server_thread_error_code;
+	static int function_that_errored;
+
 	// A global socket used by threads
 	static SOCKET global_socket;
 

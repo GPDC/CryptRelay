@@ -54,7 +54,7 @@ UPnP::UPnP()
 UPnP::~UPnP()
 {
 	// Delete port forwarding rule that was created by
-	// autoAddPortForwardRule() in order to use CryptRelay
+	// standaloneAutoAddPortForwardRule() in order to use CryptRelay
 	autoDeletePortForwardRule();
 
 	// Free everything because we are done with them
@@ -424,10 +424,161 @@ void UPnP::getListOfPortForwards()
 
 }
 
-// Adds a new port forwarding rule.
+// Add a port forwarding rule.
 // Must have called findValidIGD() first to get
 // your internal IP address, and to have an IGD to talk to.
 bool UPnP::autoAddPortForwardRule()
+{
+	// Information necessary for UPNP_AddPortMapping()
+	bool try_again = false;
+	const int try_again_count_limit = 20;
+	int try_again_count = try_again_count_limit;				// Limiting the number of attempts to make this work in certain fail cases.
+	const char * description_of_port_forward_entry = "CryptRelay";	// Describe what the port forward entry is for.
+
+																	// Amount of time (seconds) that the ports will be forwarded for. "0" == infinite.
+																	// Some NATs only allow a lease time of "0".
+	const char * lease_duration = "57600";	// 57600 == 16 hrs
+
+											// Add the port forwarding rule
+	do
+	{
+		// UPNP_AddPortMapping() requires a c string so we convert the int to a string here.
+		// And the ports can be changed during this do while() so it needs to be assigned every time.
+		my_internal_port = std::to_string(i_internal_port);
+		my_external_port = std::to_string(i_external_port);
+
+		if (global_verbose == true)
+			std::cout << "\n# Adding port forward entry...\n";
+		// Add port forwarding now
+		if (my_local_ip[0] != 0)
+		{
+			int r = UPNP_AddPortMapping(
+				Urls.controlURL,
+				IGDData.first.servicetype,
+				my_external_port.c_str(),
+				my_internal_port.c_str(),
+				my_local_ip,
+				description_of_port_forward_entry,
+				protocol,
+				0,					// Remote host, still not sure what this is really for / doing.
+				lease_duration
+				);
+			if (r != UPNPCOMMAND_SUCCESS)
+			{
+				switch (r)
+				{
+				case 718:	// Port forward entry conflicts with one that is in use by another client on the LAN.
+				{
+					// This case will be tried a miximum of try_again_count_limit times.
+
+					if (global_verbose == true)
+						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
+
+					// It is safe to roll over the max since it is unsigned and it is handled correctly;
+					if ((i_internal_port == USHRT_MAX) || (i_external_port == USHRT_MAX))
+					{
+						i_internal_port += 30248;	// arbitrary number to start trying again with.
+						i_external_port += 30248;	// arbitrary number to start trying again with.
+					}
+
+					++i_internal_port;
+					++i_external_port;
+					++try_again_count;
+					try_again = true;
+
+					// Making sure error info is displayed even after that many attempts has failed.
+					if (try_again_count == try_again_count_limit)
+					{
+						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
+							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+						try_again = false;
+					}
+
+					break;
+				}
+				case 724:	// External and internal ports must match
+				{
+					if (global_verbose == true)
+						std::cout << "External and internal ports must match. Improvising...\n";
+					i_internal_port = 30223;	// arbitrary number to start trying again with.
+					i_external_port = 30223;	// arbitrary number to start trying again with.
+					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
+					try_again = true;
+
+					break;
+				}
+				case 725:	// lease_duration is only supported as "0", aka infinite, on this NAT
+				{
+					lease_duration = "0";
+					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
+					try_again = true;
+
+					break;
+				}
+				default:	// Non-recoverable error
+					try_again = false;
+				}//end switch
+
+				 // If we are out of attempts, or if UPNP_AddPortMapping() failed hard
+				if ((try_again == false) || (try_again_count == try_again_count_limit))
+				{
+					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
+						my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+					return false;
+				}
+			}
+			// Should I be using functions for IGD v2 if IGDv2 is available?
+			// IGD:2 can be detected by sending out a message looking for InternetGatewayDevice:2
+			// but that functionality is currently commented out in the library. I guess I could un-
+			// comment it if needed. Assuming IGDv2 devices are backwards compatible for now since
+			// I have no way to test it.
+		}
+	} while ((try_again == true) && (try_again_count < try_again_count_limit));
+
+
+	// Display the port forwarding entry that was just added
+	// This should probably be its own function...
+	if (global_verbose == true)
+	{
+		// Things necessary for UPNP_GetSpecific_portMappingEntry() to output information to
+		char intClient[40];
+		char intPort[6];
+		char duration[16];
+
+		// Displays the specific port forward entry to see if it has actually been implemented
+		// ... which it should have since it didn't error.
+		// Needs some of the same information that was given to UPNP_AddPortMapping()
+		int r = UPNP_GetSpecificPortMappingEntry(
+			Urls.controlURL,
+			IGDData.first.servicetype,
+			/*in*/	my_external_port.c_str(),
+			/*in*/	protocol,
+			/*in*/	NULL/*remoteHost*/,
+			intClient,
+			intPort,
+			NULL/*description*/,
+			NULL/*enabled*/,
+			duration
+			);
+		if (r != UPNPCOMMAND_SUCCESS)
+		{
+			printf("GetSpecificPortMappingEntry() failed with code %d (%s)\n",
+				r, strupnperror(r));
+		}
+
+		if (intClient[0])
+		{
+			std::cout << "# Displaying port forward entry that was just added...\n";
+			printf("External IP:Port %s:%s %s is redirected to internal IP:Port %s:%s (duration: %s seconds)\n\n",
+				my_external_ip, my_external_port.c_str(), protocol, intClient, intPort, duration);
+		}
+	}
+
+	return true; // Success
+}
+
+// Adds a new port forwarding rule.
+bool UPnP::standaloneAutoAddPortForwardRule()
 {
 
 	// Enable socket use on Windows

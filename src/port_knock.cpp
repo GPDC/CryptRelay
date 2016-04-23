@@ -50,6 +50,72 @@ PortKnock::~PortKnock()
 
 }
 
+// returns < 0 on error
+// returns 0 if port is available
+// returns 1 if port is in use
+int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
+{
+	const int IN_USE = 1;
+	const int AVAILABLE = 0;
+	SocketClass SockStuff;
+	addrinfo hints;
+	addrinfo* result;
+	memset(&hints, 0, sizeof(hints));
+
+	// These are the settings for the connection
+	hints.ai_family = AF_INET;		//ipv4
+	hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
+	hints.ai_flags = AI_PASSIVE;		// Let anyone connect, not just a specific IP address
+	hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+
+	// Place target ip and port, and hints about the connection type into a linked list named addrinfo *result
+	// Now we use result instead of hints.
+	// Remember we are only listening as the server, so put in local IP:port
+	if (SockStuff.myGetAddrInfo(my_local_ip, my_local_port, &hints, &result) == false)
+		return false;
+
+	// Create socket
+	SOCKET listen_socket = SockStuff.mySocket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	if (listen_socket == INVALID_SOCKET)
+		return -1;
+	else if (listen_socket == SOCKET_ERROR)
+		return -1;
+
+	// Assign the socket to an address:port
+
+	// Binding the socket to the user's local address
+	int errchk = bind(listen_socket, result->ai_addr, result->ai_addrlen);
+	if (errchk == SOCKET_ERROR)
+	{
+
+#ifdef __linux__
+		int errsv = errno;			//saving the error so it isn't lost
+		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
+		{
+			SockStuff.myCloseSocket(listen_socket);
+			return IN_USE;
+		}
+		else     // Must have been a different error
+			return -1;
+#endif//__linux__
+#ifdef _WIN32
+		int errsv = WSAGetLastError();	//saving the error so it isn't lost
+		if (errsv == WSAEADDRINUSE)
+		{
+			SockStuff.myCloseSocket(listen_socket);
+			return IN_USE;
+		}
+		else     // Must have been a different error
+			return -1;
+#endif//_WIN32
+
+	}
+
+	// No errors, must be available
+	SockStuff.myCloseSocket(listen_socket);
+	return AVAILABLE;
+}
+
 // Very simple checking of 1 port. Not for checking many ports quickly.
 bool PortKnock::isPortOpen(std::string ip, std::string port)
 {

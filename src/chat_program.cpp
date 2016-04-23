@@ -50,9 +50,18 @@ HANDLE ChatProgram::ghEvents[2]{};	// i should be using vector of ghevents[] ins
 HANDLE ChatProgram::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
 
+// If something errors in the server thread, sometimes we
+// might want to do something with that information.
+// 0 == no error, 0 == no function was given.
+int server_thread_error_code = 0;
+int function_that_errored = 0;
 
-// this default_port being static isn't good i think
-const std::string ChatProgram::default_port = "30001";
+// this default_port being static might not be a good idea.
+// This is the default port for the ChatProgram as long as
+// ChatProgram isn't given any port from the UPnP class,
+// which has its own default port, or given any port from the
+// command line.
+const std::string ChatProgram::default_port = "30248";
 
 // Variables necessary for determining who won the connection race
 const int ChatProgram::SERVER_WON = -29;
@@ -195,7 +204,6 @@ void ChatProgram::startServerThread(void * instance)
 		self->exitThread(nullptr);
 
 	// Assign the socket to an address:port
-
 	// Binding the socket to the user's local address
 	if (self->SockStuff.myBind(listen_socket, self->result->ai_addr, self->result->ai_addrlen) == false)
 		self->exitThread(nullptr);
