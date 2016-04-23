@@ -1,8 +1,12 @@
-//main.cpp
+// main.cpp
 
-//Program name: CryptRelay
+// Program name: CryptRelay     version: 0.6
+// Rough outline for future versions:
+// 0.7 == file transfer
+// 0.8 == encryption
+// 0.9 == polish
 
-//Formatting guide: Located at the bottom of main.cpp
+// Formatting guide: Located at the bottom of main.cpp
 
 //solve chat output while typing msg problem by forcing a getline for whatever is currently typed out when
 // the user receives()? and then once its done recving and displaying that message, cout the getlined message back to console to make it look like everything
@@ -219,6 +223,7 @@ int main(int argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
+	std::cout << "Welcome to CryptRelay Alpha release 0.6\n";
 
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
 	ChatProgram ChatServer;
