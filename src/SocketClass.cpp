@@ -139,8 +139,10 @@ bool SocketClass::myBind(SOCKET fd, const sockaddr *name, int name_len)
 	return true;
 }
 
+// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
 int SocketClass::mySend(SOCKET s, const char* buffer, int buffer_length, int flags)
 {
+	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
 	int errchk = send(s, buffer, buffer_length, flags);
 	if (errchk == SOCKET_ERROR)
 	{
