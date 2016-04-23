@@ -7,6 +7,7 @@
 -fixed select() timeout issue, but select() should be replaced by poll() and WSAPoll()
 -file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
 -gethostbyname() should be implemented so when the user decides to turn of upnp they won't have to type in their local ip addr.
+-might want to get the username by (windows)getusername()  and linux  getlogin_r()
 
 # Critical Errors:
 -two applications. One is bind()ing to ipaddr and port:35000, other is bind()ing to ipaddr and port:35001. Why is it saying it is already in use? I thought 1 ip can be listening to multiple things as long as it was on a different port? what gives?
