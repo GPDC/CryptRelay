@@ -6,20 +6,13 @@
 -Fix chat output issue when someone sends you a message while you are typing
 -fixed select() timeout issue, but select() should be replaced by poll() and WSAPoll()
 -file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
+-gethostbyname() should be implemented so when the user decides to turn of upnp they won't have to type in their local ip addr.
 
 # Critical Errors:
--windows 10048, *nix EADDRINUSE 98:
-if multiple CryptRelay programs are trying to run on the same computer, then only one of them will work. The other will fail WSA 10048 or *nix EADDRINUSE 98 because the address && port is already in use. To solve this, need to check to see if the port that the program is going to use is free or not on the computer. -- check if port is open before doing upnp port forwarding, so the upnp can port forward to the correct port. Check to see if bind() returned WSA 10048 addr already in use. If that is the case then tell the user to change the port b/c it is in use right now.
-OR could check if use_upnp == true, then have server_thread_error_code = 10048; if server_thread_error_code == 10048, delete Upnp instance, create new instance, and port forward again, this time with a +1 port. This would be needed instead of just +1ing the port number when doing bind() in the ChatProgram class because the port forward on the NAT has to match.
-
-main passes use_upnp value to ChatProgram.
-main has while loop and a waitforthread that is JUST waiting for the server thread.
-chat program(server) tries to bind. if it errors 10048, then have it set a global server_thread_error_code = 10048, and exit thread.
-now that thread has exited,
-
+-two applications. One is bind()ing to ipaddr and port:35000, other is bind()ing to ipaddr and port:35001. Why is it saying it is already in use? I thought 1 ip can be listening to multiple things as long as it was on a different port? what gives?
 
 # Non-critical errors:
-localtime_r is erroring.
+-localtime_r is erroring.
 
 
 # Odd behavior:

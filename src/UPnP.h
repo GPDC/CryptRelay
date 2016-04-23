@@ -67,6 +67,15 @@ public:
 	char my_external_ip[40] = { 0 };	// showInformation() fills this out
 	std::string my_internal_port;		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	std::string my_external_port;		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+
+
+	// These are assigned in the constructor and used in addPortForwardRule().
+	// They are potentially re-assigned in standaloneAutoAddPortForwardRule().
+	// my_external_port and protocol are used in autoDeletePortForwardRule()
+	// These ports will be used in the ChatProgram unless the user specified
+	// their own desired ports in the command line arguments list.
+	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
+	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
 	
 protected:
 private:
@@ -89,13 +98,7 @@ private:
 	// findValidIGD() stores data here for the IGD.
 	IGDdatas IGDData;					
 
-	// These are assigned in the constructor and used in addPortForwardRule().
-	// They are potentially re-assigned in standaloneAutoAddPortForwardRule().
-	// my_external_port and protocol are used in autoDeletePortForwardRule()
-	// These ports will be used in the ChatProgram unless the user specified
-	// their own desired ports in the command line arguments list.
-	unsigned short i_internal_port;		// Some devices require that the internal and external ports must be the same.
-	unsigned short i_external_port;		// Some devices require that the internal and external ports must be the same.
+
 	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
 
 };

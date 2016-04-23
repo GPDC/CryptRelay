@@ -44,11 +44,11 @@ UPnP::UPnP()
 
 	//
 	i_internal_port = 30248;			// Some devices require that the internal and external ports must be the same.
-	i_external_port = 30248;			// Some devices require that the internal and external ports must be the same.
+	i_external_port = i_internal_port;			// Some devices require that the internal and external ports must be the same.
 
 	// mm i don't like this being here
 	my_internal_port = std::to_string(i_internal_port);
-	my_external_port = std::to_string(i_external_port);
+	my_external_port = my_internal_port;
 }
 
 UPnP::~UPnP()
@@ -445,7 +445,7 @@ bool UPnP::autoAddPortForwardRule()
 		// UPNP_AddPortMapping() requires a c string so we convert the int to a string here.
 		// And the ports can be changed during this do while() so it needs to be assigned every time.
 		my_internal_port = std::to_string(i_internal_port);
-		my_external_port = std::to_string(i_external_port);
+		my_external_port = my_internal_port;
 
 		if (global_verbose == true)
 			std::cout << "\n# Adding port forward entry...\n";

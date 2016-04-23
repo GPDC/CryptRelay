@@ -314,7 +314,7 @@ SOCKET SocketClass::myAccept(SOCKET fd)
 	return accepted_socket;
 }
 
-// Using the given hints, ip addr, and port, it then gives you a pointer
+// Using the given Hints, ip addr, and port, it then gives you a pointer
 // to a linked list of on or more addrinfo structures and gives you the
 // pointer to it. The pointer address is located in whatever u gave it for ppresult.
 // This is not to be confused with the return value of the function.
@@ -334,7 +334,7 @@ bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, 
 		std::cout << "Success\n";
 
 	return true;
-	//std::cout << "IP: " << hints.ai_addr << ". Port: " << hints.sockaddr->ai_addr\n";
+	//std::cout << "IP: " << Hints.ai_addr << ". Port: " << Hints.sockaddr->ai_addr\n";
 }
 
 // paddr_buf would be something like this:

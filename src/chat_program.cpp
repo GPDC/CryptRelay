@@ -76,7 +76,7 @@ SOCKET ChatProgram::global_socket;
 
 ChatProgram::ChatProgram()
 {
-	result = nullptr;
+	ConnectionInfo = nullptr;
 }
 ChatProgram::~ChatProgram()
 {
@@ -87,8 +87,8 @@ ChatProgram::~ChatProgram()
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	// Check comments in the myFreeAddrInfo() to see how its done.
-	if (result != nullptr)
-		SockStuff.myFreeAddrInfo(result);
+	if (ConnectionInfo != nullptr)
+		SockStuff.myFreeAddrInfo(ConnectionInfo);
 }
 
 
@@ -183,21 +183,21 @@ void ChatProgram::startServerThread(void * instance)
 		self->exitThread(nullptr);
 	}
 
-	memset(&self->hints, 0, sizeof(self->hints));
+	memset(&self->Hints, 0, sizeof(self->Hints));
 	// These are the settings for the connection
-	self->hints.ai_family = AF_INET;		//ipv4
-	self->hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	self->hints.ai_flags = AI_PASSIVE;		// Let anyone connect, not just a specific IP address
-	self->hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+	self->Hints.ai_family = AF_INET;		//ipv4
+	self->Hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
+	//self->Hints.ai_flags = AI_PASSIVE;
+	self->Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
 
-	// Place target ip and port, and hints about the connection type into a linked list named addrinfo *result
-	// Now we use result instead of hints.
+	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
+	// Now we use ConnectionInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (self->SockStuff.myGetAddrInfo(self->my_local_ip, self->my_local_port, &self->hints, &self->result) == false)
+	if (self->SockStuff.myGetAddrInfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 
 	// Create socket
-	SOCKET listen_socket = self->SockStuff.mySocket(self->result->ai_family, self->result->ai_socktype, self->result->ai_protocol);
+	SOCKET listen_socket = self->SockStuff.mySocket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 	if (listen_socket == INVALID_SOCKET)
 		self->exitThread(nullptr);
 	else if (listen_socket == SOCKET_ERROR)
@@ -205,7 +205,7 @@ void ChatProgram::startServerThread(void * instance)
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (self->SockStuff.myBind(listen_socket, self->result->ai_addr, self->result->ai_addrlen) == false)
+	if (self->SockStuff.myBind(listen_socket, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
 		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
@@ -363,14 +363,14 @@ void ChatProgram::startClientThread(void * instance)
 
 
 	// These are the settings for the connection
-	memset(&self->hints, 0, sizeof(self->hints));
-	self->hints.ai_family = AF_INET;		//ipv4
-	self->hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	self->hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+	memset(&self->Hints, 0, sizeof(self->Hints));
+	self->Hints.ai_family = AF_INET;		//ipv4
+	self->Hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
+	self->Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
 
-	// Place target ip and port, and hints about the connection type into a linked list named addrinfo *result
-	// Now we use result instead of hints.
-	if (self->SockStuff.myGetAddrInfo(self->target_external_ip, self->target_external_port, &self->hints, &self->result) == false)
+	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
+	// Now we use ConnectionInfo instead of Hints.
+	if (self->SockStuff.myGetAddrInfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 	
 	std::cout << "Attempting to connect...\n";
@@ -399,7 +399,7 @@ void ChatProgram::startClientThread(void * instance)
 		}
 
 		// Create socket
-		SOCKET s = self->SockStuff.mySocket(self->result->ai_family, self->result->ai_socktype, self->result->ai_protocol);
+		SOCKET s = self->SockStuff.mySocket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
@@ -407,7 +407,7 @@ void ChatProgram::startClientThread(void * instance)
 		}
 
 		// Attempt to connect to target
-		r = self->SockStuff.myConnect(s, self->result->ai_addr, self->result->ai_addrlen);
+		r = self->SockStuff.myConnect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";

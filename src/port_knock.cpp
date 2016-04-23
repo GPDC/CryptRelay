@@ -58,24 +58,23 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	const int IN_USE = 1;
 	const int AVAILABLE = 0;
 	SocketClass SockStuff;
-	addrinfo hints;
-	addrinfo* result;
-	memset(&hints, 0, sizeof(hints));
+	addrinfo Hints;
+	addrinfo* ServerInfo;
+	memset(&Hints, 0, sizeof(Hints));
 
 	// These are the settings for the connection
-	hints.ai_family = AF_INET;		//ipv4
-	hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	hints.ai_flags = AI_PASSIVE;		// Let anyone connect, not just a specific IP address
-	hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+	Hints.ai_family = AF_INET;		//ipv4
+	Hints.ai_socktype = SOCK_STREAM;	// Peer will see incoming data as a stream of data, not as packets.
+	Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP, reliable connection
 
-	// Place target ip and port, and hints about the connection type into a linked list named addrinfo *result
-	// Now we use result instead of hints.
+	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ServerInfo
+	// Now we use ServerInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (SockStuff.myGetAddrInfo(my_local_ip, my_local_port, &hints, &result) == false)
+	if (SockStuff.myGetAddrInfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
 		return false;
 
 	// Create socket
-	SOCKET listen_socket = SockStuff.mySocket(result->ai_family, result->ai_socktype, result->ai_protocol);
+	SOCKET listen_socket = SockStuff.mySocket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
 	if (listen_socket == INVALID_SOCKET)
 		return -1;
 	else if (listen_socket == SOCKET_ERROR)
@@ -84,7 +83,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int errchk = bind(listen_socket, result->ai_addr, result->ai_addrlen);
+	int errchk = bind(listen_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 

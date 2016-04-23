@@ -97,14 +97,14 @@ private:
 	// Cross platform windows and linux thread exiting
 	void exitThread(void* ptr);
 
-	// hints is used by getaddrinfo()
-	// once hints is given to getaddrinfo() it will return *result
-	addrinfo		 hints;	
+	// Hints is used by getaddrinfo()
+	// once Hints is given to getaddrinfo() it will return *ConnectionInfo
+	addrinfo		 Hints;	
 
-	// after being given to getaddrinfo(), result now contains all relevant info for
+	// after being given to getaddrinfo(), ConnectionInfo now contains all relevant info for
 	// ip address, family, protocol, etc.
-	// *result is ONLY used if there is a getaddrinfo().
-	addrinfo		 *result;
+	// *ConnectionInfo is ONLY used if there is a getaddrinfo().
+	addrinfo		 *ConnectionInfo;
 	//addrinfo		 *ptr;		// this would only be used if traversing the list of address structures.
 
 

@@ -295,18 +295,19 @@ int main(int argc, char *argv[])
 				if (PortTest.isLocalPortInUse(Upnp->my_internal_port, Upnp->my_local_ip) == IN_USE)
 				{
 					// Port is in use, lets try again with port++
-					std::cout << "Port: " << Upnp->my_internal_port << " is already in use.\n";
-					my_port_int = stoi(Upnp->my_internal_port);
+					std::cout << "Port: " << Upnp->i_internal_port << " is already in use.\n";
+					my_port_int = Upnp->i_internal_port;
 					++my_port_int;
+					Upnp->i_internal_port = my_port_int;
 					Upnp->my_internal_port = std::to_string(my_port_int);
-					std::cout << "Trying with Port: " << Upnp->my_internal_port << " instead.\n";
+					std::cout << "Trying with Port: " << Upnp->my_internal_port << " instead.\n\n";
 				}
 				else
 				{
-					if (i != 0)
+					if (i != 0)// if i != 0, then there must be a new port number.
 					{
 						std::cout << "Now using Port: " << Upnp->my_internal_port << " as my local port.\n";
-						std::cout << "This is because the default port was already in use\n";
+						std::cout << "This is because the default port was already in use\n\n";
 					}
 					break;// Port is not in use.
 				}
