@@ -7,7 +7,7 @@
 -file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
 
 # Think about possibly doing these:
--gethostbyname() should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.
+-GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.
 -might want to get the username by (windows)getusername()  and linux  getlogin_r()
 -In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
 

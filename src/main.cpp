@@ -1,6 +1,6 @@
 // main.cpp
 
-// Program name: CryptRelay     version: 0.6
+// Program name: CryptRelay     version: 0.6.1
 // Rough outline for future versions:
 // 0.7 == file transfer
 // 0.8 == encryption
@@ -92,7 +92,7 @@ void cliGivesIPAndPortToChatProgram(
 
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
-// /* from */ UPnP* UpnpInstance
+// /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
 // /* to */ ChatProgram* ChatServerInstance
 // /* to */ ChatProgram* ChatClientInstance
 void upnpGivesIPAndPortToChatProgram(
@@ -223,7 +223,7 @@ int main(int argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
-	std::cout << "Welcome to CryptRelay Alpha release 0.6\n";
+	std::cout << "Welcome to CryptRelay Alpha release 0.6.1\n";
 
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
 	ChatProgram ChatServer;
@@ -281,8 +281,6 @@ int main(int argc, char *argv[])
 		// 2. UPNP find valid IGD
 		// 
 		// Do the port checking here
-		//
-		// 3. UPNP Port forward
 
 		Upnp->findUPnPDevices();
 
@@ -294,6 +292,8 @@ int main(int argc, char *argv[])
 		// wants whatever port can be given to him; therefore
 		// we will +1 the port each time isLocalPortInUse() returns
 		// true, and then try checking again.
+		// If the port is not in use, it is assigned as the port
+		// that the ChatProgram will use.
 		if (CLI.my_host_port.empty() == true)
 		{
 			PortKnock PortTest;
