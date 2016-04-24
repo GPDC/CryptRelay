@@ -22,19 +22,19 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "\n";
 	std::cout << "-------------------------------------------------------------------------------\n";	//79 dashes + a new line character
 	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4\n";
-	std::cout << "Format for LAN connection is: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
-	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mL 192.168.1.4 -mP 30001\n";
+	std::cout << "Format for LAN connection: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
+	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mP 30022\n";
 	std::cout << "\n";
-	std::cout << "-h    help        Displays the readme\n";
-	std::cout << "-t    target      The target's IP address.\n";
-	std::cout << "-tP   targetport  The target's external port number.\n";
-	std::cout << "-mL   me          My local IP address that you want to listen on.\n";
-	std::cout << "-mP   myport      My port number that you want to listen on.\n";
-	std::cout << "-v    verbose     Displays a lot of text output on screen.\n";
-	std::cout << "-lan  LAN         Don't connect to the internet. Use LAN only.\n";
-	std::cout << "-spf  Show Port Forwards Shows the list of current port forwards\n";
+	std::cout << "-h    Displays this.\n";
+	std::cout << "-t    The target's IP address.\n";
+	std::cout << "-tP   The target's external port number.\n";
+	std::cout << "-mL   My local IP address that I want to listen on.\n";
+	std::cout << "-mP   My port number that I want to listen on.\n";
+	std::cout << "-v    Turns on verbose output to your terminal.\n";
+	std::cout << "-lan  Don't connect to the internet. Use LAN only. Currently disables upnp.\n";
+	std::cout << "-spf  Shows the currently forwarded ports \n";
 	std::cout << "      Format: cryptrelay.exe -spf my_external_port protocol\n";
-	std::cout << "-dpf  Delete Port Forward Delete a specific port forward rule.\n";
+	std::cout << "-dpf  Delete a port forward rule.\n";
 	std::cout << "      Format: cryptrelay.exe -dpf my_external_port protocol\n";
 	std::cout << "-si   Show Info   Displays external & local ip, and some UPnP info.\n";
 	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
@@ -54,6 +54,7 @@ void CommandLineInput::Examples()
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tP 50451 -mL 192.168.1.3 -mP 30456\n";
+	std::cout << "cryptrelay.exe -dpf 30023 TCP\n";
 	std::cout << "\n";
 
 }
