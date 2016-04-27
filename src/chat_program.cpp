@@ -55,7 +55,7 @@ HANDLE Connection::ghEvents[2]{};	// i should be using vector of ghevents[] inst
 									// [0] == server
 									// [1] == client
 
-// for the loopedSendMessagesThread()
+// for the loopedSendChatMessagesThread()
 HANDLE Connection::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
 
@@ -298,10 +298,10 @@ void Connection::startServerThread(void * instance)
 	/* now here is the actual chat portion, this should be if()'d to see if the user wants to chat, or send a file. */
 
 	// Looped checking for user input and sending it.
-	createLoopedSendMessagesThread(instance);
+	createLoopedSendChatMessagesThread(instance);
 
 	// Receive incoming messages (not threaded)
-	self->loopedReceiveMessages();
+	self->loopedReceiveChatMessages();
 
 
 	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
@@ -455,15 +455,12 @@ void Connection::startClientThread(void * instance)
 	//			create sendfile thread(), it reads a file, and sends that data to the mutex send thread()
 
 
-
-
-
-
 	// Send messages inputted by user until there is an error or connection is closed.
-	createLoopedSendMessagesThread(instance);
+	createLoopedSendChatMessagesThread(instance);
 
 	// Receive messages as until there is an error or connection is closed.
-	self->loopedReceiveMessages(/*remote_host*/);
+	self->loopedReceiveChatMessages(/*remote_host*/);
+
 
 
 	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
@@ -477,7 +474,7 @@ void Connection::startClientThread(void * instance)
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
 // To find out who we were connected to, use getnameinfo()
-int Connection::loopedReceiveMessages(const char* remote_host)
+int Connection::loopedReceiveChatMessages(const char* remote_host)
 {
 	
 #if 1// TEMP SEND AUTO MSG
@@ -571,7 +568,7 @@ int Connection::loopedReceiveMessages(const char* remote_host)
 }
 
 
-void Connection::createLoopedSendMessagesThread(void * instance)
+void Connection::createLoopedSendChatMessagesThread(void * instance)
 {
 	if (global_verbose == true)
 		std::cout << "Starting client thread.\n";
@@ -593,7 +590,7 @@ void Connection::createLoopedSendMessagesThread(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
-	uintptr_t thread_handle = _beginthread(loopedSendMessagesThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+	uintptr_t thread_handle = _beginthread(loopedSendChatMessagesThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEventsSend[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
@@ -618,14 +615,14 @@ void Connection::createLoopedSendMessagesThread(void * instance)
 
 // This function exists because threads on linux have to return a void*.
 // Conversely on windows it doesn't return anything because threads return void.
-void* Connection::posixLoopedSendMessagesThread(void * instance)
+void* Connection::posixLoopedSendChatMessagesThread(void * instance)
 {
 	if (instance != nullptr)
-		loopedSendMessagesThread(instance);
+		loopedSendChatMessagesThread(instance);
 	return nullptr;
 }
 
-void Connection::loopedSendMessagesThread(void * instance)
+void Connection::loopedSendChatMessagesThread(void * instance)
 {
 	Connection* self = (Connection*)instance;
 
@@ -757,15 +754,113 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return false;
 	}
 
-	/*
-	int sendTheFileThread(std::string usr_msg_from_terminal)
+	
+	int Connection::sendTheFileThread(std::string file_name)
 	{
-		StringManip StrManip;
+	
 		// Isn't this kind of slow tho? Should I just be passing a pointer of this vector
 		// into the function and have it fill it out from there?
 		// The compiler might optimize it so it isn't needlesly copying but why
 		// rely on the compiler? Might not be a guarantee depending on the compiler.
-		std::vector<std::string> split_strings = StrManip.split(usr_msg_from_terminal, ' ');
+		std::vector<std::string> split_strings = StrManip.split(file_name, ' ');
+
+		if (split_strings.size() < 2)
+		{
+			std::cout << "Error, too few arguments supplied to -f.\n";
+			return EXIT_FAILURE;
+		}
+
+
+		// Add a \ to every \ because \ is normally an escape character
+		// and we don't want the user to have to type out an address to
+		// a file by doing \\ every time.
+		// example: C:\Users\Downloads
+		// turns into: C:\\Users\\Downloads
+		StrManip.duplicateCharacter(split_strings[1], '\\');
+
+
+		// Please make a sha hash of the file here so it can be checked with the
+		// hash of the copy later.
+
+
+
+
+		FILE *ReadFile;
+
+		// Open the file
+		// split_strings[0] should be "-f"
+		// split_strings[1] should be the file name, and location.
+		ReadFile = fopen(split_strings[1].c_str(), "rb");
+		if (ReadFile == NULL)
+		{
+			perror("Error opening file for reading binary");
+			return false;
+		}
+
+		
+		int did_file_stat_error = false;
+		struct stat FileStatBuf;
+
+		// Get some statistics on the file, such as size, time created, etc.
+		int r = stat(split_strings[1].c_str(), &FileStatBuf);
+		if (r == -1)
+		{
+			perror("Error getting file statistics");
+			did_file_stat_error = true;
+		}
+		else
+		{
+			// Output to terminal the size of the file in Bytes, KB, MB, GB.
+			displayFileSize(split_strings[1].c_str(), &FileStatBuf);
+		}
+
+		size_t bytes_read;
+		size_t bytes_sent;
+		unsigned long long total_bytes_sent = 0;
+
+
+		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
+		const size_t buffer_size = 8 * 1024 * 1024;//maybe double this b/c it isn't unsigned??
+		char* buffer = new char[buffer_size];
+
+		std::cout << "Sending file...\n";
+		do
+		{
+			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
+			if (bytes_read)
+				bytes_sent = sendThreadMutex(buffer, bytes_read);//fwrite(buffer, 1, bytes_read, WriteFile);
+			else
+				bytes_sent = 0;
+
+			total_bytes_sent += bytes_sent;
+
+			// 0 means error. If they aren't equal to eachother
+			// then it didn't write as much as it read for some reason.
+		} while ((bytes_read > 0) && (bytes_read == bytes_sent));
+
+
+		if (total_bytes_sent == FileStatBuf.st_size)
+			std::cout << "File transfer to peer is complete.\n";
+
+		// Please implement sha hash checking here to make sure the file is legit.
+
+		if (bytes_sent)
+			perror("Error while transfering the file");
+
+		if (fclose(ReadFile))
+			perror("Error closing file designated for reading");
+
+		delete[]buffer;
+
+		return true;
+
+
+
+
+
+
+
+
 
 		openFile(split_strings[1]);// this is the link c:\Downloads  or wherever the file is located.
 		if (error)
@@ -778,7 +873,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		return success
 	}
-	*/
+	
 
 
 	// NEW SECTION***********************
@@ -789,24 +884,29 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// WARNING:
 	// This function expects the caller to protect against accessing
 	// invalid memory.
-	int Connection::sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send)
+	int Connection::sendThreadMutex(const char * sendbuf, size_t amount_to_send)
 	{
-		// whatever thread gets here first, will lock
+		// Whatever thread gets here first, will lock
 		// the door so that nobody else can come in.
-		// That means all other threads will stop here and won't
-		// be able to send
+		// That means all other threads will form a queue here,
+		// and won't be able to go past this point until the
+		// thread that got here first unlocks it.
 		m.lock();
-		if (sizeof(sendbuf) < global_sendbuf_size)
-			memcpy(global_sendbuf, sendbuf, sizeof(sendbuf));
 
-
-		bytes = send(global_socket, sendbuf, size_of_sendbuf, NULL);//pls put int bytes into the header so it isn't constantly created.
-		if (bytes == SOCKET_ERROR)
+		do
 		{
-			SockStuff.getError(bytes);
-			std::cout << "ERROR: send() failed.\n";
-			return SOCKET_ERROR;
-		}
+			bytes_sent = send(global_socket, sendbuf, amount_to_send, NULL);
+			if (bytes_sent == SOCKET_ERROR)
+			{
+				SockStuff.getError(bytes_sent);
+				std::cout << "ERROR: send() failed.\n";
+				m.unlock();
+				return SOCKET_ERROR;
+			}
+
+			amount_to_send -= bytes_sent;
+
+		} while (amount_to_send > 0);
 
 
 		std::cout << "test: " << global_sendbuf << "\n"; //temporary output to console
@@ -817,7 +917,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// thread calls spongebob(buf, 512)
 		// send(buf)
 		// 
-		return bytes;
+		return bytes_sent;
 	}
 
 	
@@ -831,10 +931,24 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		{
 			std::getline(std::cin, user_input);
 			if (doesUserWantToSendAFile(user_input) == true)
-				sendFile(user_input);
+			{
+				StringManip StrManip;
+				std::vector <std::string> split_strings;
+
+				// Split the string into multiple strings for every space.
+				if (StrManip.split(user_input, ' ', split_strings) == false)
+					std::cout << "Split failed?\n";
+
+				// Modifying the the user's input here.
+				// user_input is now the file name that will be transfered.
+				user_input = StrManip.duplicateCharacter(split_strings[1], '\\');
+
+				sendTheFileThread(user_input);
+			}
+
 			else // Continue doing normal chat operation.
 			{
-				sendThreadTwo(user_input.c_str(), user_input.length(), user_input.length());
+				sendThreadMutex(user_input.c_str(), user_input.length()/*, flag (aka 'm' for message, 'f' for file)*/);
 			}
 		}
 
@@ -885,4 +999,22 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	//<sys/types.h>
 	//<sys/stat.h>
 	//<unistd.h>
-	
+
+	bool Connection::displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf)
+	{
+		if (FileStatBuf == NULL)
+		{
+			std::cout << "displayFileSize() failed. NULL pointer.\n";
+			return false;
+		}
+		// Shifting the bits over by 10. This divides it by 2^10 aka 1024
+		off_t KB = FileStatBuf->st_size >> 10;
+		off_t MB = KB >> 10;
+		off_t GB = MB >> 10;
+		std::cout << "File size: " << FileStatBuf->st_size << "Bytes\n";
+		std::cout << "File size: " << KB << " KB\n";
+		std::cout << "File size: " << MB << " MB\n";
+		std::cout << "File size: " << GB << " GB\n";
+
+		return true;
+	}

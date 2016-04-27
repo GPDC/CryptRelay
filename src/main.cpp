@@ -255,11 +255,6 @@ int main(int argc, char *argv[])
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.transfer_file == true)
-	{
-		FTransfer = new FileTransfer;
-		FTransfer->beginFileTransfer(CLI.file_for_transfer.c_str() );
-	}
 	else if (CLI.use_lan_only == true)
 	{
 		// The user MUST supply a local ip address when using the lan only option.

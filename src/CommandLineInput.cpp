@@ -191,11 +191,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				show_info_upnp = true;
 			}
-			else if (arg[i] == "-f" && i < arg_size - 1)
-			{
-				transfer_file == true;
-				file_for_transfer = arg[i + 1];
-			}
 			else
 			{
 				helpAndReadMe();

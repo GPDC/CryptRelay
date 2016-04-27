@@ -48,7 +48,7 @@ public:
 								// [0] == server
 								// [1] == client
 
-	// for the loopedSendMessagesThread()
+	// for the loopedSendChatMessagesThread()
 	static HANDLE ghEventsSend[1];// [0] == send()
 #endif //_WIN32
 
@@ -68,17 +68,13 @@ public:
 	// If you want to give this class IP and port information, call this function.
 	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = default_port, std::string my_internal_port = default_port);
 
-	// IP and port information can be given to chat_program through these variables.
+	// IP and port information can be given to the Connection class through these variables.
 	std::string target_external_ip;						// If the option to use LAN only == true, this is target's local ip
 	std::string target_external_port = default_port;	// If the option to use LAN only == true, this is target's local port
 	std::string my_external_ip;
 	std::string my_local_ip;
 	std::string my_local_port = default_port;
 
-	// Bools to check to see what exactly the user wants to start doing with
-	// this client / server connection.
-	bool use_chat_program = false;
-	bool use_file_transfer_program = false;
 
 protected:
 private:
@@ -90,10 +86,10 @@ private:
 	static void* posixStartServerThread(void * instance);
 	static void* posixStartClientThread(void * instance);
 
-	// Send Messages thread
-	static void createLoopedSendMessagesThread(void * instance);
-	static void* posixLoopedSendMessagesThread(void * instance);
-	static void loopedSendMessagesThread(void * instance);
+	// Send Chat Messages thread
+	static void createLoopedSendChatMessagesThread(void * instance);
+	static void* posixLoopedSendChatMessagesThread(void * instance);
+	static void loopedSendChatMessagesThread(void * instance);
 
 
 	// Server and Client threads
@@ -107,7 +103,7 @@ private:
 	static int global_winner;
 
 
-	int loopedReceiveMessages(const char* host = "Peer");
+	int loopedReceiveChatMessages(const char* host = "Peer");
 	void coutPeerIPAndPort(SOCKET s);
 
 	// Cross platform windows and linux thread exiting
@@ -134,7 +130,7 @@ private:
 	// This is the only thread that has access to send().
 	// all other threads must send their info to this thread
 	// in order to send it over the network.
-	int sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send);
+	int sendThreadMutex(const char * sendbuf, size_t amount_to_send);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void getUserInputThread();
@@ -142,10 +138,11 @@ private:
 	static const size_t global_sendbuf_size = 512;
 	char global_sendbuf[global_sendbuf_size];
 
+	int sendTheFileThread(std::string usr_msg_from_terminal);
+	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
 
-
-	// Do not touch! This is for sendThreadTwo()  the send() function return value.
-	int bytes;
+	// Do not touch. This is for sendThreadTwo()
+	int bytes_sent = 0;
 };
 
 #endif //chat_program_h__

@@ -1,6 +1,7 @@
 ﻿# Todo:
 -redesign program so that it can easily fulfill any purpose specifically dealing with sending stuff over the internet. The idea is that a Server and a Client shouldn't specifically be a ChatServer or a ChatClient. It should be able to be used in that way, but not as the *only* way of using it.
 -rename chat_program.h and .cpp to connection.h .cpp
+-mutex to prevent extremely rare thread race condition
 -encryption
 -output what IP and port the user is listening on (server)
 -allow the user to exit the program by typing:  exit()  or something similiar
@@ -8,6 +9,7 @@
 -select() should be replaced by poll() and WSAPoll()
 -file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response.
 Issues with threading. Assign 1 thread to be sole owner of send(), and it will read from a lockfree queue to determine what to send. There will be another thread for getline() to get user input and giving that to the send thread, and another thread for giving file data to the send thread. Use mutexes at first to implement, however it is slow. Sounds easy tho. Come back at some time later to learn about / implement lock-free programming.
+DIFFERENT way of file implementation: just use the same chat everything, and its like sending a chat message. However, now the first byte of the message / buffer will always be reserved as a flag. It can be set to say, 'm' for a message or 'f' for a file. the receiver will check the message if(f) write(buffer), and if(m) cout << buffer[i], for i = 1;
 -sha hashes to make sure file copy & transfer is legit.
 
 # Think about possibly doing these:

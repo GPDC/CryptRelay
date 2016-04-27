@@ -28,9 +28,6 @@ public:
 	std::string delete_this_specific_port_forward_port;
 	std::string delete_this_specific_port_forward_protocol;
 
-	// -f
-	bool transfer_file = false;
-	std::string file_for_transfer;
 
 	bool show_info_upnp = false;
 	bool get_list_of_port_forwards = false;
