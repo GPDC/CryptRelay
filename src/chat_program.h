@@ -18,6 +18,8 @@
 //   That number can be thought of as a unique ID for the connection
 //   that may or may not be established.
 // fd is linux's term for a socket. == File Descriptor
+// Mutex - mutual exclusions. It is designed so that only 1 thread executes code
+// at any given time.
 
 #ifndef chat_program_h__
 #define chat_program_h__
@@ -88,6 +90,7 @@ private:
 	static void* posixLoopedSendMessagesThread(void * instance);
 	static void loopedSendMessagesThread(void * instance);
 
+
 	// Server and Client threads
 	static void startServerThread(void * instance);
 	static void startClientThread(void * instance);
@@ -118,6 +121,26 @@ private:
 
 	static const std::string default_port;
 
+
+
+
+	// NEW SECTION with threads etc
+
+	// This is the only thread that has access to send().
+	// all other threads must send their info to this thread
+	// in order to send it over the network.
+	int sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send);
+
+	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
+	void getUserInputThread();
+
+	static const size_t global_sendbuf_size = 512;
+	char global_sendbuf[global_sendbuf_size];
+
+
+
+	// Do not touch! This is for sendThreadTwo()  the send() function return value.
+	int bytes;
 };
 
 #endif //chat_program_h__

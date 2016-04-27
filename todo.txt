@@ -4,18 +4,22 @@
 -allow the user to exit the program by typing:  exit()  or something similiar
 -Fix chat output issue when someone sends you a message while you are typing
 -select() should be replaced by poll() and WSAPoll()
--file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response. If array[0] of the peer's response is Y, then the peer will start another terminal and attempt to create a new session with the user using the -f arg. The user will be doing the same thing. If the connection succeeds, begin sending the file.
+-file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response.
+Issues with threading. Assign 1 thread to be sole owner of send(), and it will read from a lockfree queue to determine what to send. There will be another thread for getline() to get user input and giving that to the send thread, and another thread for giving file data to the send thread. Use mutexes at first to implement, however it is slow. Sounds easy tho. Come back at some time later to learn about / implement lock-free programming.
+-sha hashes to make sure file copy & transfer is legit.
 
 # Think about possibly doing these:
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.
 -might want to get the username by (windows)getusername()  and linux  getlogin_r()
 -In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.
+-implement a progress indicator for the file copy or file transfer. It would preferably be something like this due to using a terminal: in the getuserinput section that does getline(), check to see if the user typed out "progress()", and if the user did, then display the current progress of the file transfer, or file copy, whatever. This would be done by giving a displayProgress() function the args: total_bytes_sent, file_size.  It would just do a simple divide calculation and turn it into a % and display that.  OR OR could just have getuserinput() set a global variable that be: display_progress = true; , and any function like copyFile() would check if(display_progress == true), then displayProgress(total_bytes_sent, file_size); and inside the displayProgress() it would make sure to set display_progress = false; at the end.
+Or because i'm no longer implementing file transfer during chat, just make a cool progress bar.
 
 # Critical Errors:
 
 
 # Non-critical errors:
--localtime_r is erroring.
+-localtime_r is erroring (linux).
 
 
 # Odd behavior:

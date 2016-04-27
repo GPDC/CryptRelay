@@ -4,9 +4,12 @@
 #include <string>
 #include <string.h> //memset
 #include <pthread.h>	// <process.h>  multithreading
+#include <vector>
+#include <mutex>
 
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
+#include "string_manipulation.h"
 #endif //__linux__
 
 #ifdef _WIN32
@@ -14,11 +17,15 @@
 #include <process.h>	// <pthread.h> multithreading
 #include <Winsock2.h>
 #include <WS2tcpip.h>
+#include <vector>
+#include <mutex>		// btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
 
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
+#include "string_manipulation.h"
 #endif //_WIN32
 
+std::mutex m;
 
 #ifdef __linux__
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
@@ -40,6 +47,8 @@
 #pragma comment(lib, "Ws2_32.lib") //tell the linker that Ws2_32.lib file is needed.
 #pragma comment(lib, "Mswsock.lib")
 #pragma comment(lib, "AdvApi32.lib")
+
+#pragma warning(disable:4996)		// disable deprecated warning for fopen()
 
 // HANDLE storage for threads
 HANDLE ChatProgram::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
@@ -436,6 +445,17 @@ void ChatProgram::startClientThread(void * instance)
 	// Display who the user is connected with.
 	self->coutPeerIPAndPort(global_socket);
 
+
+	// create thread w/ mutex for send(), all internet data will go through here.
+	// create thread to getline() user innput
+	//		in this thread, if user wants to send a file then
+	//			create sendfile thread(), it reads a file, and sends that data to the mutex send thread()
+
+
+
+
+
+
 	// Send messages inputted by user until there is an error or connection is closed.
 	createLoopedSendMessagesThread(instance);
 
@@ -614,6 +634,7 @@ void ChatProgram::loopedSendMessagesThread(void * instance)
 
 	int bytes;
 	std::string message_to_send = "Nothing.\n";
+
 #if 1	/* TEMP SEND AUTO MSG **********************/
 	message_to_send = "This is an automated message from my send loop.\n";
 	const char* send_buf = "";
@@ -642,6 +663,13 @@ void ChatProgram::loopedSendMessagesThread(void * instance)
 	{
 		// Get user's input
 		std::getline(std::cin, message_to_send);
+
+		// Do some checks to see if the user wants to xfer a file or exit
+		if (self->doesUserWantToSendAFile(message_to_send) == true)
+		{
+			// start send file process.
+		}
+
 		// Put user's input into the send buffer
 		send_buf = message_to_send.c_str();
 		// Send it
@@ -711,3 +739,147 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
        pthread_exit(ptr); // Not wanting to return anything, just exit
 #endif//__linux__
     }
+
+	// Check the user's message that he put into the terminal to see if he
+	// used the flag -f to indicate he wants to send a file.
+	bool ChatProgram::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
+	{
+		size_t user_msg_from_terminal_size = sizeof(user_msg_from_terminal);
+		// pls split into multiple strings based on spaces
+		// make a function that takes a string as input, and then return a vector filled with the strings that it split up.
+
+		if (user_msg_from_terminal[0] == '-' && user_msg_from_terminal[1] == 'f')
+			return true;
+		
+		return false;
+	}
+
+	/*
+	int sendTheFileThread(std::string usr_msg_from_terminal)
+	{
+		StringManip StrManip;
+		// Isn't this kind of slow tho? Should I just be passing a pointer of this vector
+		// into the function and have it fill it out from there?
+		// The compiler might optimize it so it isn't needlesly copying but why
+		// rely on the compiler? Might not be a guarantee depending on the compiler.
+		std::vector<std::string> split_strings = StrManip.split(usr_msg_from_terminal, ' ');
+
+		openFile(split_strings[1]);// this is the link c:\Downloads  or wherever the file is located.
+		if (error)
+			state it;
+		
+		std::string hex = readFileAsHex();	//get the contents of the file and store it in a string? as hexadecimal
+
+		while (i != endof_file)
+			call the function that has send() in it, and give it 20 packet sizes of information; // what now if its locked currently?
+
+		return success
+	}
+	*/
+
+
+	// NEW SECTION***********************
+
+	// All information that gets sent over the network MUST go through
+	// this function. This is to avoid abnormal behavior / problems
+	// with multiple threads trying to send() using the same socket.
+	// WARNING:
+	// This function expects the caller to protect against accessing
+	// invalid memory.
+	int ChatProgram::sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send)
+	{
+		// whatever thread gets here first, will lock
+		// the door so that nobody else can come in.
+		// That means all other threads will stop here and won't
+		// be able to send
+		m.lock();
+		if (sizeof(sendbuf) < global_sendbuf_size)
+			memcpy(global_sendbuf, sendbuf, sizeof(sendbuf));
+
+
+		bytes = send(global_socket, sendbuf, size_of_sendbuf, NULL);//pls put int bytes into the header so it isn't constantly created.
+		if (bytes == SOCKET_ERROR)
+		{
+			SockStuff.getError(bytes);
+			std::cout << "ERROR: send() failed.\n";
+			return SOCKET_ERROR;
+		}
+
+
+		std::cout << "test: " << global_sendbuf << "\n"; //temporary output to console
+
+		// Unlock the door now that the thread is done with this function.
+		m.unlock();
+		
+		// thread calls spongebob(buf, 512)
+		// send(buf)
+		// 
+		return bytes;
+	}
+
+	
+
+	// The user's input is getlined here and checked for things
+	// that the user might want to do.
+	void ChatProgram::getUserInputThread()
+	{
+		std::string user_input;
+		while (user_input != "exit()")
+		{
+			std::getline(std::cin, user_input);
+			if (doesUserWantToSendAFile(user_input) == true)
+				sendFile(user_input);
+			else // Continue doing normal chat operation.
+			{
+				sendThreadTwo(user_input.c_str(), user_input.length(), user_input.length());
+			}
+		}
+
+		return; // gotta make something to exit program.
+	}
+
+
+
+	// have 1 thread to send stuff over the network //this encompasses chat and file messages
+	// have 1 thread to getline() user input and send that to the network thread
+	// have 1 thread for sending file data to the network thread
+	// there will be a vector in the networkThread that will store all messages.
+	// if you want to send a message or file, put that message or file into vector.pushback();
+	// networkThread will send(vector[i]) and increment after sending each message... but
+	// problem with packet size. and gotta delete the message you just sent, from the vector.
+	// lockless queue with thread safety
+
+	// getline() thread```````````
+	// while(1)
+	// {
+	// getline(cin, getline_msg);
+	// if (doesUserWantToSendFile() == true)
+	//	    createthread(sendfilethread);
+	// else
+	// {
+	//		networkThread_msg_to_send = getline_msg;
+	//		++networkThread_message_counter;
+	// }
+
+
+	// networkThread```````````````````
+	// bool should_i_send_the_message;
+	// std::string message_to_send;
+	// char * sendbuf;
+	// while(1)
+	// {
+	//		if(should_i_send_the_message == true)
+	//		{
+	//			sendbuf = message_to_send.c_str();
+	//			send(sendbuf);
+	//			should_i_send_the_message = false;
+	//		}	
+
+
+
+	// Requires an a stat structure that was already filled out by stat();
+	// might need to include these on linux?:
+	//<sys/types.h>
+	//<sys/stat.h>
+	//<unistd.h>
+	
