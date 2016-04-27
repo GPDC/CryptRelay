@@ -49,7 +49,8 @@ void CommandLineInput::helpAndReadMe()
 
 void CommandLineInput::Examples()
 {
-	std::cout << "\n# List of various examples:\n";
+	std::cout << "\n";
+	std::cout << "# List of various examples:\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
@@ -190,10 +191,10 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				show_info_upnp = true;
 			}
-			else if (arg[i] == "-f")
+			else if (arg[i] == "-f" && i < arg_size - 1)
 			{
-				std::cout << "-f hasn't been implemented yet.\n";
-				return 0;
+				transfer_file == true;
+				file_for_transfer = arg[i + 1];
 			}
 			else
 			{

@@ -34,12 +34,12 @@ std::mutex m;
 #endif // __linux__
 
 #ifdef __linux__
-	pthread_t ChatProgram::thread0 = 0;	// Server
-	pthread_t ChatProgram::thread1 = 0;	// Client
-	pthread_t ChatProgram::thread2 = 0;	// Send()
-	int ChatProgram::ret0 = 0;	// Server
-	int ChatProgram::ret1 = 0;	// Client
-        int ChatProgram::ret2 = 0;	// Send()
+	pthread_t Connection::thread0 = 0;	// Server
+	pthread_t Connection::thread1 = 0;	// Client
+	pthread_t Connection::thread2 = 0;	// Send()
+	int Connection::ret0 = 0;	// Server
+	int Connection::ret1 = 0;	// Client
+        int Connection::ret2 = 0;	// Send()
 #endif //__linux__
 
 #ifdef _WIN32
@@ -51,12 +51,12 @@ std::mutex m;
 #pragma warning(disable:4996)		// disable deprecated warning for fopen()
 
 // HANDLE storage for threads
-HANDLE ChatProgram::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
+HANDLE Connection::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
 									// [0] == server
 									// [1] == client
 
 // for the loopedSendMessagesThread()
-HANDLE ChatProgram::ghEventsSend[1];// [0] == send()
+HANDLE Connection::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
 
 // If something errors in the server thread, sometimes we
@@ -66,28 +66,28 @@ int server_thread_error_code = 0;
 int function_that_errored = 0;
 
 // this default_port being static might not be a good idea.
-// This is the default port for the ChatProgram as long as
-// ChatProgram isn't given any port from the UPnP class,
+// This is the default port for the Connection as long as
+// Connection isn't given any port from the UPnP class,
 // which has its own default port, or given any port from the
 // command line.
-const std::string ChatProgram::default_port = "30248";
+const std::string Connection::default_port = "30248";
 
 // Variables necessary for determining who won the connection race
-const int ChatProgram::SERVER_WON = -29;
-const int ChatProgram::CLIENT_WON = -30;
-const int ChatProgram::NOBODY_WON = -25;
-int ChatProgram::global_winner = NOBODY_WON;
+const int Connection::SERVER_WON = -29;
+const int Connection::CLIENT_WON = -30;
+const int Connection::NOBODY_WON = -25;
+int Connection::global_winner = NOBODY_WON;
 
 // Used by threads after a race winner has been established
-SOCKET ChatProgram::global_socket;
+SOCKET Connection::global_socket;
 
 
 
-ChatProgram::ChatProgram()
+Connection::Connection()
 {
 	ConnectionInfo = nullptr;
 }
-ChatProgram::~ChatProgram()
+Connection::~Connection()
 {
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
 	SockStuff.myShutdown(global_socket, SD_BOTH);
@@ -101,10 +101,10 @@ ChatProgram::~ChatProgram()
 }
 
 
-// This is where the ChatProgram class receives information about IPs and ports.
+// This is where the Connection class receives information about IPs and ports.
 // /*optional*/ target_port         default value will be assumed
 // /*optional*/ my_internal_port    default value will be assumed
-void ChatProgram::giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
+void Connection::giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
 {
 	if (global_verbose == true)
 		std::cout << "Giving IP and Port information to the chat program.\n";
@@ -128,7 +128,7 @@ void ChatProgram::giveIPandPort(std::string target_extrnl_ip_address, std::strin
 }
 
 // Thread entrance for startServerThread();
-void ChatProgram::createStartServerThread(void * instance)
+void Connection::createStartServerThread(void * instance)
 {
 	if (global_verbose == true)
 		std::cout << "Starting server thread.\n";
@@ -175,16 +175,16 @@ void ChatProgram::createStartServerThread(void * instance)
 
 // This function exists because threads on linux have to return a void*.
 // Conversely on windows it doesn't return anything because threads return void.
-void* ChatProgram::posixStartServerThread(void * instance)
+void* Connection::posixStartServerThread(void * instance)
 {
 	if(instance != nullptr)
 		startServerThread(instance);
 	return nullptr;
 }
 
-void ChatProgram::startServerThread(void * instance)
+void Connection::startServerThread(void * instance)
 {
-	ChatProgram * self = (ChatProgram*)instance;
+	Connection * self = (Connection*)instance;
 
 	if (instance == nullptr)
 	{
@@ -294,6 +294,9 @@ void ChatProgram::startServerThread(void * instance)
 	// Display who the user has connected to.
 	self->coutPeerIPAndPort(global_socket);
 
+
+	/* now here is the actual chat portion, this should be if()'d to see if the user wants to chat, or send a file. */
+
 	// Looped checking for user input and sending it.
 	createLoopedSendMessagesThread(instance);
 
@@ -307,7 +310,7 @@ void ChatProgram::startServerThread(void * instance)
 	self->exitThread(nullptr);
 }
 
-void ChatProgram::createStartClientThread(void * instance)
+void Connection::createStartClientThread(void * instance)
 {
 	if (global_verbose == true)
 		std::cout << "Starting client thread.\n";
@@ -354,16 +357,16 @@ void ChatProgram::createStartClientThread(void * instance)
 
 // This function exists because threads on linux have to return a void*.
 // Conversely on windows it doesn't return anything because threads return void.
-void* ChatProgram::posixStartClientThread(void * instance)
+void* Connection::posixStartClientThread(void * instance)
 {
 	if (instance != nullptr)
 		startClientThread(instance);
 	return nullptr;
 }
 
-void ChatProgram::startClientThread(void * instance)
+void Connection::startClientThread(void * instance)
 {
-    	ChatProgram* self = (ChatProgram*)instance;
+    	Connection* self = (Connection*)instance;
 	if (instance == nullptr)
 	{
 		std::cout << "startClientThread() thread instance NULL\n";
@@ -474,7 +477,7 @@ void ChatProgram::startClientThread(void * instance)
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
 // To find out who we were connected to, use getnameinfo()
-int ChatProgram::loopedReceiveMessages(const char* remote_host)
+int Connection::loopedReceiveMessages(const char* remote_host)
 {
 	
 #if 1// TEMP SEND AUTO MSG
@@ -568,7 +571,7 @@ int ChatProgram::loopedReceiveMessages(const char* remote_host)
 }
 
 
-void ChatProgram::createLoopedSendMessagesThread(void * instance)
+void Connection::createLoopedSendMessagesThread(void * instance)
 {
 	if (global_verbose == true)
 		std::cout << "Starting client thread.\n";
@@ -615,16 +618,16 @@ void ChatProgram::createLoopedSendMessagesThread(void * instance)
 
 // This function exists because threads on linux have to return a void*.
 // Conversely on windows it doesn't return anything because threads return void.
-void* ChatProgram::posixLoopedSendMessagesThread(void * instance)
+void* Connection::posixLoopedSendMessagesThread(void * instance)
 {
 	if (instance != nullptr)
 		loopedSendMessagesThread(instance);
 	return nullptr;
 }
 
-void ChatProgram::loopedSendMessagesThread(void * instance)
+void Connection::loopedSendMessagesThread(void * instance)
 {
-	ChatProgram* self = (ChatProgram*)instance;
+	Connection* self = (Connection*)instance;
 
 	if (instance == nullptr)
 	{
@@ -690,7 +693,7 @@ void ChatProgram::loopedSendMessagesThread(void * instance)
 }
 
 // Output to console the the peer's IP and port that you have connected to the peer with.
-void ChatProgram::coutPeerIPAndPort(SOCKET s)
+void Connection::coutPeerIPAndPort(SOCKET s)
 {
 	sockaddr PeerIPAndPortStorage;
 #ifdef _WIN32
@@ -730,7 +733,7 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 }
 
 // Cross platform windows and linux thread exiting
-    void ChatProgram::exitThread(void* ptr)
+    void Connection::exitThread(void* ptr)
     {
 #ifdef _WIN32
         _endthread();
@@ -742,7 +745,7 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 
 	// Check the user's message that he put into the terminal to see if he
 	// used the flag -f to indicate he wants to send a file.
-	bool ChatProgram::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
+	bool Connection::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 	{
 		size_t user_msg_from_terminal_size = sizeof(user_msg_from_terminal);
 		// pls split into multiple strings based on spaces
@@ -786,7 +789,7 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 	// WARNING:
 	// This function expects the caller to protect against accessing
 	// invalid memory.
-	int ChatProgram::sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send)
+	int Connection::sendThreadTwo(const char * sendbuf, size_t size_of_sendbuf, size_t amount_to_send)
 	{
 		// whatever thread gets here first, will lock
 		// the door so that nobody else can come in.
@@ -821,7 +824,7 @@ void ChatProgram::coutPeerIPAndPort(SOCKET s)
 
 	// The user's input is getlined here and checked for things
 	// that the user might want to do.
-	void ChatProgram::getUserInputThread()
+	void Connection::getUserInputThread()
 	{
 		std::string user_input;
 		while (user_input != "exit()")

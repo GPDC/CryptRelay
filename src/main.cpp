@@ -47,6 +47,7 @@
 #include "SocketClass.h"
 #include "chat_program.h"
 #include "port_knock.h"
+#include "file_transfer.h"
 
 #include "UPnP.h"
 #endif//__linux__
@@ -65,6 +66,7 @@
 #include "SocketClass.h"
 #include "chat_program.h"
 #include "port_knock.h"
+#include "file_transfer.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -82,24 +84,24 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
 
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
-// /* to */ ChatProgram* ChatServerInstance
-// /* to */ ChatProgram* ChatClientInstance
+// /* to */ Connection* ChatServerInstance
+// /* to */ Connection* ChatClientInstance
 void cliGivesIPAndPortToChatProgram(
 		CommandLineInput* CLI,
-		ChatProgram* ChatServerInstance,
-		ChatProgram* ChatClientInstance
+		Connection* ChatServerInstance,
+		Connection* ChatClientInstance
 	);
 
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
 // /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
-// /* to */ ChatProgram* ChatServerInstance
-// /* to */ ChatProgram* ChatClientInstance
+// /* to */ Connection* ChatServerInstance
+// /* to */ Connection* ChatClientInstance
 void upnpGivesIPAndPortToChatProgram(
 		CommandLineInput* CLI,
 		UPnP* UpnpInstance,
-		ChatProgram* ChatServerInstance,
-		ChatProgram* ChatClientInstance
+		Connection* ChatServerInstance,
+		Connection* ChatClientInstance
 	);
 
 
@@ -115,7 +117,7 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	}
 }
 
-void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
+void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ChatServerInstance, Connection* ChatClientInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -157,7 +159,7 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, ChatProgram* ChatServ
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
 // class tried to give.
-void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, ChatProgram* ChatServerInstance, ChatProgram* ChatClientInstance)
+void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, Connection* ChatServerInstance, Connection* ChatClientInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -226,9 +228,9 @@ int main(int argc, char *argv[])
 	std::cout << "Welcome to CryptRelay Alpha release 0.6.1\n";
 
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
-	ChatProgram ChatServer;
-	ChatProgram ChatClient;
-	
+	Connection ChatServer;
+	Connection ChatClient;
+	FileTransfer* FTransfer = nullptr;
 
 	if (CLI.show_info_upnp == true)
 	{
@@ -252,6 +254,11 @@ int main(int argc, char *argv[])
 			);
 		delete Upnp;
 		return EXIT_SUCCESS;
+	}
+	else if (CLI.transfer_file == true)
+	{
+		FTransfer = new FileTransfer;
+		FTransfer->beginFileTransfer(CLI.file_for_transfer.c_str() );
 	}
 	else if (CLI.use_lan_only == true)
 	{
@@ -294,7 +301,7 @@ int main(int argc, char *argv[])
 		// we will +1 the port each time isLocalPortInUse() returns
 		// true, and then try checking again.
 		// If the port is not in use, it is assigned as the port
-		// that the ChatProgram will use.
+		// that the Connection will use.
 		if (CLI.my_host_port.empty() == true)
 		{
 			PortKnock PortTest;
@@ -337,7 +344,7 @@ int main(int argc, char *argv[])
 		}
 
 		// Add a port forward rule so we can connect to a peer, and if that
-		// succeeded, then give info to the ChatProgram.
+		// succeeded, then give info to the Connection.
 		if (Upnp->autoAddPortForwardRule() == true)
 		{
 			// Give IP and port info gathered from the command line and from
@@ -355,22 +362,22 @@ int main(int argc, char *argv[])
 	// needed information gathered and stored.
 	
 	// BEGIN THREAD RACE
-	ChatProgram::createStartServerThread(&ChatServer);			//<-----------------
-	ChatProgram::createStartClientThread(&ChatClient);			//<----------------
+	Connection::createStartServerThread(&ChatServer);			//<-----------------
+	Connection::createStartClientThread(&ChatClient);			//<----------------
 
 	// Wait for 2 ChatServer and ChatClient threads to finish
 #ifdef __linux__
-	int pret = pthread_join(ChatProgram::thread0, NULL);
+	int pret = pthread_join(Connection::thread0, NULL);
             if (pret)
                 std::cout << "error";
-	pret = pthread_join(ChatProgram::thread1, NULL);
+	pret = pthread_join(Connection::thread1, NULL);
             if (pret)
                 std::cout << "error";
 #endif//__linux__
 #ifdef _WIN32
 	int r = WaitForMultipleObjects(
 			(DWORD)2,	// Number of objects in array
-			ChatProgram::ghEvents,	// Array of objects
+			Connection::ghEvents,	// Array of objects
 			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
 			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
 		);	

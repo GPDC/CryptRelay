@@ -1,4 +1,4 @@
-// chat_program.h
+// chat_program.h  // pls rename to connection
 
 // Overview:
 // This is the area where the high level functionality for the chat program is located.
@@ -28,11 +28,11 @@
 #include "SocketClass.h"
 
 
-class ChatProgram
+class Connection
 {
 public:
-	ChatProgram();
-	~ChatProgram();
+	Connection();
+	~Connection();
 
 	// Variables for handling threads
 #ifdef __linux__
@@ -74,6 +74,11 @@ public:
 	std::string my_external_ip;
 	std::string my_local_ip;
 	std::string my_local_port = default_port;
+
+	// Bools to check to see what exactly the user wants to start doing with
+	// this client / server connection.
+	bool use_chat_program = false;
+	bool use_file_transfer_program = false;
 
 protected:
 private:

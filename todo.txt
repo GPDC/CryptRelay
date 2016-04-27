@@ -1,4 +1,6 @@
 ﻿# Todo:
+-redesign program so that it can easily fulfill any purpose specifically dealing with sending stuff over the internet. The idea is that a Server and a Client shouldn't specifically be a ChatServer or a ChatClient. It should be able to be used in that way, but not as the *only* way of using it.
+-rename chat_program.h and .cpp to connection.h .cpp
 -encryption
 -output what IP and port the user is listening on (server)
 -allow the user to exit the program by typing:  exit()  or something similiar
