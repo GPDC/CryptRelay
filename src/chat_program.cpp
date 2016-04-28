@@ -157,7 +157,7 @@ void Connection::createStartServerThread(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
-	uintptr_t thread_handle = _beginthread(startServerThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+	uintptr_t thread_handle = _beginthread(serverThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
@@ -185,11 +185,11 @@ void Connection::createStartServerThread(void * instance)
 void* Connection::posixStartServerThread(void * instance)
 {
 	if(instance != nullptr)
-		startServerThread(instance);
+		serverThread(instance);
 	return nullptr;
 }
 
-void Connection::startServerThread(void * instance)
+void Connection::serverThread(void * instance)
 {
 	Connection * self = (Connection*)instance;
 
@@ -286,8 +286,20 @@ void Connection::startServerThread(void * instance)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
 
 			// Assigning global values to let the client thread know it should stop trying.
-			global_socket = accepted_socket;
-			global_winner = SERVER_WON;
+			if (self->setWinnerMutex(SERVER_WON) != SERVER_WON)
+			{
+				if (global_verbose == true)
+				{
+					std::cout << "Server: Extremely rare race condition was almost reached.";
+					std::cout << "It was prevented using a mutex. The client is the real winner.\n";
+				}
+				self->SockStuff.myCloseSocket(listen_socket);
+				self->SockStuff.myCloseSocket(accepted_socket);
+				self->exitThread(nullptr);
+			}
+			else
+				global_socket = accepted_socket;
+
 
 			if (global_verbose == true)
 				std::cout << "dbg closing socket after retrieving new one from accept()\n";
@@ -308,7 +320,7 @@ void Connection::startServerThread(void * instance)
 	createLoopedSendChatMessagesThread(instance);
 
 	// Receive incoming messages (not threaded)
-	self->loopedReceiveChatMessages();
+	self->loopedReceiveChatMessagesThread(NULL);
 
 
 	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
@@ -339,7 +351,7 @@ void Connection::createStartClientThread(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
-	uintptr_t thread_handle = _beginthread(startClientThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
+	uintptr_t thread_handle = _beginthread(clientThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[1] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
@@ -367,11 +379,11 @@ void Connection::createStartClientThread(void * instance)
 void* Connection::posixStartClientThread(void * instance)
 {
 	if (instance != nullptr)
-		startClientThread(instance);
+		clientThread(instance);
 	return nullptr;
 }
 
-void Connection::startClientThread(void * instance)
+void Connection::clientThread(void * instance)
 {
     	Connection* self = (Connection*)instance;
 	if (instance == nullptr)
@@ -441,8 +453,19 @@ void Connection::startClientThread(void * instance)
 		else if (r == 0)				// Must have succeeded in connecting
 		{
 			// Assigning global values to let the server thread know it should stop trying.
-			global_socket = s;
-			global_winner = CLIENT_WON;
+			if (self->setWinnerMutex(CLIENT_WON) != CLIENT_WON)
+			{
+				if (global_verbose == true)
+				{
+					std::cout << "Client: Extremely rare race condition was almost reached.";
+					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
+				}
+				self->SockStuff.myCloseSocket(s);
+				self->exitThread(nullptr);
+			}
+			else
+				global_socket = s;
+
 			break;
 		}
 		else
@@ -469,12 +492,17 @@ void Connection::startClientThread(void * instance)
 	/* new */
 
 
+	// Receive messages as until there is an error or connection is closed.
+	self->loopedReceiveChatMessagesThread(NULL);
+
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
 	self->LoopedGetUserInput();
 
-
+	// Done communicating with peer. Proceeding to exit.
+	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	self->SockStuff.myCloseSocket(global_socket);
 
 
 
@@ -489,13 +517,6 @@ void Connection::startClientThread(void * instance)
 	// Send messages inputted by user until there is an error or connection is closed.
 	createLoopedSendChatMessagesThread(instance);
 
-	// Receive messages as until there is an error or connection is closed.
-	self->loopedReceiveChatMessages(/*remote_host*/);
-
-
-
-	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
-	// this is so we can exit smoothly
 
 
 	// Exiting chat program
@@ -505,7 +526,7 @@ void Connection::startClientThread(void * instance)
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
 // To find out who we were connected to, use getnameinfo()
-int Connection::loopedReceiveChatMessages(const char* remote_host)
+void Connection::loopedReceiveChatMessagesThread(void * instance)
 {
 	
 #if 1// TEMP SEND AUTO MSG
@@ -569,7 +590,7 @@ int Connection::loopedReceiveChatMessages(const char* remote_host)
 			~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 			*/
 			std::cout << "\n";
-			std::cout << remote_host << ": ";
+			std::cout << "Peer: ";
 			for (int i = 0; i < bytes; ++i)
 			{
 				std::cout << recv_buf[i];
@@ -582,20 +603,20 @@ int Connection::loopedReceiveChatMessages(const char* remote_host)
 		else if (bytes == 0)
 		{
 			printf("Connection closing...\n");
-			return EXIT_SUCCESS;
+			return;
 		}
 		else
 		{
 			SockStuff.getError(bytes);
 			std::cout << "recv failed.\n";
 			SockStuff.myCloseSocket(global_socket);
-			return EXIT_FAILURE;
+			return;
 		}
 	} while (bytes > 0);
 
 	// Should ever get here, but if it did, then the connection was closed normally.
 	std::cout << "receiveMessage() impossible area.\n";	// In case I messed something up, i'll know!
-	return EXIT_SUCCESS;
+	return;
 }
 
 
@@ -893,6 +914,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			{
 				SockStuff.getError(bytes_sent);
 				std::cout << "ERROR: send() failed.\n";
+				SockStuff.myCloseSocket(global_socket);
 				m.unlock();
 				return SOCKET_ERROR;
 			}
@@ -914,6 +936,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	void Connection::LoopedGetUserInput()
 	{
 		std::string user_input;
+
 		while (user_input != "exit()")
 		{
 			std::getline(std::cin, user_input);
@@ -945,7 +968,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 			else // Continue doing normal chat operation.
 			{
-				sendMutex(user_input.c_str(), user_input.length(), CR_CHAT_MESSAGE);
+				int b = sendMutex(user_input.c_str(), user_input.length(), CR_CHAT_MESSAGE);
+				if (b == SOCKET_ERROR)
+				{
+					if (global_verbose == true)
+						std::cout << "Exiting loopedGetUserInput()\n";
+					return;
+				}
 			}
 		}
 
@@ -1207,4 +1236,20 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		delete[]buffer;
 
 		return true;
+	}
+
+	// Server and Client thread must use this function to prevent
+	// a race condition.
+	int Connection::setWinnerMutex(int the_winner)
+	{
+		m.lock();
+
+		// If nobody has won the race yet, then set the winner.
+		if (global_winner == NOBODY_WON)
+		{
+			global_winner = the_winner;
+		}
+
+		m.unlock();
+		return global_winner;
 	}

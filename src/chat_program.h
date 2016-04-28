@@ -93,8 +93,8 @@ private:
 
 
 	// Server and Client threads
-	static void startServerThread(void * instance);
-	static void startClientThread(void * instance);
+	static void serverThread(void * instance);
+	static void clientThread(void * instance);
 
 	// Variables necessary for determining who won the connection race
 	static const int SERVER_WON;
@@ -102,8 +102,11 @@ private:
 	static const int NOBODY_WON;
 	static int global_winner;
 
+	// Server and Client thread must use this function to prevent
+	// a race condition.
+	int setWinnerMutex(int the_winner);
 
-	int loopedReceiveChatMessages(const char* host = "Peer");
+	void loopedReceiveChatMessagesThread(void * instance);
 	void coutPeerIPAndPort(SOCKET s);
 
 	// Cross platform windows and linux thread exiting
