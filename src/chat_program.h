@@ -130,19 +130,31 @@ private:
 	// This is the only thread that has access to send().
 	// all other threads must send their info to this thread
 	// in order to send it over the network.
-	int sendThreadMutex(const char * sendbuf, size_t amount_to_send);
+	int sendMutex(const char * sendbuf, size_t amount_to_send, int flag);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
-	void getUserInputThread();
+	void LoopedGetUserInput();
 
 	static const size_t global_sendbuf_size = 512;
 	char global_sendbuf[global_sendbuf_size];
 
-	int sendTheFileThread(std::string usr_msg_from_terminal);
+	void readAndSendTheFileThread(std::string file_name);
 	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
+
+	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
+	bool sendFile(const char * file_name);
 
 	// Do not touch. This is for sendThreadTwo()
 	int bytes_sent = 0;
+
+
+
+	// Flags for sendMutex() that indicated what the message is being used for.
+	static const uint8_t CR_NO_FLAG;
+	static const uint8_t CR_CHAT_MESSAGE;
+	static const uint8_t CR_ENCRYPTED_CHAT_MESSAGE;
+	static const uint8_t CR_ACTUALLY_A_FILE;
+	static const uint8_t CR_ENCRYPTED_FILE;
 };
 
 #endif //chat_program_h__

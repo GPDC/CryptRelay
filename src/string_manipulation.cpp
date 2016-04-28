@@ -27,7 +27,7 @@ bool StringManip::split(std::string string, char deliminator, std::vector<std::s
 }
 
 // Finds the specified character (aka the deliminator), and
-// duplicates it by adding another one to the right of it.
+// duplicates it by adding another one next to it.
 std::string StringManip::duplicateCharacter(std::string string, char deliminator)
 {
 

@@ -82,6 +82,13 @@ int Connection::global_winner = NOBODY_WON;
 SOCKET Connection::global_socket;
 
 
+// Flags for sendMutex() that indicated what the message is being used for.
+const uint8_t Connection::CR_NO_FLAG = 0;
+const uint8_t Connection::CR_CHAT_MESSAGE = 1;
+const uint8_t Connection::CR_ENCRYPTED_CHAT_MESSAGE = 2;
+const uint8_t Connection::CR_ACTUALLY_A_FILE = 30;
+const uint8_t Connection::CR_ENCRYPTED_FILE = 31;
+
 
 Connection::Connection()
 {
@@ -455,6 +462,30 @@ void Connection::startClientThread(void * instance)
 	//			create sendfile thread(), it reads a file, and sends that data to the mutex send thread()
 
 
+
+
+
+
+	/* new */
+
+
+	// Get the user's input from the terminal, and check
+	// to see if the user wants to do something special,
+	// else just send the message that the user typed out.
+	self->LoopedGetUserInput();
+
+
+
+
+
+
+
+
+	/* new */
+
+	/* These below would be deleted after LoopedGetUserInput() has been implemented */
+	
+
 	// Send messages inputted by user until there is an error or connection is closed.
 	createLoopedSendChatMessagesThread(instance);
 
@@ -744,134 +775,96 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// used the flag -f to indicate he wants to send a file.
 	bool Connection::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 	{
-		size_t user_msg_from_terminal_size = sizeof(user_msg_from_terminal);
+		size_t user_msg_from_terminal_len = user_msg_from_terminal.length();
 		// pls split into multiple strings based on spaces
 		// make a function that takes a string as input, and then return a vector filled with the strings that it split up.
 
-		if (user_msg_from_terminal[0] == '-' && user_msg_from_terminal[1] == 'f')
-			return true;
+		if (user_msg_from_terminal_len >= 2)
+		{
+			if (user_msg_from_terminal[0] == '-' && user_msg_from_terminal[1] == 'f')
+				return true;
+		}
 		
 		return false;
 	}
 
 	
-	int Connection::sendTheFileThread(std::string file_name)
+	void Connection::readAndSendTheFileThread(std::string string)
 	{
-	
-		// Isn't this kind of slow tho? Should I just be passing a pointer of this vector
-		// into the function and have it fill it out from there?
-		// The compiler might optimize it so it isn't needlesly copying but why
-		// rely on the compiler? Might not be a guarantee depending on the compiler.
-		std::vector<std::string> split_strings = StrManip.split(file_name, ' ');
-
-		if (split_strings.size() < 2)
-		{
-			std::cout << "Error, too few arguments supplied to -f.\n";
-			return EXIT_FAILURE;
-		}
-
-
-		// Add a \ to every \ because \ is normally an escape character
-		// and we don't want the user to have to type out an address to
-		// a file by doing \\ every time.
-		// example: C:\Users\Downloads
-		// turns into: C:\\Users\\Downloads
-		StrManip.duplicateCharacter(split_strings[1], '\\');
-
-
 		// Please make a sha hash of the file here so it can be checked with the
 		// hash of the copy later.
-
-
-
-
-		FILE *ReadFile;
-
-		// Open the file
-		// split_strings[0] should be "-f"
-		// split_strings[1] should be the file name, and location.
-		ReadFile = fopen(split_strings[1].c_str(), "rb");
-		if (ReadFile == NULL)
-		{
-			perror("Error opening file for reading binary");
-			return false;
-		}
-
 		
-		int did_file_stat_error = false;
-		struct stat FileStatBuf;
 
-		// Get some statistics on the file, such as size, time created, etc.
-		int r = stat(split_strings[1].c_str(), &FileStatBuf);
-		if (r == -1)
+		StringManip StrManip;
+		std::vector <std::string> split_strings;
+
+		// Split the string into multiple strings for every space.
+		if (StrManip.split(string, ' ', split_strings) == false)
+			std::cout << "Split failed?\n";
+
+		// get the size of the array
+		size_t split_strings_size = split_strings.size();
+
+		// There should be two strings in the vector.
+		// [0] should be -f
+		// [1] should be the file name
+		if (split_strings_size < 2)
 		{
-			perror("Error getting file statistics");
-			did_file_stat_error = true;
+			std::cout << "Error, too few arguments supplied to -f.\n";
+			return;
 		}
-		else
+
+		// Modifying the the user's input here.
+		// string is now the file name that will be transfered.
+		string = StrManip.duplicateCharacter(split_strings[1], '\\');
+
+		// 0 means no flag set.
+		std::string encryption_flag = 0;
+		for (u_int i = 0; i < split_strings_size; ++i)
 		{
-			// Output to terminal the size of the file in Bytes, KB, MB, GB.
-			displayFileSize(split_strings[1].c_str(), &FileStatBuf);
-		}
+			if (split_strings[i] == "-f" && i < split_strings_size - 1)
+			{
+				std::string file_name = split_strings[i + 1];
+				++i;
+			}
 
-		size_t bytes_read;
-		size_t bytes_sent;
-		unsigned long long total_bytes_sent = 0;
+			// Does the user want to encrypt it?
+			else if (split_strings[i] == "-e")
+			{
+				// making a guess to see if the user wants to supply an
+				// argument for -e or not.
+				// Obviously not if the next element is a '-'.
+				if (i < split_strings_size - 1)
+				{
+					if (split_strings[i + 1][0] != '-')
+					{
+						encryption_flag = split_strings[i + 1];
+						++i;
+					}
+				}
 
+				// Copy the file so we can encrypt the copied version.
+				// We don't want to encrypt the user's only copy of the file.
+				// Adding .enc as a file extension. This should be changed to
+				// a more appropriate one at some point.
+				std::string copied_file = string + ".enc";
+				if (copyFile(string.c_str(), copied_file.c_str()) == false)
+				{
+					//handle error
+					std::cout << "Failed to make a copy of the file before encrypting it.\n";
+					//exitThread(NULL);
+				}
 
-		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
-		const size_t buffer_size = 8 * 1024 * 1024;//maybe double this b/c it isn't unsigned??
-		char* buffer = new char[buffer_size];
-
-		std::cout << "Sending file...\n";
-		do
-		{
-			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
-			if (bytes_read)
-				bytes_sent = sendThreadMutex(buffer, bytes_read);//fwrite(buffer, 1, bytes_read, WriteFile);
+				// encryptFile(copied_file.c_str(), asynchronous?, RSA?)
+				sendFile(copied_file.c_str());
+				//exitThread(NULL);
+			}
 			else
-				bytes_sent = 0;
-
-			total_bytes_sent += bytes_sent;
-
-			// 0 means error. If they aren't equal to eachother
-			// then it didn't write as much as it read for some reason.
-		} while ((bytes_read > 0) && (bytes_read == bytes_sent));
-
-
-		if (total_bytes_sent == FileStatBuf.st_size)
-			std::cout << "File transfer to peer is complete.\n";
-
-		// Please implement sha hash checking here to make sure the file is legit.
-
-		if (bytes_sent)
-			perror("Error while transfering the file");
-
-		if (fclose(ReadFile))
-			perror("Error closing file designated for reading");
-
-		delete[]buffer;
-
-		return true;
-
-
-
-
-
-
-
-
-
-		openFile(split_strings[1]);// this is the link c:\Downloads  or wherever the file is located.
-		if (error)
-			state it;
-		
-		std::string hex = readFileAsHex();	//get the contents of the file and store it in a string? as hexadecimal
-
-		while (i != endof_file)
-			call the function that has send() in it, and give it 20 packet sizes of information; // what now if its locked currently?
-
-		return success
+			{
+				sendFile(string.c_str());
+				//exitThread(NULL);
+			}
+		}
 	}
 	
 
@@ -884,7 +877,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// WARNING:
 	// This function expects the caller to protect against accessing
 	// invalid memory.
-	int Connection::sendThreadMutex(const char * sendbuf, size_t amount_to_send)
+	int Connection::sendMutex(const char * sendbuf, size_t amount_to_send, int flag)
 	{
 		// Whatever thread gets here first, will lock
 		// the door so that nobody else can come in.
@@ -908,15 +901,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		} while (amount_to_send > 0);
 
-
-		std::cout << "test: " << global_sendbuf << "\n"; //temporary output to console
-
 		// Unlock the door now that the thread is done with this function.
 		m.unlock();
-		
-		// thread calls spongebob(buf, 512)
-		// send(buf)
-		// 
+
 		return bytes_sent;
 	}
 
@@ -924,7 +911,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	// The user's input is getlined here and checked for things
 	// that the user might want to do.
-	void Connection::getUserInputThread()
+	void Connection::LoopedGetUserInput()
 	{
 		std::string user_input;
 		while (user_input != "exit()")
@@ -939,20 +926,30 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				if (StrManip.split(user_input, ' ', split_strings) == false)
 					std::cout << "Split failed?\n";
 
-				// Modifying the the user's input here.
-				// user_input is now the file name that will be transfered.
-				user_input = StrManip.duplicateCharacter(split_strings[1], '\\');
+				// get the size of the array
+				size_t split_strings_size = split_strings.size();
 
-				sendTheFileThread(user_input);
+				// There should be two strings in the vector.
+				// [0] should be -f
+				// [1] should be the file name
+				if (split_strings_size < 2)
+				{
+					std::cout << "Error, too few arguments supplied to -f.\n";
+				}
+				else
+				{
+					// Send the file
+					readAndSendTheFileThread(user_input.c_str());
+				}
 			}
 
 			else // Continue doing normal chat operation.
 			{
-				sendThreadMutex(user_input.c_str(), user_input.length()/*, flag (aka 'm' for message, 'f' for file)*/);
+				sendMutex(user_input.c_str(), user_input.length(), CR_CHAT_MESSAGE);
 			}
 		}
 
-		return; // gotta make something to exit program.
+		return;
 	}
 
 
@@ -1011,10 +1008,203 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		off_t KB = FileStatBuf->st_size >> 10;
 		off_t MB = KB >> 10;
 		off_t GB = MB >> 10;
-		std::cout << "File size: " << FileStatBuf->st_size << "Bytes\n";
-		std::cout << "File size: " << KB << " KB\n";
-		std::cout << "File size: " << MB << " MB\n";
-		std::cout << "File size: " << GB << " GB\n";
+		std::cout << "Displaying file size as Bytes: " << FileStatBuf->st_size << "\n";
+		std::cout << "As KB: " << KB << "\n";
+		std::cout << "As MB: " << MB << "\n";
+		std::cout << "As GB: " << GB << "\n";
+
+		return true;
+	}
+
+	bool Connection::copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location)
+	{
+
+		FILE *ReadFile;
+		FILE *WriteFile;
+
+		ReadFile = fopen(read_file_name_and_location, "rb");
+		if (ReadFile == NULL)
+		{
+			perror("Error opening file for reading binary");
+			return false;
+		}
+		WriteFile = fopen(write_file_name_and_location, "wb");
+		if (WriteFile == NULL)
+		{
+			perror("Error opening file for writing binary");
+			return false;
+		}
+
+		int did_file_stat_error = false;
+		struct stat FileStatBuf;
+
+		// Get some statistics on the file, such as size, time created, etc.
+		int r = stat(read_file_name_and_location, &FileStatBuf);
+		if (r == -1)
+		{
+			perror("Error getting file statistics");
+			did_file_stat_error = true;
+		}
+		else
+		{
+			// Output to terminal the size of the file in Bytes, KB, MB, GB.
+			displayFileSize(read_file_name_and_location, &FileStatBuf);
+		}
+
+
+
+		// Please make a sha hash of the file here so it can be checked with the
+		// hash of the copy later.
+
+		size_t bytes_read;
+		size_t bytes_written;
+		unsigned long long total_bytes_written = 0;
+
+		unsigned long long twenty_five_percent = FileStatBuf.st_size / 4;	// divide it by 4
+		unsigned long long fifty_percent = FileStatBuf.st_size / 2;	//divide it by two
+		unsigned long long seventy_five_percent = FileStatBuf.st_size - twenty_five_percent;
+
+		bool twenty_five_already_spoke = false;
+		bool fifty_already_spoke = false;
+		bool seventy_five_already_spoke = false;
+
+		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
+		const size_t buffer_size = 8 * 1024 * 1024;
+		unsigned char* buffer = new unsigned char[buffer_size];
+
+		std::cout << "Copying file...\n";
+		do
+		{
+			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
+			if (bytes_read)
+				bytes_written = fwrite(buffer, 1, bytes_read, WriteFile);
+			else
+				bytes_written = 0;
+
+			total_bytes_written += bytes_written;
+
+			// If we have some statistics to work with, then display
+			// ghetto progress indicators.
+			if (did_file_stat_error == false)
+			{
+				if (total_bytes_written > twenty_five_percent && total_bytes_written < fifty_percent && twenty_five_already_spoke == false)
+				{
+					std::cout << "File copy 25% complete.\n";
+					twenty_five_already_spoke = true;
+				}
+				else if (total_bytes_written > fifty_percent && total_bytes_written < seventy_five_percent && fifty_already_spoke == false)
+				{
+					std::cout << "File copy 50% complete.\n";
+					fifty_already_spoke = true;
+				}
+				else if (total_bytes_written > seventy_five_percent && seventy_five_already_spoke == false)
+				{
+					std::cout << "File copy 75% complete.\n";
+					seventy_five_already_spoke = true;
+				}
+			}
+
+
+			// 0 means error. If they aren't equal to eachother
+			// then it didn't write as much as it read for some reason.
+		} while ((bytes_read > 0) && (bytes_read == bytes_written));
+
+		if (total_bytes_written == FileStatBuf.st_size)
+			std::cout << "File copy complete.\n";
+
+		// Please implement sha hash checking here to make sure the file is legit.
+
+		if (bytes_written)
+			perror("Error while copying the file");
+
+
+
+		if (fclose(WriteFile))
+			perror("Error closing file designated for writing");
+		if (fclose(ReadFile))
+			perror("Error closing file designated for reading");
+
+		delete[]buffer;
+
+		return true;
+
+		//// Give a compiler error if streamsize > sizeof(long long)
+		//// This is so we can safely do this: (long long) streamsize
+		//static_assert(sizeof(std::streamsize) <= sizeof(long long), "myERROR: streamsize > sizeof(long long)");
+	}
+
+	bool Connection::sendFile(const char * file_name)
+	{
+
+		FILE *ReadFile;
+
+		// Open the file
+		// split_strings[0] should be "-f"
+		// split_strings[1] should be the file name, and location.
+		ReadFile = fopen(file_name, "rb");
+		if (ReadFile == NULL)
+		{
+			perror("Error opening file for reading binary");
+			return false;
+		}
+
+
+		int did_file_stat_error = false;
+		struct stat FileStatBuf;
+
+		// Get some statistics on the file, such as size, time created, etc.
+		int r = stat(file_name, &FileStatBuf);
+		if (r == -1)
+		{
+			perror("Error getting file statistics");
+			did_file_stat_error = true;
+		}
+		else
+		{
+			// Output to terminal the size of the file in Bytes, KB, MB, GB.
+			displayFileSize(file_name, &FileStatBuf);
+		}
+
+
+
+
+		size_t bytes_read;
+		size_t bytes_sent;
+		unsigned long long total_bytes_sent = 0;
+
+
+		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
+		const size_t buffer_size = 8 * 1024 * 1024;//maybe double this b/c it isn't unsigned??
+		char* buffer = new char[buffer_size];
+
+		std::cout << "Sending file...\n";
+		do
+		{
+			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
+			if (bytes_read)
+				bytes_sent = sendMutex(buffer, bytes_read, 100);
+			else
+				bytes_sent = 0;
+
+			total_bytes_sent += bytes_sent;
+
+			// 0 means error. If they aren't equal to eachother
+			// then it didn't write as much as it read for some reason.
+		} while ((bytes_read > 0) && (bytes_read == bytes_sent));
+
+
+		if (total_bytes_sent == FileStatBuf.st_size)
+			std::cout << "File transfer to peer is complete.\n";
+
+		// Please implement sha hash checking here to make sure the file is legit.
+
+		if (bytes_sent)
+			perror("Error while transfering the file");
+
+		if (fclose(ReadFile))
+			perror("Error closing file designated for reading");
+
+		delete[]buffer;
 
 		return true;
 	}

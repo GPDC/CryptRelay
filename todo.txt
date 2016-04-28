@@ -11,6 +11,7 @@
 Issues with threading. Assign 1 thread to be sole owner of send(), and it will read from a lockfree queue to determine what to send. There will be another thread for getline() to get user input and giving that to the send thread, and another thread for giving file data to the send thread. Use mutexes at first to implement, however it is slow. Sounds easy tho. Come back at some time later to learn about / implement lock-free programming.
 DIFFERENT way of file implementation: just use the same chat everything, and its like sending a chat message. However, now the first byte of the message / buffer will always be reserved as a flag. It can be set to say, 'm' for a message or 'f' for a file. the receiver will check the message if(f) write(buffer), and if(m) cout << buffer[i], for i = 1;
 -sha hashes to make sure file copy & transfer is legit.
+-improve display of file size so that it will show different size when appropriate. I.E. 357.2 MB, 1.2 GB
 
 # Think about possibly doing these:
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.

@@ -267,12 +267,12 @@ bool FileTransfer::copyFile(const char * read_file_name_and_location, const char
 				std::cout << "File copy 25% complete.\n";
 				twenty_five_already_spoke = true;
 			}
-			if (total_bytes_written > fifty_percent && total_bytes_written < seventy_five_percent && fifty_already_spoke == false)
+			else if (total_bytes_written > fifty_percent && total_bytes_written < seventy_five_percent && fifty_already_spoke == false)
 			{
 				std::cout << "File copy 50% complete.\n";
 				fifty_already_spoke = true;
 			}
-			if (total_bytes_written > seventy_five_percent && seventy_five_already_spoke == false)
+			else if (total_bytes_written > seventy_five_percent && seventy_five_already_spoke == false)
 			{
 				std::cout << "File copy 75% complete.\n";
 				seventy_five_already_spoke = true;
