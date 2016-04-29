@@ -314,18 +314,24 @@ void Connection::serverThread(void * instance)
 	self->coutPeerIPAndPort(global_socket);
 
 
-	/* now here is the actual chat portion, this should be if()'d to see if the user wants to chat, or send a file. */
+	// Receive messages as until there is an error or connection is closed.
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
 
-	// Looped checking for user input and sending it.
-	createLoopedSendChatMessagesThread(instance);
+	// Get the user's input from the terminal, and check
+	// to see if the user wants to do something special,
+	// else just send the message that the user typed out.
+	self->LoopedGetUserInput();
 
-	// Receive incoming messages (not threaded)
-	self->loopedReceiveChatMessagesThread(NULL);
+	// wait here until x thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
 
+	// Done communicating with peer. Proceeding to exit.
+	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	self->SockStuff.myCloseSocket(global_socket);
 
-	// WAIT HERE FOR LOOPED SENDMESSAGES THREAD
-	// this is so we can exit smoothly
-
+	// Exiting chat program
 	self->exitThread(nullptr);
 }
 
@@ -479,45 +485,22 @@ void Connection::clientThread(void * instance)
 	self->coutPeerIPAndPort(global_socket);
 
 
-	// create thread w/ mutex for send(), all internet data will go through here.
-	// create thread to getline() user innput
-	//		in this thread, if user wants to send a file then
-	//			create sendfile thread(), it reads a file, and sends that data to the mutex send thread()
-
-
-
-
-
-
-	/* new */
-
-
-	// Receive messages as until there is an error or connection is closed.
-	self->loopedReceiveChatMessagesThread(NULL);
+	// Receive messages until there is an error or connection is closed.
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
 	self->LoopedGetUserInput();
 
+	// wait here until x thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
+
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
 	self->SockStuff.myCloseSocket(global_socket);
-
-
-
-
-
-
-	/* new */
-
-	/* These below would be deleted after LoopedGetUserInput() has been implemented */
-	
-
-	// Send messages inputted by user until there is an error or connection is closed.
-	createLoopedSendChatMessagesThread(instance);
-
-
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -528,7 +511,16 @@ void Connection::clientThread(void * instance)
 // To find out who we were connected to, use getnameinfo()
 void Connection::loopedReceiveChatMessagesThread(void * instance)
 {
-	
+	// so is this needed with std::thread ???
+	if (instance == nullptr)
+	{
+		std::cout << "Instance was null. loopedReceiveChatMessagesThread()\n";
+		return;
+	}
+
+	Connection* self = (Connection*)instance;
+	// or what?
+
 #if 1// TEMP SEND AUTO MSG
 	const char* sendbuf = nullptr;
 	std::string message_to_send = "This is an automated message from my receive loop.\n";
@@ -538,9 +530,9 @@ void Connection::loopedReceiveChatMessagesThread(void * instance)
 	int wombocombo = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
 	if (wombocombo == SOCKET_ERROR)
 	{
-		SockStuff.getError(wombocombo);
+		self->SockStuff.getError(wombocombo);
 		std::cout << "send failed.\n";
-		SockStuff.myCloseSocket(global_socket);
+		self->SockStuff.myCloseSocket(global_socket);
 		//return;
 	}
 	//else
@@ -607,9 +599,9 @@ void Connection::loopedReceiveChatMessagesThread(void * instance)
 		}
 		else
 		{
-			SockStuff.getError(bytes);
+			self->SockStuff.getError(bytes);
 			std::cout << "recv failed.\n";
-			SockStuff.myCloseSocket(global_socket);
+			self->SockStuff.myCloseSocket(global_socket);
 			return;
 		}
 	} while (bytes > 0);

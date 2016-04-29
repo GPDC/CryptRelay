@@ -32,7 +32,8 @@ std::string StringManip::duplicateCharacter(std::string string, char deliminator
 {
 
 	size_t string_length = string.length();
-	for (unsigned long long i = 0; i < string_length && i < ULLONG_MAX; ++i)
+	unsigned int i;
+	for (i = 0; i < string_length && i < UINT_MAX; ++i)
 	{
 		if (string[i] == '\\')
 		{
@@ -42,6 +43,9 @@ std::string StringManip::duplicateCharacter(std::string string, char deliminator
 			string.insert(i, 1, '\\');
 		}
 	}
+	if (i == UINT_MAX)
+		std::cout << "WARNING: duplicateCharacter() reached UINT_MAX\n";
+
 	std::cout << "dbg string.insert yielded: " << string << "\n";
 	return string;
 }

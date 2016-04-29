@@ -87,9 +87,9 @@ private:
 	static void* posixStartClientThread(void * instance);
 
 	// Send Chat Messages thread
-	static void createLoopedSendChatMessagesThread(void * instance);
-	static void* posixLoopedSendChatMessagesThread(void * instance);
-	static void loopedSendChatMessagesThread(void * instance);
+	static void createLoopedSendChatMessagesThread(void * instance);	// DEPRECATED
+	static void* posixLoopedSendChatMessagesThread(void * instance);	// DEPRECATED
+	static void loopedSendChatMessagesThread(void * instance);			// DEPRECATED
 
 
 	// Server and Client threads

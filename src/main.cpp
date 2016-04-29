@@ -230,7 +230,7 @@ int main(int argc, char *argv[])
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
 	Connection ChatServer;
 	Connection ChatClient;
-	FileTransfer* FTransfer = nullptr;
+
 
 	if (CLI.show_info_upnp == true)
 	{
