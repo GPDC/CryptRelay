@@ -68,6 +68,7 @@ public:
 	void standaloneGetListOfPortForwards();
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
 	bool autoAddPortForwardRule();
+	void autoDeletePortForwardRule();
 	bool standaloneAutoAddPortForwardRule();
 
 	// These are in public because connection class will
@@ -83,7 +84,7 @@ private:
 	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
-	void autoDeletePortForwardRule();
+
 
 	SocketClass SockStuff;
 

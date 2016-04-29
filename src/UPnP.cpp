@@ -112,8 +112,9 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 		else if (r == 714)
 			std::cout << "Error: " << r << ". The port forward rule specified for deletion does not exist.\n";
 		else
-			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed.\n";
+			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed. Router might not have this feature?\n";
 	}
+	std::cout << "Port forward rule: " << protocol << " " << extern_port << " successfully deleted.\n";
 }
 
 
@@ -633,8 +634,8 @@ void UPnP::autoDeletePortForwardRule()
 	// that description and give it to UPNP_DeletePortMapping().
 
 
-	if (global_verbose == true)
-		std::cout << "Automatically deleting port forward rule...\n";
+
+	std::cout << "Automatically deleting port forward rule...\n";
 
 	// Delete the port forward rule
 	int r = UPNP_DeletePortMapping(

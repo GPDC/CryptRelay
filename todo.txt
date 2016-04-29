@@ -25,3 +25,6 @@ Or because i'm no longer implementing file transfer during chat, just make a coo
 
 # Odd behavior:
 
+
+# Note-worthy side effects of actions:
+-ctrl-c doesn't call deconstructors. Therefore it won't automatically delete the port forward that was automatically added at the beginning.

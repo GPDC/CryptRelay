@@ -10,6 +10,7 @@
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
 #include "string_manipulation.h"
+#include "UPnP.h"
 #endif //__linux__
 
 #ifdef _WIN32
@@ -23,6 +24,7 @@
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
 #include "string_manipulation.h"
+#include "UPnP.h"
 #endif //_WIN32
 
 std::mutex m;
@@ -98,6 +100,8 @@ Connection::~Connection()
 {
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
 	SockStuff.myShutdown(global_socket, SD_BOTH);
+
+
 
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.

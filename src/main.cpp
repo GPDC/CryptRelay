@@ -304,7 +304,7 @@ int main(int argc, char *argv[])
 			int my_port_int = 0;
 			const int ATTEMPT_COUNT = 20;
 
-			// Only checking ATTEMPT_COUNT times.
+			// Only checking ATTEMPT_COUNT times to see if the port is in use.
 			// Only assigning a new port number ATTEMPT_COUNT times.
 			for (int i = 0; i < ATTEMPT_COUNT; ++i)
 			{

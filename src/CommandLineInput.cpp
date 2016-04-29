@@ -25,20 +25,26 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "Format for LAN connection: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
 	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mP 30022\n";
 	std::cout << "\n";
-	std::cout << "-h    Displays this.\n";
-	std::cout << "-t    The target's IP address.\n";
-	std::cout << "-tP   The target's external port number.\n";
-	std::cout << "-mL   My local IP address that I want to listen on.\n";
-	std::cout << "-mP   My port number that I want to listen on.\n";
-	std::cout << "-v    Turns on verbose output to your terminal.\n";
-	std::cout << "-lan  Don't connect to the internet. Use LAN only. Currently disables upnp.\n";
-	std::cout << "-spf  Shows the currently forwarded ports \n";
-	std::cout << "      Format: cryptrelay.exe -spf my_external_port protocol\n";
-	std::cout << "-dpf  Delete a port forward rule.\n";
-	std::cout << "      Format: cryptrelay.exe -dpf my_external_port protocol\n";
-	std::cout << "-si   Show Info   Displays external & local ip, and some UPnP info.\n";
+	std::cout << "-h     Displays this.\n";
+	std::cout << "-t     The target's IP address.\n";
+	std::cout << "-tP    The target's external port number.\n";
+	std::cout << "-mL    My local IP address that I want to listen on.\n";
+	std::cout << "-mP    My port number that I want to listen on.\n";
+	std::cout << "-v     Turns on verbose output to your terminal.\n";
+	std::cout << "-lan   Don't connect to the internet. Use LAN only. Currently disables upnp.\n";
+	std::cout << "-spf   Shows the currently forwarded ports \n";
+	std::cout << "       Format: cryptrelay.exe -spf my_external_port protocol\n";
+	std::cout << "-dpf   Delete a port forward rule.\n";
+	std::cout << "       Format: cryptrelay.exe -dpf protocol my_external_port\n";
+	std::cout << "-si    Show Info   Displays external & local ip, and some UPnP info.\n";
 	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
 	std::cout << "\n";
+	std::cout << "NOT YET:\n";
+	std::cout << "Arguments that are able to be used during a chat session:\n";
+	std::cout << "-f     Send a file to the peer you are connected to.\n";
+	std::cout << "       -e make a copy of the file you want to send and encrypt it.\n";
+	std::cout << "       Format: -f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
+	std::cout << "exit() This will exit CryptRelay. Another option would pressing ctrl-c.\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f    file       The file, and location of the file you wish to xfer.\n";
 	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n";
@@ -55,7 +61,11 @@ void CommandLineInput::Examples()
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
 	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tP 50451 -mL 192.168.1.3 -mP 30456\n";
-	std::cout << "cryptrelay.exe -dpf 30023 TCP\n";
+	std::cout << "cryptrelay.exe -dpf TCP 30023\n";
+	std::cout << "\n";
+	std::cout << "# List of various examples for use during a chat session:\n";
+	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt\n";
+	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
 	std::cout << "\n";
 
 }
@@ -175,17 +185,17 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "-spf")
 			{
 				get_list_of_port_forwards = true;
-				return 0;							// exit program even though this is not a failure.
+				return 1;
 			}
 			else if (arg[i] == "-dpf" && i < arg_size - 2)
 			{
 				delete_this_specific_port_forward = true;
-				delete_this_specific_port_forward_port = i + 1;
-				delete_this_specific_port_forward_protocol = i + 2;
+				delete_this_specific_port_forward_protocol = arg[i + 1];
+				delete_this_specific_port_forward_port = arg[i + 2];
 
 				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
-				return 0;							// exit program even though this is not a failure.
+				return 1;
 			}
 			else if (arg[i] == "-si")
 			{

@@ -75,7 +75,6 @@ public:
 	std::string my_local_ip;
 	std::string my_local_port = default_port;
 
-
 protected:
 private:
 	SocketClass SockStuff;
@@ -124,8 +123,6 @@ private:
 
 
 	static const std::string default_port;
-
-
 
 
 	// NEW SECTION with threads etc
