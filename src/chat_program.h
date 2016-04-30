@@ -75,6 +75,15 @@ public:
 	std::string my_local_ip;
 	std::string my_local_port = default_port;
 
+	// Send a file the normal way
+	bool does_user_want_to_send_a_file = false;
+	std::string file_name_and_loc;
+
+	// Before sending a file, make a copy of it, encrypt that copy, then send it.
+	bool does_user_want_to_send_an_encrypted_file = false;
+	std::string file_name_and_loc_to_be_encrypted;
+	std::string file_encryption_option;
+
 protected:
 private:
 	SocketClass SockStuff;
@@ -138,23 +147,27 @@ private:
 	static const size_t global_sendbuf_size = 512;
 	char global_sendbuf[global_sendbuf_size];
 
+
+	// DEPRECATED?
 	void readAndSendTheFileThread(std::string file_name);
 	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
 
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 	bool sendFile(const char * file_name);
 
-	// Do not touch. This is for sendThreadTwo()
+	// Do not touch. This is for sendMutex()
 	int bytes_sent = 0;
 
 
-
 	// Flags for sendMutex() that indicated what the message is being used for.
-	static const uint8_t CR_NO_FLAG;
-	static const uint8_t CR_CHAT_MESSAGE;
-	static const uint8_t CR_ENCRYPTED_CHAT_MESSAGE;
-	static const uint8_t CR_ACTUALLY_A_FILE;
-	static const uint8_t CR_ENCRYPTED_FILE;
+	static const int8_t CR_NO_FLAG;
+	static const int8_t CR_CHAT_MESSAGE;
+	static const int8_t CR_ENCRYPTED_CHAT_MESSAGE;
+	static const int8_t CR_FILE;
+	static const int8_t CR_ENCRYPTED_FILE;
+
+
+	bool askPeerIfHeDesiresFile();
 };
 
 #endif //chat_program_h__

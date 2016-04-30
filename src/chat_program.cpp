@@ -85,11 +85,11 @@ SOCKET Connection::global_socket;
 
 
 // Flags for sendMutex() that indicated what the message is being used for.
-const uint8_t Connection::CR_NO_FLAG = 0;
-const uint8_t Connection::CR_CHAT_MESSAGE = 1;
-const uint8_t Connection::CR_ENCRYPTED_CHAT_MESSAGE = 2;
-const uint8_t Connection::CR_ACTUALLY_A_FILE = 30;
-const uint8_t Connection::CR_ENCRYPTED_FILE = 31;
+const int8_t Connection::CR_NO_FLAG = 0;
+const int8_t Connection::CR_CHAT_MESSAGE = 1;
+const int8_t Connection::CR_ENCRYPTED_CHAT_MESSAGE = 2;
+const int8_t Connection::CR_FILE = 30;
+const int8_t Connection::CR_ENCRYPTED_FILE = 31;
 
 
 Connection::Connection()
@@ -317,19 +317,78 @@ void Connection::serverThread(void * instance)
 	// Display who the user has connected to.
 	self->coutPeerIPAndPort(global_socket);
 
+	// Start up file transfer instead of chat.
+	if (self->does_user_want_to_send_a_file == true)
+	{
+		//// spin up recv_chat_msgs thread pls
+		StringManip StrManip;
+		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc, '\\');
 
-	// Receive messages as until there is an error or connection is closed.
-	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-	std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
 
-	// Get the user's input from the terminal, and check
-	// to see if the user wants to do something special,
-	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
 
-	// wait here until x thread finishes.
-	if (rcv_thread.joinable())
-		rcv_thread.join();
+		//StringManip StrManip;
+		//std::vector <std::string> split_strings;
+
+		//// Split the string into multiple strings for every space.
+		//if (StrManip.split(file_name_and_loc, ' ', split_strings) == false)
+		//	std::cout << "Split failed?\n";
+
+		//// get the size of the array
+		//size_t split_strings_size = split_strings.size();
+
+		//// There should be two strings in the vector.
+		//// [0] should be -f
+		//// [1] should be the file name
+		//if (split_strings_size < 2)
+		//{
+		//	std::cout << "Error, too few arguments supplied to -f.\n";
+		//}
+		//else
+		//{
+		//	// Send the file
+		//	self->readAndSendTheFileThread(user_input.c_str());
+		//}
+
+		if (self->sendFile(modified_file_name.c_str()) == false)
+		{
+			std::cout << "sendFile() failed.\n";
+		}
+		return;
+	}
+	else if (self->does_user_want_to_send_an_encrypted_file == true)
+	{
+		StringManip StrManip;
+		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc_to_be_encrypted, '\\');
+
+		// Copy the file before encrypting it.
+		std::string copied_file_to_be_encrypted = modified_file_name + ".enc";
+		self->copyFile(modified_file_name.c_str(), copied_file_to_be_encrypted.c_str());
+
+		// Encrypt the copied file.
+		// switchcase(file_encryption_option)
+		// case: (RSA-4096), encryptRSALARGE(copied_file_to_be_encyrpted.c_str());
+
+		// if successfully encrypted, send it
+		self->sendFile(modified_file_name.c_str());
+		return;
+	}
+	else
+	{
+		// Receive messages as until there is an error or connection is closed.
+		// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+		std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
+
+		// Get the user's input from the terminal, and check
+		// to see if the user wants to do something special,
+		// else just send the message that the user typed out.
+		self->LoopedGetUserInput();
+
+		// wait here until x thread finishes.
+		if (rcv_thread.joinable())
+			rcv_thread.join();
+	}
+
+
 
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
@@ -488,19 +547,78 @@ void Connection::clientThread(void * instance)
 	// Display who the user is connected with.
 	self->coutPeerIPAndPort(global_socket);
 
+	// Start up file transfer instead of chat.
+	if (self->does_user_want_to_send_a_file == true)
+	{
+		//// spin up recv_chat_msgs thread pls
+		StringManip StrManip;
+		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc, '\\');
 
-	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-	std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
 
-	// Get the user's input from the terminal, and check
-	// to see if the user wants to do something special,
-	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
 
-	// wait here until x thread finishes.
-	if (rcv_thread.joinable())
-		rcv_thread.join();
+		//StringManip StrManip;
+		//std::vector <std::string> split_strings;
+
+		//// Split the string into multiple strings for every space.
+		//if (StrManip.split(file_name_and_loc, ' ', split_strings) == false)
+		//	std::cout << "Split failed?\n";
+
+		//// get the size of the array
+		//size_t split_strings_size = split_strings.size();
+
+		//// There should be two strings in the vector.
+		//// [0] should be -f
+		//// [1] should be the file name
+		//if (split_strings_size < 2)
+		//{
+		//	std::cout << "Error, too few arguments supplied to -f.\n";
+		//}
+		//else
+		//{
+		//	// Send the file
+		//	self->readAndSendTheFileThread(user_input.c_str());
+		//}
+
+		//askPeerIfHeDesiresFile();
+
+		if (self->sendFile(modified_file_name.c_str()) == false)
+		{
+			std::cout << "sendFile() failed.\n";
+		}
+		return;
+	}
+	else if (self->does_user_want_to_send_an_encrypted_file == true)
+	{
+		StringManip StrManip;
+		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc_to_be_encrypted, '\\');
+
+		// Copy the file before encrypting it.
+		std::string copied_file_to_be_encrypted = modified_file_name + ".enc";
+		self->copyFile(modified_file_name.c_str(), copied_file_to_be_encrypted.c_str());
+
+		// Encrypt the copied file.
+		// switchcase(file_encryption_option)
+		// case: (RSA-4096), encryptRSALARGE(copied_file_to_be_encyrpted.c_str());
+
+		// if successfully encrypted, send it
+		self->sendFile(modified_file_name.c_str());
+		return;
+	}
+	else
+	{
+		// Receive messages until there is an error or connection is closed.
+		// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+		std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
+
+		// Get the user's input from the terminal, and check
+		// to see if the user wants to do something special,
+		// else just send the message that the user typed out.
+		self->LoopedGetUserInput();
+
+		// wait here until x thread finishes.
+		if (rcv_thread.joinable())
+			rcv_thread.join();
+	}
 
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
@@ -615,7 +733,7 @@ void Connection::loopedReceiveChatMessagesThread(void * instance)
 	return;
 }
 
-
+// DEPRECATED
 void Connection::createLoopedSendChatMessagesThread(void * instance)
 {
 	if (global_verbose == true)
@@ -661,6 +779,7 @@ void Connection::createLoopedSendChatMessagesThread(void * instance)
 #endif//_WIN32
 }
 
+// DEPRECATED
 // This function exists because threads on linux have to return a void*.
 // Conversely on windows it doesn't return anything because threads return void.
 void* Connection::posixLoopedSendChatMessagesThread(void * instance)
@@ -670,6 +789,7 @@ void* Connection::posixLoopedSendChatMessagesThread(void * instance)
 	return nullptr;
 }
 
+// DEPRECATED
 void Connection::loopedSendChatMessagesThread(void * instance)
 {
 	Connection* self = (Connection*)instance;
@@ -805,14 +925,17 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return false;
 	}
 
-	
+	// DEPRECATED?
 	void Connection::readAndSendTheFileThread(std::string string)
 	{
 		// Please make a sha hash of the file here so it can be checked with the
 		// hash of the copy later.
-		
 
-		StringManip StrManip;
+		//StringManip StrManip;
+
+
+
+		/*
 		std::vector <std::string> split_strings;
 
 		// Split the string into multiple strings for every space.
@@ -830,6 +953,12 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			std::cout << "Error, too few arguments supplied to -f.\n";
 			return;
 		}
+
+		std::cout << "NOTICE: You will not be able to send chat messages while the file is being transfered.\n";
+
+		
+
+
 
 		// Modifying the the user's input here.
 		// string is now the file name that will be transfered.
@@ -876,24 +1005,31 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				sendFile(copied_file.c_str());
 				//exitThread(NULL);
 			}
-			else
+			else // Done looking for arguments as -e was the last thing to check for
 			{
 				sendFile(string.c_str());
 				//exitThread(NULL);
 			}
 		}
+		*/
+
+
 	}
 	
 
 
 	// NEW SECTION***********************
 
-	// All information that gets sent over the network MUST go through
-	// this function. This is to avoid abnormal behavior / problems
-	// with multiple threads trying to send() using the same socket.
 	// WARNING:
 	// This function expects the caller to protect against accessing
 	// invalid memory.
+	// All information that gets sent over the network MUST go through
+	// this function. This is to avoid abnormal behavior / problems
+	// with multiple threads trying to send() using the same socket.
+	// The flag argument is to tell the receiver of these messages
+	// how to interpret the incoming message. For example as a file,
+	// or as a chat message.
+	// To see a list of flags, look in the header file.
 	int Connection::sendMutex(const char * sendbuf, size_t amount_to_send, int flag)
 	{
 		// Whatever thread gets here first, will lock
@@ -943,7 +1079,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					std::cout << "Split failed?\n";
+					std::cout << "Split failed?\n";	// Currently no return false?
 
 				// get the size of the array
 				size_t split_strings_size = split_strings.size();
@@ -955,15 +1091,60 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					std::cout << "Error, too few arguments supplied to -f.\n";
 				}
-				else
+
+				std::string file_name_and_loca;
+				std::string file_encryption_option;
+				// Determine if user wants to send a file or Encrypt & send a file.
+				for (size_t i = 0; i < split_strings_size; ++i)
 				{
-					// Send the file
-					readAndSendTheFileThread(user_input.c_str());
+					if (split_strings[i] == "-f" && i < split_strings_size - 1)
+					{
+						file_name_and_loca = split_strings[i + 1];
+
+						// Fix the user's input to add an escape character to every '\'
+						StrManip.duplicateCharacter(file_name_and_loca, '\\');
+
+						break;
+					}
+					else if (split_strings[i] == "-fE" && i < split_strings_size -2)
+					{
+						file_name_and_loca = split_strings[i + 1];
+						file_encryption_option = split_strings[i + 2];
+
+						// Fix the user's input to add an escape character to every '\'
+						std::string copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
+						copied_file_name_and_location += ".enc";
+
+						// Copy the file before encrypting it.
+						copyFile(file_name_and_loca.c_str(), copied_file_name_and_location.c_str());
+
+						// Encrypt the copied file.
+						// beep boop encryption(file_encryption_option);
+
+						break;
+					}
 				}
+			
+				// Send the file
+				sendFile(file_name_and_loca.c_str());
 			}
+
 
 			else // Continue doing normal chat operation.
 			{
+				// User input can't exceed USHRT_MAX b/c that is the maximum size
+				// that is able to be sent to the peer. (artifically limited).
+				size_t user_input_length = user_input.length();
+				if (user_input_length > USHRT_MAX)
+				{
+					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
+					return;
+				}
+
+				// First 3 bytes are reserved for flags and the "packet" size.
+				user_input.insert(CR_CHAT_MESSAGE, 0);
+				user_input.insert(1, 1, (char)(user_input_length >> 8));
+				user_input.insert(1, 1, (char)(user_input_length << 8) & 0xff);
 				int b = sendMutex(user_input.c_str(), user_input.length(), CR_CHAT_MESSAGE);
 				if (b == SOCKET_ERROR)
 				{
@@ -1161,11 +1342,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	bool Connection::sendFile(const char * file_name)
 	{
 
-		FILE *ReadFile;
+		// sha checking?
+
 
 		// Open the file
 		// split_strings[0] should be "-f"
 		// split_strings[1] should be the file name, and location.
+		FILE *ReadFile;
 		ReadFile = fopen(file_name, "rb");
 		if (ReadFile == NULL)
 		{
@@ -1199,15 +1382,43 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 
 		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
-		const size_t buffer_size = 8 * 1024 * 1024;//maybe double this b/c it isn't unsigned??
+		// Buffer size must NOT be bigger than 65,536 bytes (u_short).
+		const size_t buffer_size = USHRT_MAX;
 		char* buffer = new char[buffer_size];
 
-		std::cout << "Sending file...\n";
+		// We are treating bytes_read as a u_short, instead of size_t
+		static_assert(buffer_size <= USHRT_MAX,
+			"Buffer size must NOT be bigger than USHRT_MAX.");
+
+		std::cout << "Sending file: " << file_name << "\n";
 		do
 		{
-			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
+			// The first 3 chars of the buffer are reserved for:
+			// [0] Flag to tell the peer what kind of packet this is (file, chat)
+			// [1] both [1] and [2] combined are considered a u_short.
+			// [2] the u_short is to tell the peer what the size of the buffer is.
+			//
+			// Example: you want to send your peer a 50,000 byte file.
+			// So you sendMutex() 10,000 bytes at a time. The u_short [1] and [2]
+			// will tell the peer to treat the next 10,000 bytes as whatever the flag is set to.
+			// In this case the flag would be set to 'file'.
+			bytes_read = fread(buffer + 3, 1, buffer_size -3, ReadFile);
 			if (bytes_read)
-				bytes_sent = sendMutex(buffer, bytes_read, 100);
+			{
+				buffer[0] = CR_FILE;
+				// Converting bytes_read to Big endian and placing it in [1] and [2]
+				// so that the person we are sending to will know the size of our "packet"
+				// so to speak.
+				buffer[1] = (char)(bytes_read >> 8);
+				buffer[2] = (bytes_read << 8) & 0xff;
+
+				bytes_sent = sendMutex(buffer, bytes_read, CR_FILE);
+				if (bytes_sent == SOCKET_ERROR)
+				{
+					std::cout << "sendMutex() in sendFile() failed. File transfer stopped.\n";
+					break;
+				}
+			}
 			else
 				bytes_sent = 0;
 
@@ -1248,4 +1459,23 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		m.unlock();
 		return global_winner;
+	}
+
+
+	bool Connection::askPeerIfHeDesiresFile()
+	{
+		/*
+		send message "Attempting to send you a file: " << file_name << " size: " << file_size << "\n";
+		"Do you wish to accept? Y\\N\n";
+		recv a message;
+		if message == "y || Y";
+		{
+			sendFile(filename, etc);
+		}
+		else
+		{
+			std::cout << "User declined the file transfer.\n";
+			return false;
+		}
+		*/
 	}

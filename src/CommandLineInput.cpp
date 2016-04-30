@@ -168,6 +168,20 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
+			else if (arg[i] == "-f" && i < arg_size - 1)
+			{
+				transfer_a_file = true;
+				file_name_and_location = argv[i + 1];
+				++i;
+			}
+			else if (arg[i] == "-fE" && i < arg_size - 2)
+			{
+				transfer_an_encrypted_file = true;
+				file_name_and_location_to_be_encrypted = argv[i + 1];
+				file_encryption_option = argv[i + 2];
+
+				i += 2;
+			}
 			else if (arg[i] == "--examples")
 			{
 				Examples();
@@ -180,7 +194,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "-lan")
 			{
 				use_lan_only = true;
-				use_upnp_to_connect_to_peer = false;	// This is a wonky way to do this. Think of a better way.
+				use_upnp_to_connect_to_peer = false;
 			}
 			else if (arg[i] == "-spf")
 			{

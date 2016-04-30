@@ -231,8 +231,25 @@ int main(int argc, char *argv[])
 	Connection ChatServer;
 	Connection ChatClient;
 
+	if (CLI.transfer_a_file == true)
+	{
+		ChatServer.does_user_want_to_send_a_file = true;
+		ChatServer.file_name_and_loc = CLI.file_name_and_location;
 
-	if (CLI.show_info_upnp == true)
+		ChatClient.does_user_want_to_send_a_file = true;
+		ChatClient.file_name_and_loc = CLI.file_name_and_location;
+	}
+	else if (CLI.transfer_an_encrypted_file == true)
+	{
+		ChatServer.does_user_want_to_send_an_encrypted_file = true;
+		ChatServer.file_name_and_loc_to_be_encrypted = CLI.file_name_and_location_to_be_encrypted;
+		ChatServer.file_encryption_option = CLI.file_encryption_option;
+
+		ChatClient.does_user_want_to_send_an_encrypted_file = true;
+		ChatClient.file_name_and_loc_to_be_encrypted = CLI.file_name_and_location_to_be_encrypted;
+		ChatClient.file_encryption_option = CLI.file_encryption_option;
+	}
+	else if (CLI.show_info_upnp == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneShowInformation();
@@ -267,7 +284,7 @@ int main(int argc, char *argv[])
 		// Give IP and port info to the ChatServer and ChatClient instance
 		cliGivesIPAndPortToChatProgram(&CLI, &ChatServer, &ChatClient);
 	}
-	else if (CLI.use_upnp_to_connect_to_peer == true)
+	if (CLI.use_upnp_to_connect_to_peer == true)
 	{
 		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
 							// If I could make this a plug-in or something of the sort to automatically
@@ -360,7 +377,7 @@ int main(int argc, char *argv[])
 	Connection::createStartServerThread(&ChatServer);			//<-----------------
 	Connection::createStartClientThread(&ChatClient);			//<----------------
 
-	// Wait for 2 ChatServer and ChatClient threads to finish
+	// Wait for ChatServer and ChatClient threads to finish
 #ifdef __linux__
 	int pret = pthread_join(Connection::thread0, NULL);
             if (pret)
