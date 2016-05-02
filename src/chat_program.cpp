@@ -532,9 +532,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	}
 
 	Connection* self = (Connection*)instance;
-	// or what?
+	// or what? update: i don't think so, i think i remember it saying that it essential calls self-> on everything for you.
 
 #if 0// TEMP SEND AUTO MSG
+	DEPRECATED DO NOT USE;
 	const char* sendbuf = nullptr;
 	std::string message_to_send = "This is an automated message from my receive loop.\n";
 
@@ -557,161 +558,186 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 #endif//1 TEMP SEND AUTO MSG
 	
 
-
-
+	// Helpful Information:
+	// Any time a 'message' is mentioned, it is referring to the idea of
+	// a whole message. That message may be broken up into packets and sent over the
+	// network, and when it gets to this recv() loop, it will read in as much as it can
+	// at a time. The entirety of a message is not always contained in the recv_buf,
+	// because the message could be so large that you will have to recv() multiple times
+	// in order to get the whole message. 
+	// References to 'message' have nothing to do with the recv_buf.
+	// the size and type of a message is determined by the peer, and the peer tells us
+	// the type and size of the message in the first CR_RESERVED_BUFFER_SPACE characters
+	// of his message that he sent us.
 
 	// Receive until the peer shuts down the connection
 	if (global_verbose == true)
 		std::cout << "Recv loop started...\n";
 
-	// Buffer for receiving messages
-	static const size_t RECV_BUF_LEN = 512;
-	char recv_buf[RECV_BUF_LEN];
 
-	const int DONE_READING_BYTES_FROM_LAST_RECV = 0;
+	enum RecvStateMachine
+	{
+		RECEIVE,
+		DECIDE_ACTION_BASED_ON_FLAG,
+		CHECK_FOR_FLAG,
+		CHECK_MESSAGE_SIZE_PART_ONE,
+		CHECK_MESSAGE_SIZE_PART_TWO,
+
+		EXIT_RECV_LOOP
+	};
+
+	size_t position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
+
+	uint8_t type_of_message_flag = CR_NO_FLAG;
+	size_t message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+	size_t message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
+
+	size_t position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
+
+
+	// Buffer for receiving messages
+	static const size_t recv_buf_len = 512;
+	char recv_buf[recv_buf_len];
 
 	int bytes = 0;
-	size_t position_in_message = 0;
+	int state = RECEIVE;
+	bool continue_looping = true;
 
-	size_t message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
-	size_t message_size_part_one = CR_SIZE_NOT_ASSIGNED;
-
-	size_t position_in_recv_buf = RECV_BUF_LEN;	// the current cursor position inside the buffer.
-	uint8_t type_of_message_flag = CR_NO_FLAG;
-	while (1)
+	// RecvStateMachine
+	while (continue_looping)
 	{
-		if (position_in_recv_buf >= bytes)
+		switch (state)
 		{
-			bytes = recv(global_socket, recv_buf, RECV_BUF_LEN, 0);
-			position_in_recv_buf = CR_BEGIN;
+		case RECEIVE:
+		{
+			bytes = recv(global_socket, recv_buf, recv_buf_len, 0);
+			if (bytes > 0)
+			{
+				position_in_recv_buf = CR_BEGIN;
+				state = DECIDE_ACTION_BASED_ON_FLAG;
+				break;
+			}
+			else
+			{
+				SockStuff.getError(bytes);
+				std::cout << "recv() failed. loopedReceiveMessagesThread(). State machine.\n";
+				state = EXIT_RECV_LOOP;// make it go to default
+				break;
+			}
 		}
-		// If successfully received something
-		if (bytes > 0)
+		case DECIDE_ACTION_BASED_ON_FLAG:
 		{
-			// Set the cursor in the buffer to the start position.
-			//position_in_recv_buf = CR_BEGIN;
-
-			// If the position_in_message >= message_size, then either we have finished
-			// displaying or writing the peer's message, or we don't know the message_size yet.
-			// If we don't know the message_size yet that would be like trying to compare: something < 0
-			// which means if we don't know message_size yet, lets find out (go to else)
+			// If we haven't finished dealing with the user's message, enter here.
 			if (position_in_message < message_size)
 			{
-				// if true, print out the message to terminal
 				if (type_of_message_flag == CR_CHAT)
 				{
 					// Print out the message to terminal
 					std::cout << "\n";
 					std::cout << "Peer: ";
-					for (; (position_in_recv_buf < (u_int)bytes) && (position_in_message < message_size); ++position_in_recv_buf, ++position_in_message)
+					for (; (position_in_recv_buf < (u_int)bytes) && (position_in_message < message_size);
+						++position_in_recv_buf, ++position_in_message)
 					{
 						std::cout << recv_buf[position_in_recv_buf];
-						//++position_in_recv_buf; // plus one the recv_buf cursor
-						//++position_in_message;  // position_in_message out of message_size messages have been printed out.
 					}
 					std::cout << "\n";
 				}
 				else if (type_of_message_flag == CR_FILE)
 				{
 					// Write the file to disk.
-
 				}
 				else
 				{
 					std::cout << "Fatal Error: Unidentified message has been received.\n";
-					return;
+					state = EXIT_RECV_LOOP;
+					break;
 				}
 
-				
+				// Time to recv() again if we have reached the end of the byte count in the buffer.
+				if (position_in_recv_buf == (u_int)bytes)
+				{
+					state = RECEIVE;
+					break;
+				}
 				// If we have reached the end of the peer's message (not the
 				// buffer, and not the amount of bytes received)
-				if (position_in_message == message_size)
+				else if (position_in_message == message_size)
 				{
-					// Resetting all the variables that are relevant to the peer's message
-					// Notably leaving variables for recv_buf alone.
-					message_size = CR_SIZE_NOT_ASSIGNED;// reset the incoming size because there is no current size.
 					position_in_message = CR_BEGIN;
-					type_of_message_flag = CR_NO_FLAG;
-					message_size_part_one = CR_SIZE_NOT_ASSIGNED;
-					//bytes = DONE_READING_BYTES_FROM_LAST_RECV;// THIS IS WRONG
-					// read the first 3 bytes again to determine flags
-
-					if (position_in_recv_buf >= bytes)
-						continue; //recv() again
-					else if (type_of_message_flag == CR_NO_FLAG) // safe to access first element of recv_buf
-					{
-						type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
-						//++position_in_message; // because this is still considered part of the peer's new message
-						++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
-					}
-
-					// Getting half of the u_short size of the message
-					if (position_in_recv_buf >= bytes)
-						continue;
-					else if (message_size_part_one == CR_SIZE_NOT_ASSIGNED)
-					{
-						message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
-						message_size_part_one = message_size_part_one << 8;
-						//++position_in_message;
-						++position_in_recv_buf;
-					}
-
-					// getting the second half of the u_short size of the message
-					if (position_in_recv_buf >= bytes)
-						continue;
-					else if (message_size == CR_SIZE_NOT_ASSIGNED)
-					{
-						message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
-						//++position_in_message;
-						++position_in_recv_buf;
-					}
+					message_size = CR_SIZE_NOT_ASSIGNED;
+					state = CHECK_FOR_FLAG;
+					break;
 				}
-
-				// continue the while loop, recv() again.
 			}
-
-			/**************** Get flags and message size ******************/
-			// messag_b_count must be the same size as message_size. Therefore we
-			// have completed printing out the peer's message, and now need to look
-			// for the flag and size of the peer's next incoming message.
-			else
+			else// must have a new message from the peer. Lets check the flag and size of the message.
 			{
-				if (position_in_recv_buf >= bytes)
-					continue; //recv() again
-				else
-				{
-					type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
-					//++position_in_message; // because this is still considered part of the peer's new message
-					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
-				}
-
-				// Getting half of the u_short size of the message
-				if (position_in_recv_buf >= bytes)
-					continue;
-				else
-				{
-					message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
-					message_size_part_one = message_size_part_one << 8;
-					//++position_in_message;
-					++position_in_recv_buf;
-				}
-
-				// getting the second half of the u_short size of the message
-				if (position_in_recv_buf >= bytes)
-					continue;
-				else
-				{
-					message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
-					//++position_in_message;
-					++position_in_recv_buf;
-				}
+				position_in_message = CR_BEGIN;
+				message_size = CR_SIZE_NOT_ASSIGNED;
+				state = CHECK_FOR_FLAG;
+				break;
 			}
-		}
-		else
-		{
-			std::cout << "Exiting.\n";
+
+			// this shouldn't be reached?
+			std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+			std::cout << "Catastrophic failure.\n";
+			state = EXIT_RECV_LOOP;
 			break;
 		}
+		case CHECK_FOR_FLAG:
+		{
+			if (position_in_recv_buf >= bytes)
+			{
+				state = RECEIVE;
+				break;
+			}
+			else
+			{
+				type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
+				++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
+				state = CHECK_MESSAGE_SIZE_PART_ONE;
+				break;
+			}
+		}
+		case CHECK_MESSAGE_SIZE_PART_ONE:
+		{
+			// Getting half of the u_short size of the message
+			if (position_in_recv_buf >= bytes)
+			{
+				state = RECEIVE;
+				break;
+			}
+			else
+			{
+				message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
+				message_size_part_one = message_size_part_one << 8;
+				++position_in_recv_buf;
+				state = CHECK_MESSAGE_SIZE_PART_TWO;
+				break;
+			}
+		}
+		case CHECK_MESSAGE_SIZE_PART_TWO:
+		{
+			// getting the second half of the u_short size of the message
+			if (position_in_recv_buf >= bytes)
+			{
+				state = RECEIVE;
+				break;
+			}
+			else
+			{
+				message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
+				++position_in_recv_buf;
+				state = DECIDE_ACTION_BASED_ON_FLAG;
+				break;
+			}
+		}
+		default:
+		{
+			std::cout << "Exiting.\n";
+			continue_looping = false;
+			break;
+		}
+		}//end switch
 	}
 
 	return;
