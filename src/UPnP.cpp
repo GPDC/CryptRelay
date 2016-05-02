@@ -404,11 +404,9 @@ void UPnP::getListOfPortForwards()
 		// If the list was successfully retrieved, print to console
 		if (r == 0)
 		{
-
 			printf("%2d %s %10s->%s:%-5s '%s'     %s         '%s'\n",
 				i, protocol, ext_port, internal_client, internal_port,
 				description, lease_time, remote_host);
-
 		}
 		else
 			printf("GetGenericPortMappingEntry() returned %d (%s)\n",
@@ -460,7 +458,52 @@ bool UPnP::autoAddPortForwardRule()
 				// 501 == Action failed. The router is telling us this error, not the library. It could be that
 				// the router doesn't supply detailed error info; it is just reporting that the action failed.
 				// Ergo we try again assuming that its just because the port is in use by another client on the LAN.
-				case 718 || 501:
+				case 501:
+				{
+					// This case will be tried a maximum of try_again_count_limit times.
+					// The port will add +1 to itself every time it encounters this case.
+					if (global_verbose == true)
+						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
+
+					// Making it an integer for easy manipulation
+					int i_internal_port = stoi(my_internal_port);
+					int i_external_port = stoi(my_external_port);
+
+					// Making sure we don't ++ over the maximum size of a unsigned short
+					if ((i_internal_port < USHRT_MAX && i_external_port < USHRT_MAX)
+						&& (i_internal_port > 0 && i_external_port > 0))
+					{
+						++i_internal_port;
+						++i_external_port;
+					}
+					else // Must have been too big to be a port, let's just give it an arbitrary port number.
+					{
+						i_internal_port = 30207;
+						i_external_port = 30207;
+					}
+
+					// Convert it back to string
+					my_internal_port = std::to_string(i_internal_port);
+					my_external_port = std::to_string(i_external_port);
+
+					++try_again_count;
+					try_again = true;
+
+					// Making sure error info is displayed even after that many attempts has failed.
+					if (try_again_count == try_again_count_limit)
+					{
+						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
+							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+						try_again = false;
+					}
+
+					break;
+				}
+				// 718 == Port forward entry conflicts with one that is in use by another client on the LAN.
+				// 501 == Action failed. The router is telling us this error, not the library. It could be that
+				// the router doesn't supply detailed error info; it is just reporting that the action failed.
+				// Ergo we try again assuming that its just because the port is in use by another client on the LAN.
+				case 718:
 				{
 					// This case will be tried a maximum of try_again_count_limit times.
 					// The port will add +1 to itself every time it encounters this case.

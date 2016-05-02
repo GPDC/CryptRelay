@@ -86,10 +86,18 @@ SOCKET Connection::global_socket;
 
 // Flags for sendMutex() that indicated what the message is being used for.
 const int8_t Connection::CR_NO_FLAG = 0;
-const int8_t Connection::CR_CHAT_MESSAGE = 1;
+const int8_t Connection::CR_BEGIN = 0;
+const int8_t Connection::CR_SIZE_NOT_ASSIGNED = 0;
+const int8_t Connection::CR_CHAT = 1;
 const int8_t Connection::CR_ENCRYPTED_CHAT_MESSAGE = 2;
 const int8_t Connection::CR_FILE = 30;
 const int8_t Connection::CR_ENCRYPTED_FILE = 31;
+
+
+
+// How many characters at the beginning of the buffer that should be
+// reserved for usage of a flag, and size of the "packet"
+const int8_t Connection::CR_RESERVED_BUFFER_SPACE = 3;
 
 
 Connection::Connection()
@@ -317,78 +325,18 @@ void Connection::serverThread(void * instance)
 	// Display who the user has connected to.
 	self->coutPeerIPAndPort(global_socket);
 
-	// Start up file transfer instead of chat.
-	if (self->does_user_want_to_send_a_file == true)
-	{
-		//// spin up recv_chat_msgs thread pls
-		StringManip StrManip;
-		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc, '\\');
+	// Receive messages until there is an error or connection is closed.
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
+	// Get the user's input from the terminal, and check
+	// to see if the user wants to do something special,
+	// else just send the message that the user typed out.
+	self->LoopedGetUserInput();
 
-
-		//StringManip StrManip;
-		//std::vector <std::string> split_strings;
-
-		//// Split the string into multiple strings for every space.
-		//if (StrManip.split(file_name_and_loc, ' ', split_strings) == false)
-		//	std::cout << "Split failed?\n";
-
-		//// get the size of the array
-		//size_t split_strings_size = split_strings.size();
-
-		//// There should be two strings in the vector.
-		//// [0] should be -f
-		//// [1] should be the file name
-		//if (split_strings_size < 2)
-		//{
-		//	std::cout << "Error, too few arguments supplied to -f.\n";
-		//}
-		//else
-		//{
-		//	// Send the file
-		//	self->readAndSendTheFileThread(user_input.c_str());
-		//}
-
-		if (self->sendFile(modified_file_name.c_str()) == false)
-		{
-			std::cout << "sendFile() failed.\n";
-		}
-		return;
-	}
-	else if (self->does_user_want_to_send_an_encrypted_file == true)
-	{
-		StringManip StrManip;
-		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc_to_be_encrypted, '\\');
-
-		// Copy the file before encrypting it.
-		std::string copied_file_to_be_encrypted = modified_file_name + ".enc";
-		self->copyFile(modified_file_name.c_str(), copied_file_to_be_encrypted.c_str());
-
-		// Encrypt the copied file.
-		// switchcase(file_encryption_option)
-		// case: (RSA-4096), encryptRSALARGE(copied_file_to_be_encyrpted.c_str());
-
-		// if successfully encrypted, send it
-		self->sendFile(modified_file_name.c_str());
-		return;
-	}
-	else
-	{
-		// Receive messages as until there is an error or connection is closed.
-		// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-		std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
-
-		// Get the user's input from the terminal, and check
-		// to see if the user wants to do something special,
-		// else just send the message that the user typed out.
-		self->LoopedGetUserInput();
-
-		// wait here until x thread finishes.
-		if (rcv_thread.joinable())
-			rcv_thread.join();
-	}
-
-
+	// wait here until x thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
 
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
@@ -547,78 +495,21 @@ void Connection::clientThread(void * instance)
 	// Display who the user is connected with.
 	self->coutPeerIPAndPort(global_socket);
 
-	// Start up file transfer instead of chat.
-	if (self->does_user_want_to_send_a_file == true)
-	{
-		//// spin up recv_chat_msgs thread pls
-		StringManip StrManip;
-		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc, '\\');
 
 
 
-		//StringManip StrManip;
-		//std::vector <std::string> split_strings;
+	// Receive messages until there is an error or connection is closed.
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
-		//// Split the string into multiple strings for every space.
-		//if (StrManip.split(file_name_and_loc, ' ', split_strings) == false)
-		//	std::cout << "Split failed?\n";
+	// Get the user's input from the terminal, and check
+	// to see if the user wants to do something special,
+	// else just send the message that the user typed out.
+	self->LoopedGetUserInput();
 
-		//// get the size of the array
-		//size_t split_strings_size = split_strings.size();
-
-		//// There should be two strings in the vector.
-		//// [0] should be -f
-		//// [1] should be the file name
-		//if (split_strings_size < 2)
-		//{
-		//	std::cout << "Error, too few arguments supplied to -f.\n";
-		//}
-		//else
-		//{
-		//	// Send the file
-		//	self->readAndSendTheFileThread(user_input.c_str());
-		//}
-
-		//askPeerIfHeDesiresFile();
-
-		if (self->sendFile(modified_file_name.c_str()) == false)
-		{
-			std::cout << "sendFile() failed.\n";
-		}
-		return;
-	}
-	else if (self->does_user_want_to_send_an_encrypted_file == true)
-	{
-		StringManip StrManip;
-		std::string modified_file_name = StrManip.duplicateCharacter(self->file_name_and_loc_to_be_encrypted, '\\');
-
-		// Copy the file before encrypting it.
-		std::string copied_file_to_be_encrypted = modified_file_name + ".enc";
-		self->copyFile(modified_file_name.c_str(), copied_file_to_be_encrypted.c_str());
-
-		// Encrypt the copied file.
-		// switchcase(file_encryption_option)
-		// case: (RSA-4096), encryptRSALARGE(copied_file_to_be_encyrpted.c_str());
-
-		// if successfully encrypted, send it
-		self->sendFile(modified_file_name.c_str());
-		return;
-	}
-	else
-	{
-		// Receive messages until there is an error or connection is closed.
-		// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-		std::thread rcv_thread(&Connection::loopedReceiveChatMessagesThread, self, instance);
-
-		// Get the user's input from the terminal, and check
-		// to see if the user wants to do something special,
-		// else just send the message that the user typed out.
-		self->LoopedGetUserInput();
-
-		// wait here until x thread finishes.
-		if (rcv_thread.joinable())
-			rcv_thread.join();
-	}
+	// wait here until x thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
 
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
@@ -631,28 +522,28 @@ void Connection::clientThread(void * instance)
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
 // To find out who we were connected to, use getnameinfo()
-void Connection::loopedReceiveChatMessagesThread(void * instance)
+void Connection::loopedReceiveMessagesThread(void * instance)
 {
 	// so is this needed with std::thread ???
 	if (instance == nullptr)
 	{
-		std::cout << "Instance was null. loopedReceiveChatMessagesThread()\n";
+		std::cout << "Instance was null. loopedReceiveMessagesThread()\n";
 		return;
 	}
 
 	Connection* self = (Connection*)instance;
 	// or what?
 
-#if 1// TEMP SEND AUTO MSG
+#if 0// TEMP SEND AUTO MSG
 	const char* sendbuf = nullptr;
 	std::string message_to_send = "This is an automated message from my receive loop.\n";
 
 	//send this message once
 	sendbuf = message_to_send.c_str();
-	int wombocombo = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
-	if (wombocombo == SOCKET_ERROR)
+	int b = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
+	if (b == SOCKET_ERROR)
 	{
-		self->SockStuff.getError(wombocombo);
+		self->SockStuff.getError(b);
 		std::cout << "send failed.\n";
 		self->SockStuff.myCloseSocket(global_socket);
 		//return;
@@ -674,63 +565,177 @@ void Connection::loopedReceiveChatMessagesThread(void * instance)
 		std::cout << "Recv loop started...\n";
 
 	// Buffer for receiving messages
-	static const int recv_buf_len = 512;
-	char recv_buf[recv_buf_len];
+	static const size_t RECV_BUF_LEN = 512;
+	char recv_buf[RECV_BUF_LEN];
 
-	int bytes;
-	do
+	const int DONE_READING_BYTES_FROM_LAST_RECV = 0;
+
+	int bytes = 0;
+	size_t position_in_message = 0;
+
+	size_t message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
+	size_t message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+
+	size_t position_in_recv_buf = RECV_BUF_LEN;	// the current cursor position inside the buffer.
+	uint8_t type_of_message_flag = CR_NO_FLAG;
+	while (1)
 	{
-		bytes = recv(global_socket, recv_buf, recv_buf_len, 0);
+		if (position_in_recv_buf >= bytes)
+		{
+			bytes = recv(global_socket, recv_buf, RECV_BUF_LEN, 0);
+			position_in_recv_buf = CR_BEGIN;
+		}
+		// If successfully received something
 		if (bytes > 0)
 		{
-			/*
-			~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
-			HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-			CONSOLE_SCREEN_BUFFER_INFO csbiInfo;	//console screen buffer info
-			COORD CursorCoordinatesStruct;
-			ZeroMemory(&CursorCoordinatesStruct, sizeof(CursorCoordinatesStruct));
+			// Set the cursor in the buffer to the start position.
+			//position_in_recv_buf = CR_BEGIN;
 
-			if (GetConsoleScreenBufferInfo(hStdout, &csbiInfo) == 0)	//0,0 is top left of console
+			// If the position_in_message >= message_size, then either we have finished
+			// displaying or writing the peer's message, or we don't know the message_size yet.
+			// If we don't know the message_size yet that would be like trying to compare: something < 0
+			// which means if we don't know message_size yet, lets find out (go to else)
+			if (position_in_message < message_size)
 			{
-			getError();
-			std::cout << "GetConsoleScreenBufferInfo failed.\n";
+				// if true, print out the message to terminal
+				if (type_of_message_flag == CR_CHAT)
+				{
+					// Print out the message to terminal
+					std::cout << "\n";
+					std::cout << "Peer: ";
+					for (; (position_in_recv_buf < (u_int)bytes) && (position_in_message < message_size); ++position_in_recv_buf, ++position_in_message)
+					{
+						std::cout << recv_buf[position_in_recv_buf];
+						//++position_in_recv_buf; // plus one the recv_buf cursor
+						//++position_in_message;  // position_in_message out of message_size messages have been printed out.
+					}
+					std::cout << "\n";
+				}
+				else if (type_of_message_flag == CR_FILE)
+				{
+					// Write the file to disk.
+
+				}
+				else
+				{
+					std::cout << "Fatal Error: Unidentified message has been received.\n";
+					return;
+				}
+
+				
+				// If we have reached the end of the peer's message (not the
+				// buffer, and not the amount of bytes received)
+				if (position_in_message == message_size)
+				{
+					// Resetting all the variables that are relevant to the peer's message
+					// Notably leaving variables for recv_buf alone.
+					message_size = CR_SIZE_NOT_ASSIGNED;// reset the incoming size because there is no current size.
+					position_in_message = CR_BEGIN;
+					type_of_message_flag = CR_NO_FLAG;
+					message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+					//bytes = DONE_READING_BYTES_FROM_LAST_RECV;// THIS IS WRONG
+					// read the first 3 bytes again to determine flags
+
+					if (position_in_recv_buf >= bytes)
+						continue; //recv() again
+					else if (type_of_message_flag == CR_NO_FLAG) // safe to access first element of recv_buf
+					{
+						type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
+						//++position_in_message; // because this is still considered part of the peer's new message
+						++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
+					}
+
+					// Getting half of the u_short size of the message
+					if (position_in_recv_buf >= bytes)
+						continue;
+					else if (message_size_part_one == CR_SIZE_NOT_ASSIGNED)
+					{
+						message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
+						message_size_part_one = message_size_part_one << 8;
+						//++position_in_message;
+						++position_in_recv_buf;
+					}
+
+					// getting the second half of the u_short size of the message
+					if (position_in_recv_buf >= bytes)
+						continue;
+					else if (message_size == CR_SIZE_NOT_ASSIGNED)
+					{
+						message_size = message_size_part_one | (int8_t)recv_buf[2];
+						//++position_in_message;
+						++position_in_recv_buf;
+					}
+				}
+
+				// continue the while loop, recv() again.
 			}
 
-			CursorCoordinatesStruct.X = csbiInfo.dwCursorPosition.X;
-			CursorCoordinatesStruct.Y = csbiInfo.dwCursorPosition.Y;
-
-			//only 299 or 300 lines in the Y position?
-			SetConsoleCursorPosition(hStdout, CursorCoordinatesStruct);
-			~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-			*/
-			std::cout << "\n";
-			std::cout << "Peer: ";
-			for (int i = 0; i < bytes; ++i)
+			/**************** Get flags and message size ******************/
+			// messag_b_count must be the same size as message_size. Therefore we
+			// have completed printing out the peer's message, and now need to look
+			// for the flag and size of the peer's next incoming message.
+			else
 			{
-				std::cout << recv_buf[i];
-			}
-			std::cout << "\n";
+				if (position_in_recv_buf >= RECV_BUF_LEN)
+					continue; //recv() again
+				else if (type_of_message_flag == CR_NO_FLAG) // safe to access first element of recv_buf
+				{
+					type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
+					//++position_in_message; // because this is still considered part of the peer's new message
+					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
+				}
 
-			if (global_verbose == true)
-				std::cout << "dbg Bytes recvd: " << bytes << "\n";
-		}
-		else if (bytes == 0)
-		{
-			printf("Connection closing...\n");
-			return;
+				// Getting half of the u_short size of the message
+				if (position_in_recv_buf >= RECV_BUF_LEN)
+					continue;
+				else if (message_size_part_one == CR_SIZE_NOT_ASSIGNED)
+				{
+					message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
+					message_size_part_one = message_size_part_one << 8;
+					//++position_in_message;
+					++position_in_recv_buf;
+				}
+
+				// getting the second half of the u_short size of the message
+				if (position_in_recv_buf >= RECV_BUF_LEN)
+					continue;
+				else if (message_size == CR_SIZE_NOT_ASSIGNED)
+				{
+					message_size = message_size_part_one | (int8_t)recv_buf[2];
+					//++position_in_message;
+					++position_in_recv_buf;
+				}
+			}
 		}
 		else
 		{
-			self->SockStuff.getError(bytes);
-			std::cout << "recv failed.\n";
-			self->SockStuff.myCloseSocket(global_socket);
-			return;
+			std::cout << "Exiting.\n";
+			break;
 		}
-	} while (bytes > 0);
+	}
 
-	// Should ever get here, but if it did, then the connection was closed normally.
-	std::cout << "receiveMessage() impossible area.\n";	// In case I messed something up, i'll know!
 	return;
+
+	/*
+	~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
+	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
+	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;	//console screen buffer info
+	COORD CursorCoordinatesStruct;
+	ZeroMemory(&CursorCoordinatesStruct, sizeof(CursorCoordinatesStruct));
+
+	if (GetConsoleScreenBufferInfo(hStdout, &csbiInfo) == 0)	//0,0 is top left of console
+	{
+	getError();
+	std::cout << "GetConsoleScreenBufferInfo failed.\n";
+	}
+
+	CursorCoordinatesStruct.X = csbiInfo.dwCursorPosition.X;
+	CursorCoordinatesStruct.Y = csbiInfo.dwCursorPosition.Y;
+
+	//only 299 or 300 lines in the Y position?
+	SetConsoleCursorPosition(hStdout, CursorCoordinatesStruct);
+	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+	*/
 }
 
 // DEPRECATED
@@ -1089,7 +1094,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				// [1] should be the file name
 				if (split_strings_size < 2)
 				{
-					std::cout << "Error, too few arguments supplied to -f.\n";
+					std::cout << "Error, not enough arguments given.\n";
 				}
 
 				std::string file_name_and_loca;
@@ -1140,18 +1145,49 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
 					return;
 				}
+				const size_t buf_len = CR_RESERVED_BUFFER_SPACE + user_input_length ;
+				char* buf = new char[buf_len];// this is quite intensive, maybe have an already created one?
 
-				// First 3 bytes are reserved for flags and the "packet" size.
-				user_input.insert(CR_CHAT_MESSAGE, 0);
-				user_input.insert(1, 1, (char)(user_input_length >> 8));
-				user_input.insert(1, 1, (char)(user_input_length << 8) & 0xff);
-				int b = sendMutex(user_input.c_str(), user_input.length(), CR_CHAT_MESSAGE);
+				if (buf_len >= 3)
+				{
+					//// Copy the size of the message into the buf as big endian.
+					//buf[0] = CR_CHAT;								// Message flag
+					//buf[1] = (char)(user_input_length >> 8);		// size of the message we are sending
+					//buf[2] = (char)(user_input_length << 8) & 0xff;	// size of the message we are sending
+
+					// This is the same as ^, but maybe easier to understand? idk.
+
+					buf[0] = CR_CHAT;								// Message flag
+					// Copy the size of the message into the buf as big endian.
+					u_short msg_sz = (u_short)htons(user_input_length);
+					size_t msg_sz_size = sizeof(msg_sz);
+					memcpy(buf + 1, &msg_sz, msg_sz_size);
+
+					
+
+					if (buf_len >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
+						memcpy(buf + CR_RESERVED_BUFFER_SPACE, user_input.c_str(), user_input_length);
+					std::cout << "DEBUG OUTPUT:\n";
+					for (u_int z = 0; z < buf_len; ++z)
+					{
+						std::cout << z << "_" << +buf[z] << "\n";
+					}
+				}
+				else
+				{
+					"Programmer error. buf_len < 3. loopedGetUserInput()";
+					return;
+				}
+				int b = sendMutex(buf, buf_len, CR_CHAT);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
 						std::cout << "Exiting loopedGetUserInput()\n";
+					delete buf;
 					return;
 				}
+
+				delete buf;
 			}
 		}
 
@@ -1357,7 +1393,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		}
 
 
-		int did_file_stat_error = false;
+		//int did_file_stat_error = false;
 		struct stat FileStatBuf;
 
 		// Get some statistics on the file, such as size, time created, etc.
@@ -1365,7 +1401,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (r == -1)
 		{
 			perror("Error getting file statistics");
-			did_file_stat_error = true;
+			//did_file_stat_error = true;
 		}
 		else
 		{
@@ -1402,7 +1438,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// So you sendMutex() 10,000 bytes at a time. The u_short [1] and [2]
 			// will tell the peer to treat the next 10,000 bytes as whatever the flag is set to.
 			// In this case the flag would be set to 'file'.
-			bytes_read = fread(buffer + 3, 1, buffer_size -3, ReadFile);
+			bytes_read = fread(buffer + CR_RESERVED_BUFFER_SPACE, 1, buffer_size - CR_RESERVED_BUFFER_SPACE, ReadFile);
 			if (bytes_read)
 			{
 				buffer[0] = CR_FILE;
@@ -1459,23 +1495,4 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		m.unlock();
 		return global_winner;
-	}
-
-
-	bool Connection::askPeerIfHeDesiresFile()
-	{
-		/*
-		send message "Attempting to send you a file: " << file_name << " size: " << file_size << "\n";
-		"Do you wish to accept? Y\\N\n";
-		recv a message;
-		if message == "y || Y";
-		{
-			sendFile(filename, etc);
-		}
-		else
-		{
-			std::cout << "User declined the file transfer.\n";
-			return false;
-		}
-		*/
 	}

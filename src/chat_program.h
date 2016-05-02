@@ -114,7 +114,7 @@ private:
 	// a race condition.
 	int setWinnerMutex(int the_winner);
 
-	void loopedReceiveChatMessagesThread(void * instance);
+	void loopedReceiveMessagesThread(void * instance);
 	void coutPeerIPAndPort(SOCKET s);
 
 	// Cross platform windows and linux thread exiting
@@ -144,14 +144,12 @@ private:
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void LoopedGetUserInput();
 
-	static const size_t global_sendbuf_size = 512;
-	char global_sendbuf[global_sendbuf_size];
-
 
 	// DEPRECATED?
 	void readAndSendTheFileThread(std::string file_name);
-	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
 
+
+	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 	bool sendFile(const char * file_name);
 
@@ -161,13 +159,14 @@ private:
 
 	// Flags for sendMutex() that indicated what the message is being used for.
 	static const int8_t CR_NO_FLAG;
-	static const int8_t CR_CHAT_MESSAGE;
+	static const int8_t CR_BEGIN;
+	static const int8_t CR_SIZE_NOT_ASSIGNED;
+	static const int8_t CR_CHAT;
 	static const int8_t CR_ENCRYPTED_CHAT_MESSAGE;
 	static const int8_t CR_FILE;
 	static const int8_t CR_ENCRYPTED_FILE;
 
-
-	bool askPeerIfHeDesiresFile();
+	static const int8_t CR_RESERVED_BUFFER_SPACE;	//not to be confused with the size or length of a buffer
 };
 
 #endif //chat_program_h__
