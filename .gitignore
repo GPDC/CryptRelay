@@ -12,6 +12,9 @@
 **/Release/
 **/x64/
 **/CryptRelay.vcxproj.user
+**/CryptRelay.VC.db
+
+my_current_commit_notes.txt
 
 gsoap-2.8/
 pjproject-2.4.5/

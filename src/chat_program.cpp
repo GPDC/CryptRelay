@@ -661,7 +661,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 						continue;
 					else if (message_size == CR_SIZE_NOT_ASSIGNED)
 					{
-						message_size = message_size_part_one | (int8_t)recv_buf[2];
+						message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
 						//++position_in_message;
 						++position_in_recv_buf;
 					}
@@ -676,9 +676,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			// for the flag and size of the peer's next incoming message.
 			else
 			{
-				if (position_in_recv_buf >= RECV_BUF_LEN)
+				if (position_in_recv_buf >= bytes)
 					continue; //recv() again
-				else if (type_of_message_flag == CR_NO_FLAG) // safe to access first element of recv_buf
+				else
 				{
 					type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
 					//++position_in_message; // because this is still considered part of the peer's new message
@@ -686,9 +686,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 
 				// Getting half of the u_short size of the message
-				if (position_in_recv_buf >= RECV_BUF_LEN)
+				if (position_in_recv_buf >= bytes)
 					continue;
-				else if (message_size_part_one == CR_SIZE_NOT_ASSIGNED)
+				else
 				{
 					message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
@@ -697,11 +697,11 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 
 				// getting the second half of the u_short size of the message
-				if (position_in_recv_buf >= RECV_BUF_LEN)
+				if (position_in_recv_buf >= bytes)
 					continue;
-				else if (message_size == CR_SIZE_NOT_ASSIGNED)
+				else
 				{
-					message_size = message_size_part_one | (int8_t)recv_buf[2];
+					message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
 					//++position_in_message;
 					++position_in_recv_buf;
 				}
