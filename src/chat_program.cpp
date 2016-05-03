@@ -575,169 +575,38 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		std::cout << "Recv loop started...\n";
 
 
-	enum RecvStateMachine
-	{
-		RECEIVE,
-		DECIDE_ACTION_BASED_ON_FLAG,
-		CHECK_FOR_FLAG,
-		CHECK_MESSAGE_SIZE_PART_ONE,
-		CHECK_MESSAGE_SIZE_PART_TWO,
 
-		EXIT_RECV_LOOP
-	};
 
-	size_t position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
+	position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
 
-	uint8_t type_of_message_flag = CR_NO_FLAG;
-	size_t message_size_part_one = CR_SIZE_NOT_ASSIGNED;
-	size_t message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
+	type_of_message_flag = CR_NO_FLAG;
+	message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+	message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
 
-	size_t position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
-
+	process_recv_buf_state = CHECK_FOR_FLAG;
 
 	// Buffer for receiving messages
 	static const size_t recv_buf_len = 512;
 	char recv_buf[recv_buf_len];
 
-	int bytes = 0;
-	int state = RECEIVE;
-	bool continue_looping = true;
-
-	// RecvStateMachine
-	while (continue_looping)
+	int bytes = 0;	
+	while (1)
 	{
-		switch (state)
+		
+		bytes = recv(global_socket, recv_buf, recv_buf_len, 0);
+		if (bytes > 0)
 		{
-		case RECEIVE:
-		{
-			bytes = recv(global_socket, recv_buf, recv_buf_len, 0);
-			if (bytes > 0)
-			{
-				position_in_recv_buf = CR_BEGIN;
-				state = DECIDE_ACTION_BASED_ON_FLAG;
+			// State machine that processes recv_buf and decides what to do
+			// based on the information in the buffer.
+			if (processRecvBuf(recv_buf, recv_buf_len, bytes) == false)
 				break;
-			}
-			else
-			{
-				SockStuff.getError(bytes);
-				std::cout << "recv() failed. loopedReceiveMessagesThread(). State machine.\n";
-				state = EXIT_RECV_LOOP;// make it go to default
-				break;
-			}
 		}
-		case DECIDE_ACTION_BASED_ON_FLAG:
+		else
 		{
-			// If we haven't finished dealing with the user's message, enter here.
-			if (position_in_message < message_size)
-			{
-				if (type_of_message_flag == CR_CHAT)
-				{
-					// Print out the message to terminal
-					std::cout << "\n";
-					std::cout << "Peer: ";
-					for (; (position_in_recv_buf < (u_int)bytes) && (position_in_message < message_size);
-						++position_in_recv_buf, ++position_in_message)
-					{
-						std::cout << recv_buf[position_in_recv_buf];
-					}
-					std::cout << "\n";
-				}
-				else if (type_of_message_flag == CR_FILE)
-				{
-					// Write the file to disk.
-				}
-				else
-				{
-					std::cout << "Fatal Error: Unidentified message has been received.\n";
-					state = EXIT_RECV_LOOP;
-					break;
-				}
-
-				// Time to recv() again if we have reached the end of the byte count in the buffer.
-				if (position_in_recv_buf == (u_int)bytes)
-				{
-					state = RECEIVE;
-					break;
-				}
-				// If we have reached the end of the peer's message (not the
-				// buffer, and not the amount of bytes received)
-				else if (position_in_message == message_size)
-				{
-					position_in_message = CR_BEGIN;
-					message_size = CR_SIZE_NOT_ASSIGNED;
-					state = CHECK_FOR_FLAG;
-					break;
-				}
-			}
-			else// must have a new message from the peer. Lets check the flag and size of the message.
-			{
-				position_in_message = CR_BEGIN;
-				message_size = CR_SIZE_NOT_ASSIGNED;
-				state = CHECK_FOR_FLAG;
-				break;
-			}
-
-			// this shouldn't be reached?
-			std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
-			std::cout << "Catastrophic failure.\n";
-			state = EXIT_RECV_LOOP;
+			SockStuff.getError(bytes);
+			std::cout << "recv() failed. loopedReceiveMessagesThread(). State machine.\n";
 			break;
 		}
-		case CHECK_FOR_FLAG:
-		{
-			if (position_in_recv_buf >= bytes)
-			{
-				state = RECEIVE;
-				break;
-			}
-			else
-			{
-				type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
-				++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
-				state = CHECK_MESSAGE_SIZE_PART_ONE;
-				break;
-			}
-		}
-		case CHECK_MESSAGE_SIZE_PART_ONE:
-		{
-			// Getting half of the u_short size of the message
-			if (position_in_recv_buf >= bytes)
-			{
-				state = RECEIVE;
-				break;
-			}
-			else
-			{
-				message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
-				message_size_part_one = message_size_part_one << 8;
-				++position_in_recv_buf;
-				state = CHECK_MESSAGE_SIZE_PART_TWO;
-				break;
-			}
-		}
-		case CHECK_MESSAGE_SIZE_PART_TWO:
-		{
-			// getting the second half of the u_short size of the message
-			if (position_in_recv_buf >= bytes)
-			{
-				state = RECEIVE;
-				break;
-			}
-			else
-			{
-				message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
-				++position_in_recv_buf;
-				state = DECIDE_ACTION_BASED_ON_FLAG;
-				break;
-			}
-		}
-		default:
-		{
-			std::cout << "Exiting.\n";
-			continue_looping = false;
-			break;
-		}
-		}//end switch
 	}
 
 	return;
@@ -1171,8 +1040,10 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
 					return;
 				}
-				const size_t buf_len = CR_RESERVED_BUFFER_SPACE + user_input_length ;
-				char* buf = new char[buf_len];// this is quite intensive, maybe have an already created one?
+
+				size_t amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
+				const size_t buf_len = amount_to_send;
+				char* buf = new char[buf_len];
 
 				if (buf_len >= 3)
 				{
@@ -1182,21 +1053,25 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					//buf[2] = (char)(user_input_length << 8) & 0xff;	// size of the message we are sending
 
 					// This is the same as ^, but maybe easier to understand? idk.
-
-					buf[0] = CR_CHAT;								// Message flag
+					buf[0] = CR_CHAT;	// Message flag
 					// Copy the size of the message into the buf as big endian.
-					u_short msg_sz = (u_short)htons(user_input_length);
-					size_t msg_sz_size = sizeof(msg_sz);
-					memcpy(buf + 1, &msg_sz, msg_sz_size);
+					u_short msg_sz = htons((u_short)user_input_length);
+					if (buf_len - 1 >= sizeof(msg_sz))
+						memcpy(buf + 1, &msg_sz, sizeof(msg_sz));
 
 					
-
-					if (buf_len >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
+					// Copy the user's message into the buf
+					if ((long long)buf_len >= ((long long)user_input_length - (long long)CR_RESERVED_BUFFER_SPACE))
 						memcpy(buf + CR_RESERVED_BUFFER_SPACE, user_input.c_str(), user_input_length);
-					std::cout << "DEBUG OUTPUT:\n";
-					for (u_int z = 0; z < buf_len; ++z)
+					else
 					{
-						std::cout << z << "_" << +buf[z] << "\n";
+						std::cout << "Message was too big for the send buf.\n";
+						return;
+					}
+					std::cout << "dbg OUTPUT:\n";
+					for (u_int z = 0; z < amount_to_send; ++z)
+					{
+						std::cout << z << "_" << (int)buf[z] << "\n";
 					}
 				}
 				else
@@ -1204,16 +1079,16 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					"Programmer error. buf_len < 3. loopedGetUserInput()";
 					return;
 				}
-				int b = sendMutex(buf, buf_len, CR_CHAT);
+				int b = sendMutex(buf, amount_to_send, CR_CHAT);//int b = sendMutex(buf, buf_len, CR_CHAT);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
 						std::cout << "Exiting loopedGetUserInput()\n";
-					delete buf;
+					//delete buf;
 					return;
 				}
 
-				delete buf;
+				//delete buf;
 			}
 		}
 
@@ -1521,4 +1396,136 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		m.unlock();
 		return global_winner;
+	}
+
+	bool Connection::processRecvBuf(char * recv_buf, size_t buf_len, int received_bytes)
+	{
+		size_t position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
+
+		// RecvStateMachin
+		while (1)
+		{
+			switch (process_recv_buf_state)
+			{
+			case DECIDE_ACTION_BASED_ON_FLAG:
+			{
+				// If we haven't finished dealing with the user's message, enter here.
+				if (position_in_message < message_size)
+				{
+					if (type_of_message_flag == CR_CHAT)
+					{
+						// Print out the message to terminal
+						std::cout << "\n";
+						std::cout << "Peer: ";
+						for (; (position_in_recv_buf < (u_int)received_bytes) && (position_in_message < message_size);
+							++position_in_recv_buf, ++position_in_message)
+						{
+							std::cout << recv_buf[position_in_recv_buf];
+						}
+						std::cout << "\n";
+					}
+					else if (type_of_message_flag == CR_FILE)
+					{
+						// Write the file to disk.
+					}
+					else
+					{
+						std::cout << "Fatal Error: Unidentified message has been received.\n";
+						process_recv_buf_state = ERROR_STATE;
+						break;
+					}
+
+					// Time to recv() again if we have reached the end of the byte count in the buffer.
+					if (position_in_recv_buf == (u_int)received_bytes)
+					{
+						return true;//process_recv_buf_state = RECEIVE;
+						break;
+					}
+					// If we have reached the end of the peer's message (not the
+					// buffer, and not the amount of bytes received)
+					else if (position_in_message == message_size)
+					{
+						position_in_message = CR_BEGIN;
+						message_size = CR_SIZE_NOT_ASSIGNED;
+						process_recv_buf_state = CHECK_FOR_FLAG;
+						break;
+					}
+				}
+				else// must have a new message from the peer. Lets check the flag and size of the message.
+				{
+					position_in_message = CR_BEGIN;
+					message_size = CR_SIZE_NOT_ASSIGNED;
+					process_recv_buf_state = CHECK_FOR_FLAG;
+					break;
+				}
+
+				// this shouldn't be reached?
+				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Catastrophic failure.\n";
+				process_recv_buf_state = ERROR_STATE;
+				break;
+			}
+			case CHECK_FOR_FLAG:
+			{
+				if (position_in_recv_buf >= (u_int)received_bytes)
+				{
+					return true;//process_recv_buf_state = RECEIVE;
+					break;
+				}
+				else
+				{
+					type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
+					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
+					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_ONE;
+					break;
+				}
+			}
+			case CHECK_MESSAGE_SIZE_PART_ONE:
+			{
+				// Getting half of the u_short size of the message
+				if (position_in_recv_buf >= (u_int)received_bytes)
+				{
+					return true;//process_recv_buf_state = RECEIVE;
+					break;
+				}
+				else
+				{
+					message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
+					message_size_part_one = message_size_part_one << 8;
+					++position_in_recv_buf;
+					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_TWO;
+					break;
+				}
+			}
+			case CHECK_MESSAGE_SIZE_PART_TWO:
+			{
+				// getting the second half of the u_short size of the message
+				if (position_in_recv_buf >= (u_int)received_bytes)
+				{
+					return true;//process_recv_buf_state = RECEIVE;
+					break;
+				}
+				else
+				{
+					message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
+					++position_in_recv_buf;
+					process_recv_buf_state = DECIDE_ACTION_BASED_ON_FLAG;
+					break;
+				}
+			}
+			case ERROR_STATE:
+			{
+				std::cout << "Exiting with error, state machine for recv().\n";
+				return false;
+			}
+			default:// currently nothing will cause this to execute.
+			{
+				std::cout << "State machine for recv() got to default. Exiting.\n";
+				return false;
+				break;
+			}
+			}//end switch
+		}
+
+		return true;
 	}

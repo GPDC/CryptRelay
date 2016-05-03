@@ -10,6 +10,7 @@ DIFFERENT way of file implementation: just use the same chat everything, and its
 -remove displaying of errors of closesocket and shutdown in the deconstructor for Connection class
 -file related: determine how to send a "flag" at the beginning of each packet so the receiver has noteworth info about that packet. Temporary workaround is just disable sending of chat messages while sending the file.
 ---uhhhhhh making it required to start the program with -f instead of during chat for now.
+- what would happen if a buffer was created but not enough memory was available to give to it? right now the user is in control of the buffer size of sending messages. This raises red flags in my head, but how big of a deal is this? look into it.
 
 # Think about possibly doing these:
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.

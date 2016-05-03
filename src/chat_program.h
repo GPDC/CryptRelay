@@ -167,6 +167,28 @@ private:
 	static const int8_t CR_ENCRYPTED_FILE;
 
 	static const int8_t CR_RESERVED_BUFFER_SPACE;	//not to be confused with the size or length of a buffer
+
+
+	// Variables necessary for processRecvBuf().
+	// They are here so that the state can be saved even after exiting the funciton.
+	int process_recv_buf_state;
+	size_t position_in_message;	// current cursor position inside the imaginary message sent by the peer.
+	uint8_t type_of_message_flag;
+	size_t message_size_part_one;
+	size_t message_size;		// peer told us this size
+
+	bool processRecvBuf(char * recv_buf, size_t buf_len, int byte_count);
+
+	enum RecvStateMachine
+	{
+		RECEIVE,
+		DECIDE_ACTION_BASED_ON_FLAG,
+		CHECK_FOR_FLAG,
+		CHECK_MESSAGE_SIZE_PART_ONE,
+		CHECK_MESSAGE_SIZE_PART_TWO,
+		ERROR_STATE,
+	};
+
 };
 
 #endif //chat_program_h__
