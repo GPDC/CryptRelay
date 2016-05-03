@@ -587,13 +587,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 	// Buffer for receiving messages
 	static const size_t recv_buf_len = 512;
-	char recv_buf[recv_buf_len];
+	u_char recv_buf[recv_buf_len];
 
 	int bytes = 0;	
 	while (1)
 	{
 		
-		bytes = recv(global_socket, recv_buf, recv_buf_len, 0);
+		bytes = recv(global_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
@@ -1043,7 +1043,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				size_t amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
 				const size_t buf_len = amount_to_send;
-				char* buf = new char[buf_len];
+				u_char* buf = new u_char[buf_len];
 
 				if (buf_len >= 3)
 				{
@@ -1079,7 +1079,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					"Programmer error. buf_len < 3. loopedGetUserInput()";
 					return;
 				}
-				int b = sendMutex(buf, amount_to_send, CR_CHAT);//int b = sendMutex(buf, buf_len, CR_CHAT);
+				int b = sendMutex((char *)buf, amount_to_send, CR_CHAT);//int b = sendMutex(buf, buf_len, CR_CHAT);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
@@ -1398,7 +1398,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return global_winner;
 	}
 
-	bool Connection::processRecvBuf(char * recv_buf, size_t buf_len, int received_bytes)
+	bool Connection::processRecvBuf(u_char * recv_buf, size_t buf_len, int received_bytes)
 	{
 		size_t position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
 
@@ -1438,23 +1438,23 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					// Time to recv() again if we have reached the end of the byte count in the buffer.
 					if (position_in_recv_buf == (u_int)received_bytes)
 					{
-						return true;//process_recv_buf_state = RECEIVE;
+						return true;
 						break;
 					}
 					// If we have reached the end of the peer's message (not the
 					// buffer, and not the amount of bytes received)
 					else if (position_in_message == message_size)
 					{
-						position_in_message = CR_BEGIN;
-						message_size = CR_SIZE_NOT_ASSIGNED;
+						//position_in_message = CR_BEGIN;
+						//message_size = CR_SIZE_NOT_ASSIGNED;
 						process_recv_buf_state = CHECK_FOR_FLAG;
 						break;
 					}
 				}
 				else// must have a new message from the peer. Lets check the flag and size of the message.
 				{
-					position_in_message = CR_BEGIN;
-					message_size = CR_SIZE_NOT_ASSIGNED;
+					//position_in_message = CR_BEGIN;
+					//message_size = CR_SIZE_NOT_ASSIGNED;
 					process_recv_buf_state = CHECK_FOR_FLAG;
 					break;
 				}
@@ -1467,6 +1467,10 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			}
 			case CHECK_FOR_FLAG:
 			{
+				// Because if we are here, that means we currently
+				// aren't in a message at the moment.
+				position_in_message = CR_BEGIN;
+
 				if (position_in_recv_buf >= (u_int)received_bytes)
 				{
 					return true;//process_recv_buf_state = RECEIVE;
@@ -1474,7 +1478,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					type_of_message_flag = (int8_t)recv_buf[position_in_recv_buf];
+					type_of_message_flag = recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_ONE;
 					break;
@@ -1490,7 +1494,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					message_size_part_one = (int8_t)recv_buf[position_in_recv_buf];
+					message_size_part_one = recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
 					++position_in_recv_buf;
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_TWO;
@@ -1507,10 +1511,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
+					message_size_part_two = recv_buf[position_in_recv_buf];
+					message_size = message_size_part_one | message_size_part_two;
+					//message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;
 					process_recv_buf_state = DECIDE_ACTION_BASED_ON_FLAG;
 					break;
+
+					// [1]				[2]
+					// 0000'0000       1111'1110
 				}
 			}
 			case ERROR_STATE:

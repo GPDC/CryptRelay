@@ -175,9 +175,10 @@ private:
 	size_t position_in_message;	// current cursor position inside the imaginary message sent by the peer.
 	uint8_t type_of_message_flag;
 	size_t message_size_part_one;
+	size_t message_size_part_two;
 	size_t message_size;		// peer told us this size
 
-	bool processRecvBuf(char * recv_buf, size_t buf_len, int byte_count);
+	bool processRecvBuf(u_char * recv_buf, size_t buf_len, int byte_count);
 
 	enum RecvStateMachine
 	{
