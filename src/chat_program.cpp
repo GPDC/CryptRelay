@@ -939,7 +939,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// and won't be able to go past this point until the
 		// thread that got here first unlocks it.
 		m.lock();
-		int total_amount_sent = amount_to_send;
+		total_amount_sent = amount_to_send;
 
 		do
 		{
@@ -989,7 +989,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					std::cout << "Split failed?\n";	// Currently no return false?
 
 				// get the size of the array
-				size_t split_strings_size = split_strings.size();
+				long long split_strings_size = split_strings.size();
 
 				// There should be two strings in the vector.
 				// [0] should be -f
@@ -1002,7 +1002,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				std::string file_name_and_loca;
 				std::string file_encryption_option;
 				// Determine if user wants to send a file or Encrypt & send a file.
-				for (size_t i = 0; i < split_strings_size; ++i)
+				for (long long i = 0; i < split_strings_size; ++i)
 				{
 					if (split_strings[i] == "-f" && i < split_strings_size - 1)
 					{
@@ -1039,8 +1039,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					}
 				}
 			}
-
-
 			else // Continue doing normal chat operation.
 			{
 				// User input can't exceed USHRT_MAX b/c that is the maximum size
@@ -1054,7 +1052,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				long long amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
 				const long long BUF_LEN = 4096;	// try catch see if enough memory available?
-				u_char* buf = new u_char[BUF_LEN];
+				char* buf = new char[BUF_LEN];
 
 				if (BUF_LEN >= CR_RESERVED_BUFFER_SPACE)
 				{
@@ -1062,9 +1060,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					buf[0] = CR_CHAT;
 					// Copy the size of the message into the buf as big endian.
 					long long temp1 = user_input_length >> 8;
-					buf[1] = (u_char)temp1;
+					buf[1] = (char)temp1;
 					long long temp2 = user_input_length;
-					buf[2] = (u_char)temp2;
+					buf[2] = (char)temp2;
 
 
 					// This is the same as ^, but maybe easier to understand? idk.
@@ -1076,15 +1074,18 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 
 					// Copy the user's message into the buf
-					if (BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
+					if ((BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
+						&& user_input_length < UINT_MAX)
+					{
 						memcpy(buf + CR_RESERVED_BUFFER_SPACE, user_input.c_str(), (size_t)user_input_length);
+					}
 					else
 					{
 						std::cout << "Message was too big for the send buf.\n";
 						return;
 					}
 					std::cout << "dbg OUTPUT:\n";
-					for (u_int z = 0; z < amount_to_send; ++z)
+					for (long long z = 0; z < amount_to_send; ++z)
 					{
 						std::cout << z << "_" << (int)buf[z] << "\n";
 					}
@@ -1214,8 +1215,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// Please make a sha hash of the file here so it can be checked with the
 		// hash of the copy later.
 
-		size_t bytes_read;
-		size_t bytes_written;
+		long long bytes_read;
+		long long bytes_written;
 		unsigned long long total_bytes_written = 0;
 
 		unsigned long long twenty_five_percent = FileStatBuf.st_size / 4;	// divide it by 4
@@ -1227,7 +1228,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		bool seventy_five_already_spoke = false;
 
 		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
-		const size_t buffer_size = 8 * 1024 * 1024;
+		const long long buffer_size = 8 * 1024 * 1024;
 		unsigned char* buffer = new unsigned char[buffer_size];
 
 		std::cout << "Copying file...\n";
@@ -1464,7 +1465,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						// Print out the message to terminal
 						std::cout << "\n";
 						std::cout << "Peer: ";
-						for (; (position_in_recv_buf < (u_int)received_bytes) && (position_in_message < message_size);
+						for (; (position_in_recv_buf < received_bytes) && (position_in_message < message_size);
 							++position_in_recv_buf, ++position_in_message)
 						{
 							std::cout << recv_buf[position_in_recv_buf];
@@ -1478,7 +1479,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 						// Set the file name variable.
 						for (;
-							(position_in_recv_buf < (u_int)received_bytes)
+							(position_in_recv_buf < received_bytes)
 							&& (position_in_message < message_size)
 							&& (position_in_message < INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME);
 							++position_in_recv_buf, ++position_in_message
@@ -1523,8 +1524,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					else if (type_of_message_flag == CR_FILE)
 					{
 						// write file
-						writePartOfTheFileFromPeer((char *)recv_buf, received_bytes);
-						//position_in_recv_buf = (u_int)received_bytes;
+						writePartOfTheFileFromPeer(recv_buf, received_bytes);
+						//position_in_recv_buf = received_bytes;
 					}
 					else
 					{
@@ -1534,7 +1535,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					}
 
 					// Time to recv() again if we have reached the end of the byte count in the buffer.
-					if (position_in_recv_buf == (u_int)received_bytes)
+					if (position_in_recv_buf == received_bytes)
 					{
 						return true;
 					}
@@ -1548,7 +1549,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						break;
 					}
 				}
-				else if (position_in_recv_buf >= (u_int)received_bytes)
+				else if (position_in_recv_buf >= received_bytes)
 				{
 					return true;
 				}
@@ -1572,7 +1573,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				// aren't in a message at the moment.
 				position_in_message = CR_BEGIN;
 
-				if (position_in_recv_buf >= (u_int)received_bytes)
+				if (position_in_recv_buf >= received_bytes)
 				{
 					return true;//process_recv_buf_state = RECEIVE;
 				}
@@ -1587,7 +1588,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			case CHECK_MESSAGE_SIZE_PART_ONE:
 			{
 				// Getting half of the u_short size of the message
-				if (position_in_recv_buf >= (u_int)received_bytes)
+				if (position_in_recv_buf >= received_bytes)
 				{
 					return true;//process_recv_buf_state = RECEIVE;
 				}
@@ -1603,7 +1604,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			case CHECK_MESSAGE_SIZE_PART_TWO:
 			{
 				// getting the second half of the u_short size of the message
-				if (position_in_recv_buf >= (u_int)received_bytes)
+				if (position_in_recv_buf >= received_bytes)
 				{
 					return true;//process_recv_buf_state = RECEIVE;
 				}
