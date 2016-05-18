@@ -139,7 +139,7 @@ private:
 	// This is the only thread that has access to send().
 	// all other threads must send their info to this thread
 	// in order to send it over the network.
-	int sendMutex(const char * sendbuf, size_t amount_to_send, int flag);
+	int sendMutex(const char * sendbuf, int amount_to_send);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void LoopedGetUserInput();
@@ -151,18 +151,22 @@ private:
 
 	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
-	bool sendFile(const char * file_name);
+	bool sendFileThread(std::string file_name);
 
 	// Do not touch. This is for sendMutex()
 	int bytes_sent = 0;
 
 
 	// Flags for sendMutex() that indicated what the message is being used for.
+	// enum is not used for these b/c it could break compatability when
+	// communicating with older version of this program.
 	static const int8_t CR_NO_FLAG;
 	static const int8_t CR_BEGIN;
 	static const int8_t CR_SIZE_NOT_ASSIGNED;
 	static const int8_t CR_CHAT;
 	static const int8_t CR_ENCRYPTED_CHAT_MESSAGE;
+	static const int8_t CR_FILE_NAME;
+	static const int8_t CR_FILE_SIZE;
 	static const int8_t CR_FILE;
 	static const int8_t CR_ENCRYPTED_FILE;
 
@@ -171,14 +175,29 @@ private:
 
 	// Variables necessary for processRecvBuf().
 	// They are here so that the state can be saved even after exiting the funciton.
-	int process_recv_buf_state;
-	size_t position_in_message;	// current cursor position inside the imaginary message sent by the peer.
-	uint8_t type_of_message_flag;
-	size_t message_size_part_one;
-	size_t message_size_part_two;
-	size_t message_size;		// peer told us this size
+	long long position_in_recv_buf;
+	long long process_recv_buf_state;
+	long long position_in_message;	// current cursor position inside the imaginary message sent by the peer.
+	int8_t type_of_message_flag;
+	long long message_size_part_one = 0;
+	long long message_size_part_two = 0;
+	long long message_size = 0;		// peer told us this size
+	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
+	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
+	std::string incoming_file_name_from_peer;
+	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 
-	bool processRecvBuf(u_char * recv_buf, size_t buf_len, int byte_count);
+	long long file_size_part_one = 0;
+	long long file_size_part_two = 0;
+	long long file_size_part_three = 0;
+	long long file_size_part_four = 0;
+	long long file_size_part_five = 0;
+	long long file_size_part_six = 0;
+	long long file_size_part_seven = 0;
+	long long file_size_part_eight = 0;
+	long long incoming_file_size_from_peer = 0;
+
+	bool processRecvBuf(char * recv_buf, long long buf_len, long long byte_count);
 
 	enum RecvStateMachine
 	{
@@ -187,9 +206,35 @@ private:
 		CHECK_FOR_FLAG,
 		CHECK_MESSAGE_SIZE_PART_ONE,
 		CHECK_MESSAGE_SIZE_PART_TWO,
+
 		ERROR_STATE,
 	};
 
+	bool writePartOfTheFileFromPeer(char * recv_buf, long long bytes_received);
+
+	// from a buffer, convert 8 bytes from Network to Host Long Long
+	enum NtoHLLStateMachine
+	{
+		CHECK_INCOMING_FILE_SIZE_PART_ONE,
+		CHECK_INCOMING_FILE_SIZE_PART_TWO,
+		CHECK_INCOMING_FILE_SIZE_PART_THREE,
+		CHECK_INCOMING_FILE_SIZE_PART_FOUR,
+		CHECK_INCOMING_FILE_SIZE_PART_FIVE,
+		CHECK_INCOMING_FILE_SIZE_PART_SIX,
+		CHECK_INCOMING_FILE_SIZE_PART_SEVEN,
+		CHECK_INCOMING_FILE_SIZE_PART_EIGHT,
+		RECV_AGAIN,
+		FINISHED,
+	};
+	int state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_ONE;
+	// from a buffer, convert 8 bytes from Network to Host Long Long
+	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
+
+	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
+
+	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
+	bool sendFileName(char * buf, const long long BUF_LEN, std::string name_and_location_of_file);
+	std::string returnFileNameFromFileNameAndPath(std::string name_and_location_of_file);
 };
 
 #endif //chat_program_h__
