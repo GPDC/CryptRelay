@@ -149,7 +149,8 @@ private:
 	void readAndSendTheFileThread(std::string file_name);
 
 
-	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf);
+	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBufLinux, struct _stat64 * FileStatBufWindows);
+	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 	bool sendFileThread(std::string file_name);
 
@@ -187,6 +188,11 @@ private:
 	std::string incoming_file_name_from_peer;
 	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 
+	bool received_file_name = false;
+	bool received_file_size = false;
+	bool isFileOpen = false;
+	bool isFileDoneBeingWritten = false;
+
 	long long file_size_part_one = 0;
 	long long file_size_part_two = 0;
 	long long file_size_part_three = 0;
@@ -202,15 +208,27 @@ private:
 	enum RecvStateMachine
 	{
 		RECEIVE,
-		DECIDE_ACTION_BASED_ON_FLAG,
 		CHECK_FOR_FLAG,
 		CHECK_MESSAGE_SIZE_PART_ONE,
 		CHECK_MESSAGE_SIZE_PART_TWO,
+		WRITE_FILE_FROM_PEER,
+		TAKE_FILE_NAME_FROM_PEER,
+		TAKE_FILE_SIZE_FROM_PEER,
+		OUTPUT_CHAT_FROM_PEER,
+
+		OPEN_FILE_FOR_WRITE,
+		CLOSE_FILE_FOR_WRITE,
 
 		ERROR_STATE,
 	};
 
+	// Variables for writePartOfTheFileFromPeer()
+	long long bytes_read = 0;
+	long long bytes_written = 0;
+	long long total_bytes_written_to_file = 0;
 	bool writePartOfTheFileFromPeer(char * recv_buf, long long bytes_received);
+
+	FILE * WriteFile = nullptr;
 
 	// from a buffer, convert 8 bytes from Network to Host Long Long
 	enum NtoHLLStateMachine

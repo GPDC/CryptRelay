@@ -12,6 +12,11 @@ DIFFERENT way of file implementation: just use the same chat everything, and its
 ---uhhhhhh making it required to start the program with -f instead of during chat for now.
 - what would happen if a buffer was created but not enough memory was available to give to it? right now the user is in control of the buffer size of sending messages. This raises red flags in my head, but how big of a deal is this? look into it.
 - change (basically) all unsigned into signed.
+- prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will open CryptRelay.exe and start trying to write to it.
+-prevent incompatible symbols from being used with files.
+
+# Research:
+-I have serious concerns about the fact that messages contain predictable content. Could this be used to reduce brute force decryption time? I don't know much about this area, need research. Could add random amounts of junk data at the beginning and end.
 
 # Think about possibly doing these:
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.

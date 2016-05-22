@@ -41,6 +41,7 @@ std::string StringManip::duplicateCharacter(std::string string, char deliminator
 			// arg2 how many of arg3
 			// arg3 insert this char
 			string.insert(i, 1, '\\');
+			++i;
 		}
 	}
 	if (i == UINT_MAX)

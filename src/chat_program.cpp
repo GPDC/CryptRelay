@@ -327,8 +327,8 @@ void Connection::serverThread(void * instance)
 	self->coutPeerIPAndPort(global_socket);
 
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
+	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
+	std::thread RcvThread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
@@ -336,8 +336,8 @@ void Connection::serverThread(void * instance)
 	self->LoopedGetUserInput();
 
 	// wait here until x thread finishes.
-	if (rcv_thread.joinable())
-		rcv_thread.join();
+	if (RcvThread.joinable())
+		RcvThread.join();
 
 	// Done communicating with peer. Proceeding to exit.
 	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
@@ -500,7 +500,7 @@ void Connection::clientThread(void * instance)
 
 
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
 	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
@@ -970,6 +970,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	void Connection::LoopedGetUserInput()
 	{
 		std::string user_input;
+		std::thread FileThread;
 
 		while (1)
 		{
@@ -977,7 +978,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			if (user_input == "exit()")
 			{
 				// Exit program.
-				return;
+				return;//why does this cause the program to crash?
 			}
 			if (doesUserWantToSendAFile(user_input) == true)
 			{
@@ -1004,21 +1005,21 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				// Determine if user wants to send a file or Encrypt & send a file.
 				for (long long i = 0; i < split_strings_size; ++i)
 				{
-					if (split_strings[i] == "-f" && i < split_strings_size - 1)
+					if (split_strings[(u_int)i] == "-f" && i < split_strings_size - 1)
 					{
-						file_name_and_loca = split_strings[i + 1];
+						file_name_and_loca = split_strings[(u_int)i + 1];
 
 						// Fix the user's input to add an escape character to every '\'
 						StrManip.duplicateCharacter(file_name_and_loca, '\\');
 
 						// Send the file
-						sendFileThread(file_name_and_loca);
+						FileThread = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
 						break;
 					}
-					else if (split_strings[i] == "-fE" && i < split_strings_size -2)
+					else if (split_strings[(u_int)i] == "-fE" && i < split_strings_size -2)
 					{
-						file_name_and_loca = split_strings[i + 1];
-						file_encryption_option = split_strings[i + 2];
+						file_name_and_loca = split_strings[(u_int)i + 1];
+						file_encryption_option = split_strings[(u_int)i + 2];
 
 						// Fix the user's input to add an escape character to every '\'
 						std::string copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
@@ -1032,9 +1033,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 						// Send the file
 
-						// MAKE THIS THREADED PLEASE
-						if (sendFileThread(copied_file_name_and_location) == false)
-							return;//exit please?
+						FileThread = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
+						//if (sendFileThread(copied_file_name_and_location) == false)
+							//return;//exit please?
 						break;
 					}
 				}
@@ -1156,25 +1157,45 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	//<sys/stat.h>
 	//<unistd.h>
 
-	bool Connection::displayFileSize(const char* file_name_and_location, struct stat * FileStatBuf)
+	// Pass NULL to the struct that doesn't correspond to your OS.
+	bool Connection::displayFileSize(const char* file_name_and_location, struct stat * FileStatBufLinux, struct _stat64 * FileStatBufWindows)
 	{
-		if (FileStatBuf == NULL)
+#ifdef _WIN32
+		if (FileStatBufWindows == NULL)
 		{
 			std::cout << "displayFileSize() failed. NULL pointer.\n";
 			return false;
 		}
 		// Shifting the bits over by 10. This divides it by 2^10 aka 1024
-		off_t KB = FileStatBuf->st_size >> 10;
-		off_t MB = KB >> 10;
-		off_t GB = MB >> 10;
-		std::cout << "Displaying file size as Bytes: " << FileStatBuf->st_size << "\n";
+		long long KB = FileStatBufWindows->st_size >> 10;
+		long long MB = KB >> 10;
+		long long GB = MB >> 10;
+		std::cout << "Displaying file size as Bytes: " << FileStatBufWindows->st_size << "\n";
 		std::cout << "As KB: " << KB << "\n";
 		std::cout << "As MB: " << MB << "\n";
 		std::cout << "As GB: " << GB << "\n";
-
+#endif//_WIN32
+#ifdef __linux__
+		if (FileStatBufLinux == NULL)
+		{
+			std::cout << "displayFileSize() failed. NULL pointer.\n";
+			return false;
+		}
+		// Shifting the bits over by 10. This divides it by 2^10 aka 1024
+		long long KB = FileStatBufLinux->st_size >> 10;
+		long long MB = KB >> 10;
+		long long GB = MB >> 10;
+		std::cout << "Displaying file size as Bytes: " << FileStatBufLinux->st_size << "\n";
+		std::cout << "As KB: " << KB << "\n";
+		std::cout << "As MB: " << MB << "\n";
+		std::cout << "As GB: " << GB << "\n";
+#endif//__linux__
 		return true;
 	}
 
+	// This function expects the file name and location of the file
+	// to be properly formatted already. That means escape characters
+	// must be used to make a path valid '\\'.
 	bool Connection::copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location)
 	{
 
@@ -1194,34 +1215,19 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			return false;
 		}
 
-		int did_file_stat_error = false;
-		struct stat FileStatBuf;
-
-		// Get some statistics on the file, such as size, time created, etc.
-		int r = stat(read_file_name_and_location, &FileStatBuf);
-		if (r == -1)
-		{
-			perror("Error getting file statistics");
-			did_file_stat_error = true;
-		}
-		else
-		{
-			// Output to terminal the size of the file in Bytes, KB, MB, GB.
-			displayFileSize(read_file_name_and_location, &FileStatBuf);
-		}
-
-
+		// Get file stastics and cout the size of the file
+		long long size_of_file_to_be_copied = getFileStatsAndDisplaySize(read_file_name_and_location);
 
 		// Please make a sha hash of the file here so it can be checked with the
 		// hash of the copy later.
 
 		long long bytes_read;
 		long long bytes_written;
-		unsigned long long total_bytes_written = 0;
+		long long total_bytes_written_to_file = 0;
 
-		unsigned long long twenty_five_percent = FileStatBuf.st_size / 4;	// divide it by 4
-		unsigned long long fifty_percent = FileStatBuf.st_size / 2;	//divide it by two
-		unsigned long long seventy_five_percent = FileStatBuf.st_size - twenty_five_percent;
+		long long twenty_five_percent = size_of_file_to_be_copied / 4;	// divide it by 4
+		long long fifty_percent = size_of_file_to_be_copied / 2;	//divide it by two
+		long long seventy_five_percent = size_of_file_to_be_copied - twenty_five_percent;
 
 		bool twenty_five_already_spoke = false;
 		bool fifty_already_spoke = false;
@@ -1229,34 +1235,34 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
 		const long long buffer_size = 8 * 1024 * 1024;
-		unsigned char* buffer = new unsigned char[buffer_size];
+		char* buffer = new char[buffer_size];
 
-		std::cout << "Copying file...\n";
+		std::cout << "Starting Copy file...\n";
 		do
 		{
 			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
 			if (bytes_read)
-				bytes_written = fwrite(buffer, 1, bytes_read, WriteFile);
+				bytes_written = fwrite(buffer, 1, (size_t)bytes_read, WriteFile);
 			else
 				bytes_written = 0;
 
-			total_bytes_written += bytes_written;
+			total_bytes_written_to_file += bytes_written;
 
 			// If we have some statistics to work with, then display
 			// ghetto progress indicators.
-			if (did_file_stat_error == false)
+			if (size_of_file_to_be_copied >= 0)
 			{
-				if (total_bytes_written > twenty_five_percent && total_bytes_written < fifty_percent && twenty_five_already_spoke == false)
+				if (total_bytes_written_to_file > twenty_five_percent && total_bytes_written_to_file < fifty_percent && twenty_five_already_spoke == false)
 				{
 					std::cout << "File copy 25% complete.\n";
 					twenty_five_already_spoke = true;
 				}
-				else if (total_bytes_written > fifty_percent && total_bytes_written < seventy_five_percent && fifty_already_spoke == false)
+				else if (total_bytes_written_to_file > fifty_percent && total_bytes_written_to_file < seventy_five_percent && fifty_already_spoke == false)
 				{
 					std::cout << "File copy 50% complete.\n";
 					fifty_already_spoke = true;
 				}
-				else if (total_bytes_written > seventy_five_percent && seventy_five_already_spoke == false)
+				else if (total_bytes_written_to_file > seventy_five_percent && seventy_five_already_spoke == false)
 				{
 					std::cout << "File copy 75% complete.\n";
 					seventy_five_already_spoke = true;
@@ -1268,7 +1274,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// then it didn't write as much as it read for some reason.
 		} while ((bytes_read > 0) && (bytes_read == bytes_written));
 
-		if (total_bytes_written == FileStatBuf.st_size)
+		if (total_bytes_written_to_file == size_of_file_to_be_copied)
 			std::cout << "File copy complete.\n";
 
 		// Please implement sha hash checking here to make sure the file is legit.
@@ -1285,6 +1291,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		delete[]buffer;
 
+		std::cout << "dbg beep boop end of copyFile()\n";
 		return true;
 
 		//// Give a compiler error if streamsize > sizeof(long long)
@@ -1312,45 +1319,35 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		// Open the file
 		FILE *ReadFile;
-		ReadFile = fopen(file_name_and_loc.c_str(), "rb");
+		ReadFile = fopen(name_and_location_of_file.c_str(), "rb");
 		if (ReadFile == NULL)
 		{
-			perror("Error opening file for reading binary");
+			perror("Error opening file for reading binary sendFileThread");
 			return false;
 		}
 
 		// Retrieve the name of the file from the string that contains
 		// the path and the name of the file.
-		std::string file_name = (name_and_location_of_file);
+		std::string file_name = returnFileNameFromFileNameAndPath(name_and_location_of_file);
 		if (file_name.empty() == true)
 		{
-			perror("dbg file_name.empty() return true.\n");
+			std::cout << "dbg file_name.empty() returned true.";
 			return false; //exit please, file name couldn't be found.
 		}
 		std::cout << "dbg name of the file: " << file_name << "\n";
 
-
+		// *** The order in which file name and file size is sent DOES matter! ***
 		// Send the file name to peer
 		if (sendFileName(buf, BUF_LEN, file_name) == false)
 		{
 			return false; //exit please
 		}
 
+		// Get file statistics and display the size of the file
 		long long size_of_file = 0;
-		// Get some statistics on the file, such as size, time created, etc.
-		struct stat FileStatBuf;
-		int r = stat(file_name_and_loc.c_str(), &FileStatBuf);
-		if (r == -1)
-		{
-			perror("Error getting file statistics");
-		}
-		else
-		{
-			// Output to terminal the size of the file in Bytes, KB, MB, GB.
-			displayFileSize(file_name_and_loc.c_str(), &FileStatBuf);
-
-			size_of_file = FileStatBuf.st_size;
-		}
+		size_of_file = getFileStatsAndDisplaySize(name_and_location_of_file.c_str());
+		if (size_of_file == -1)
+			return false; //exit please
 
 		// Send file size to peer
 		if (sendFileSize(buf, BUF_LEN, size_of_file) == false)
@@ -1361,11 +1358,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 
 		// Send the file to peer.
-		long long bytes_read;
-		long long bytes_sent;
+		long long bytes_read = 0;
+		long long bytes_sent = 0;
 		long long total_bytes_sent = 0;
 
 		// We are treating bytes_read as a u_short, instead of size_t
+		// because we don't want to take up needless buffer space?
+		// not sure if this is an advantage or disadvantage.
+		// ehhhh maybe i shouldn't have this. Int would be
+		// more appropriate?
 		static_assert(BUF_LEN <= USHRT_MAX,
 			"Buffer size must NOT be bigger than USHRT_MAX.");
 
@@ -1391,13 +1392,19 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				// Copy the size of the message into the buf as big endian.
 				temp1 = bytes_read >> 8;
-				buf[1] = temp1;
+				buf[1] = (char)temp1;
 
 				temp2 = bytes_read;
-				buf[2] = temp2;
+				buf[2] = (char)temp2;
+
+				std::cout << "dbg send Message (not packet)\n";
+				for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
+				{
+					std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
+				}
 
 				// Send the message
-				bytes_sent = sendMutex(buf, bytes_read);
+				bytes_sent = sendMutex(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
 				if (bytes_sent == SOCKET_ERROR)
 				{
 					std::cout << "sendMutex() in sendFileThread() failed. File transfer stopped.\n";
@@ -1407,19 +1414,23 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			else
 				bytes_sent = 0;
 
-			total_bytes_sent += bytes_sent;
+			total_bytes_sent += bytes_sent - CR_RESERVED_BUFFER_SPACE;
 
 			// 0 means error. If they aren't equal to eachother
 			// then it didn't write as much as it read for some reason.
-		} while ((bytes_read > 0) && (bytes_read == bytes_sent));
+		} while (bytes_read > 0);
 
 
 		if (total_bytes_sent == size_of_file)
 			std::cout << "File transfer to peer is complete.\n";
+		else
+		{
+			std::cout << "total_bytes_sent != size_of_file\n";
+		}
 
 		// Please implement sha hash checking here to make sure the file is legit.
 
-		if (bytes_sent)
+		if (bytes_sent <= 0)
 			perror("Error while transfering the file");
 
 		if (fclose(ReadFile))
@@ -1455,112 +1466,164 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		{
 			switch (process_recv_buf_state)
 			{
-			case DECIDE_ACTION_BASED_ON_FLAG:
+			case WRITE_FILE_FROM_PEER:
 			{
-				// If we haven't finished dealing with the user's message, enter here.
 				if (position_in_message < message_size)
 				{
-					if (type_of_message_flag == CR_CHAT)
+					if (position_in_recv_buf == 512)
 					{
-						// Print out the message to terminal
-						std::cout << "\n";
-						std::cout << "Peer: ";
-						for (; (position_in_recv_buf < received_bytes) && (position_in_message < message_size);
-							++position_in_recv_buf, ++position_in_message)
-						{
-							std::cout << recv_buf[position_in_recv_buf];
-						}
-						std::cout << "\n";
+						std::cout << "wat\n";
 					}
-					else if (type_of_message_flag == CR_FILE_NAME)
-					{
-						// SHOULD PROBABLY CLEAN THE FILE NAME OF INCORRECT SYMBOLS 
-						// AND PREVENT PERIODS FROM BEING USED, ETC.
+					//61,440 bytes, and then error
+					long long amount_to_write = message_size - position_in_message;
+					if (amount_to_write > received_bytes - position_in_recv_buf)
+						amount_to_write = received_bytes - position_in_recv_buf;
 
-						// Set the file name variable.
-						for (;
-							(position_in_recv_buf < received_bytes)
-							&& (position_in_message < message_size)
-							&& (position_in_message < INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME);
-							++position_in_recv_buf, ++position_in_message
-							)
-						{
-							incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
-						}
-						// If the file name was too big, then say so, but don't error.
-						if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
-						{
-							std::cout << "Receive File: WARNING: Peer's file name is too long. Exceeded " << INCOMING_FILE_NAME_FROM_PEER_SIZE << " characters.\n";
-							std::cout << "Receive File: File name will be incorrect on your computer.\n";
-						}
-
-						std::string incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
-						std::cout << "Incoming file name: " << incoming_file_name_from_peer << "\n";
-
-						// Linux:
-						// Max file name length is 255 chars on most filesystems, and max path 4096 chars.
-						//
-						// Windows:
-						// Max file name length + subdirectory path is 255 chars. or MAX_PATH .. 260 chars?
-						// 1+2+256+1 or [drive][:][path][null] = 260
-						// This is not strictly true as the NTFS filesystem supports paths up to 32k characters.
-						// You can use the win32 api and "\\?\" prefix the path to use greater than 260 characters. 
-						// However using the long path "\\?\" is not a very good idea.
-					}
-					else if (type_of_message_flag == CR_FILE_SIZE)
+					bytes_written = fwrite(recv_buf + position_in_recv_buf, 1, (size_t)(amount_to_write), WriteFile);
+					if (!bytes_written)// uhh this might be a negative number sometimes which makes !bytes_written not work?
 					{
-						// convert the file size in the buffer from network long long to
-						// host long long. It assigns the variable incoming_file_size_from_peer
-						// a value.
-						if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) != FINISHED)
+						perror("Error while writing the file from peer");
+						std::cout << "dbg Error: bytes_written returned: " << bytes_written << "\n";
+						std::cout << "dbg File stream: " << WriteFile << "\n";
+						std::cout << "dbg received_bytes: " << received_bytes << "\n";
+						std::cout << "dbg message_size: " << message_size << "\n";
+
+						// close file
+						if (fclose(WriteFile))
 						{
-							return true;// go recv() again
+							perror("Error closing file for writing");
 						}
-						else
-						{
-							std::cout << "Size of Peer's file: " << incoming_file_size_from_peer << "\n";
-						}
-					}
-					else if (type_of_message_flag == CR_FILE)
-					{
-						// write file
-						writePartOfTheFileFromPeer(recv_buf, received_bytes);
-						//position_in_recv_buf = received_bytes;
+						// delete file?
+						return false;
 					}
 					else
 					{
-						std::cout << "Fatal Error: Unidentified message has been received.\n";
-						process_recv_buf_state = ERROR_STATE;
-						break;
-					}
+						total_bytes_written_to_file += bytes_written;
+						position_in_message += bytes_written;
+						position_in_recv_buf += bytes_written;
 
-					// Time to recv() again if we have reached the end of the byte count in the buffer.
-					if (position_in_recv_buf == received_bytes)
-					{
-						return true;
-					}
-					// If we have reached the end of the peer's message (not the
-					// buffer, and not the amount of bytes received)
-					else if (position_in_message == message_size)
-					{
-						//position_in_message = CR_BEGIN;
-						//message_size = CR_SIZE_NOT_ASSIGNED;
-						process_recv_buf_state = CHECK_FOR_FLAG;
-						break;
+						if (total_bytes_written_to_file >= incoming_file_size_from_peer)
+						{
+							std::cout << "Finished receiving file from peer.\n";
+							std::cout << "Expected " << incoming_file_size_from_peer << ".\n";
+							std::cout << "Wrote " << total_bytes_written_to_file << "\n";
+							std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
+							process_recv_buf_state = CLOSE_FILE_FOR_WRITE;
+							break;
+						}
 					}
 				}
-				else if (position_in_recv_buf >= received_bytes)
+
+				if (position_in_recv_buf >= received_bytes)
 				{
-					return true;
+					return true; // go recv() again to get more bytes
 				}
-				else// must have a new message from the peer. Lets check the flag and size of the message.
+				else if (position_in_message == message_size)// must have a new message from the peer.
 				{
-					//position_in_message = CR_BEGIN;
-					//message_size = CR_SIZE_NOT_ASSIGNED;
 					process_recv_buf_state = CHECK_FOR_FLAG;
 					break;
 				}
 
+				// this shouldn't be reached?
+				std::cout << "Unrecognized message?\n";
+				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Catastrophic failure.\n";
+				process_recv_buf_state = ERROR_STATE;
+
+				break;
+			}
+			case OUTPUT_CHAT_FROM_PEER:
+			{
+				// Print out the message to terminal
+				std::cout << "\n";
+				std::cout << "Peer: ";
+				for (; (position_in_recv_buf < received_bytes) && (position_in_message < message_size);
+					++position_in_recv_buf, ++position_in_message)
+				{
+					std::cout << recv_buf[position_in_recv_buf];
+				}
+				std::cout << "\n";
+
+				if (position_in_recv_buf >= received_bytes)
+				{
+					return true; // go recv() again to get more bytes
+				}
+				else if (position_in_message == message_size)// must have a new message from the peer.
+				{
+					process_recv_buf_state = CHECK_FOR_FLAG;
+					break;
+				}
+				// this shouldn't be reached?
+				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Catastrophic failure.\n";
+				process_recv_buf_state = ERROR_STATE;
+				break;
+			}
+			case TAKE_FILE_NAME_FROM_PEER:
+			{
+				// SHOULD PROBABLY CLEAN THE FILE NAME OF INCORRECT SYMBOLS 
+				// AND PREVENT PERIODS FROM BEING USED, ETC.
+
+				// Set the file name variable.
+				for (;
+					(position_in_recv_buf < received_bytes)
+					&& (position_in_message < message_size)
+					&& (position_in_message < INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME);
+					++position_in_recv_buf, ++position_in_message)
+				{
+					incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
+				}
+				// If the file name was too big, then say so, but don't error.
+				if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
+				{
+					std::cout << "Receive File: WARNING: Peer's file name is too long. Exceeded " << INCOMING_FILE_NAME_FROM_PEER_SIZE << " characters.\n";
+					std::cout << "Receive File: File name will be incorrect on your computer.\n";
+				}
+
+				std::string temporary_incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
+				incoming_file_name_from_peer = temporary_incoming_file_name_from_peer;
+				std::cout << "Incoming file name: " << temporary_incoming_file_name_from_peer << "\n";
+
+
+				if (position_in_message == message_size)// must have a new message from the peer.
+				{
+					process_recv_buf_state = CHECK_FOR_FLAG;
+					break;
+				}
+				// this shouldn't be reached?
+				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Catastrophic failure.\n";
+				process_recv_buf_state = ERROR_STATE;
+				break;
+				// Linux:
+				// Max file name length is 255 chars on most filesystems, and max path 4096 chars.
+				//
+				// Windows:
+				// Max file name length + subdirectory path is 255 chars. or MAX_PATH .. 260 chars?
+				// 1+2+256+1 or [drive][:][path][null] = 260
+				// This is not strictly true as the NTFS filesystem supports paths up to 32k characters.
+				// You can use the win32 api and "\\?\" prefix the path to use greater than 260 characters. 
+				// However using the long path "\\?\" is not a very good idea.
+			}
+			case TAKE_FILE_SIZE_FROM_PEER:
+			{
+				// convert the file size in the buffer from network long long to
+				// host long long. It assigns the variable incoming_file_size_from_peer
+				// a value.
+				if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) != FINISHED)
+				{
+					return true;// go recv() again
+				}
+				else
+				{
+					std::cout << "Size of Peer's file: " << incoming_file_size_from_peer << "\n";
+				}
+				
+				if (position_in_message == message_size)// must have a new message from the peer.
+				{
+					process_recv_buf_state = OPEN_FILE_FOR_WRITE;
+					break;
+				}
 				// this shouldn't be reached?
 				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
@@ -1579,11 +1642,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					type_of_message_flag = recv_buf[position_in_recv_buf];
+					std::cout << "dbg Check for flag: ";
+					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+
+					type_of_message_flag = (u_char)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_ONE;
 					break;
 				}
+				break;
 			}
 			case CHECK_MESSAGE_SIZE_PART_ONE:
 			{
@@ -1594,32 +1661,97 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					message_size_part_one = recv_buf[position_in_recv_buf];
+					std::cout << "dbg Check msg size pt1: ";
+					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+					message_size_part_one = (u_char)recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
 					++position_in_recv_buf;
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_TWO;
 					break;
 				}
+				break;
 			}
 			case CHECK_MESSAGE_SIZE_PART_TWO:
 			{
 				// getting the second half of the u_short size of the message
 				if (position_in_recv_buf >= received_bytes)
 				{
-					return true;//process_recv_buf_state = RECEIVE;
+					return true;
 				}
 				else
 				{
-					message_size_part_two = recv_buf[position_in_recv_buf];
+					std::cout << "dbg Check msg size pt2: ";
+					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+					message_size_part_two = (u_char)recv_buf[position_in_recv_buf];
 					message_size = message_size_part_one | message_size_part_two;
-					//message_size = message_size_part_one | (int8_t)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;
-					process_recv_buf_state = DECIDE_ACTION_BASED_ON_FLAG;
-					break;
 
-					// [1]				[2]
-					// 0000'0000       1111'1110
+					std::cout << "dbg position_in_recv_buf: " << position_in_recv_buf << "\n";
+
+					if (type_of_message_flag == CR_FILE)
+						process_recv_buf_state = WRITE_FILE_FROM_PEER;
+					else if (type_of_message_flag == CR_FILE_NAME)
+						process_recv_buf_state = TAKE_FILE_NAME_FROM_PEER;
+					else if (type_of_message_flag == CR_FILE_SIZE)
+						process_recv_buf_state = TAKE_FILE_SIZE_FROM_PEER;
+					else if (type_of_message_flag == CR_CHAT)
+						process_recv_buf_state = OUTPUT_CHAT_FROM_PEER;
+					else
+					{
+						std::cout << "Fatal Error: Unidentified message has been received.\n";
+						process_recv_buf_state = ERROR_STATE;
+						break;
+					}
+
+					if (position_in_recv_buf >= received_bytes)
+					{
+						return true;
+					}
+					break;
 				}
+
+				break;
+			}
+			case OPEN_FILE_FOR_WRITE:
+			{
+				WriteFile = new FILE;
+				WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
+				if (WriteFile == nullptr)
+				{
+					perror("Error opening file for writing in binary mode.\n");
+				}
+				
+				process_recv_buf_state = CHECK_FOR_FLAG;
+				
+				break;
+			}
+			case CLOSE_FILE_FOR_WRITE:
+			{
+				if (fclose(WriteFile) != 0)		// 0 == successful close
+				{
+					perror("Error closing file for writing in binary mode.\n");
+				}
+
+				// Set it back to default
+				total_bytes_written_to_file = 0;
+
+				//is this necessary or does fclose do this?
+				WriteFile = nullptr;
+
+				if (position_in_message < message_size)
+				{
+					perror("dbg: position_in_message < message_size, closefileforwrite\n");
+				}
+				if (position_in_message == message_size)
+				{
+					perror("dbg: position_in_message == message_size, everything A OK closefileforwrite\n");
+				}
+				if (position_in_message > message_size)
+				{
+					perror("dbg: ERROR, position_in_message > message_size , closefileforwrite\n");
+				}
+				process_recv_buf_state = CHECK_FOR_FLAG;
+				break;
 			}
 			case ERROR_STATE:
 			{
@@ -1640,15 +1772,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// This function is only for use with the RecvStateMachine
 	bool Connection::writePartOfTheFileFromPeer(char * recv_buf, long long bytes_received)
 	{
+		//FILE *WriteFile = NULL;
+		
 		// Write the file to disk.
-		FILE *WriteFile;
-
-		WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
-		if (WriteFile == NULL)
-		{
-			perror("Error opening file for writing binary");
-			return false;
-		}
 
 		//int did_file_stat_error = false;
 		//struct stat FileStatBuf;
@@ -1670,9 +1796,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// Please make a sha hash of the file here so it can be checked with the
 		// hash of the copy later.
 
-		long long bytes_read;
-		long long bytes_written;
-		long long total_bytes_written = 0;
 
 		// put these variables in the header so it won't lose its state.
 		// state machine recv()'s , checks flag, then it calls this function.
@@ -1682,25 +1805,29 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		
 		// recv()
-		if (bytes_received)
-			bytes_written = fwrite(recv_buf, 1, bytes_received, WriteFile);
+		
+
+		
+		if (total_bytes_written_to_file >= incoming_file_size_from_peer)
+		{
+			std::cout << "File transfer from peer complete.\n";
+
+			// close file?
+			isFileDoneBeingWritten = true;
+			
+			return false;
+		}
 		else
-			bytes_written = 0;
-
-		total_bytes_written += bytes_written;
-
-		if (total_bytes_written == incoming_file_size_from_peer)
-			std::cout << "File copy complete.\n";
+			return true;//continue receiving and writing to file.
 
 		// Please implement sha hash checking here to make sure the file is legit.
 
-		if (bytes_written)
-			perror("Error while copying the file");
 
 		if (fclose(WriteFile))
+		{
 			perror("Error closing file designated for writing");
-
-		//delete[]buf;
+			return false;
+		}
 
 		return true;
 	}
@@ -1718,7 +1845,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_one = recv_buf[position_in_recv_buf];
+				file_size_part_one = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_one <<= 56;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1731,7 +1858,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_two = recv_buf[position_in_recv_buf];
+				file_size_part_two = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_two <<= 48;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1744,7 +1871,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_three = recv_buf[position_in_recv_buf];
+				file_size_part_three = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_three <<= 40;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1757,7 +1884,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_four = recv_buf[position_in_recv_buf];
+				file_size_part_four = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_four <<= 32;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1770,7 +1897,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_five = recv_buf[position_in_recv_buf];
+				file_size_part_five = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_five <<= 24;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1783,7 +1910,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_six = recv_buf[position_in_recv_buf];
+				file_size_part_six = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_six <<= 16;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1796,7 +1923,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_seven = recv_buf[position_in_recv_buf];
+				file_size_part_seven = (u_char)recv_buf[position_in_recv_buf];
 				file_size_part_seven <<= 8;
 				++position_in_recv_buf;
 				++position_in_message;
@@ -1809,7 +1936,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
 				}
-				file_size_part_eight = recv_buf[position_in_recv_buf];
+				u_char test123 = recv_buf[position_in_recv_buf];
+				file_size_part_eight = test123;
+				file_size_part_eight = (u_char)recv_buf[position_in_recv_buf];
 				++position_in_recv_buf;
 				++position_in_message;
 
@@ -1836,22 +1965,22 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > sizeof(variable_to_convert))
 		{
-			char temp1 = variable_to_convert >> 56;
-			buf[3] = temp1;
-			char temp2 = variable_to_convert >> 48;
-			buf[4] = temp2;
-			char temp3 = variable_to_convert >> 40;
-			buf[5] = temp3;
-			char temp4 = variable_to_convert >> 32;
-			buf[6] = temp4;
-			char temp5 = variable_to_convert >> 24;
-			buf[7] = temp5;
-			char temp6 = variable_to_convert >> 16;
-			buf[8] = temp6;
-			char temp7 = variable_to_convert >> 8;
-			buf[9] = temp7;
-			char temp8 = variable_to_convert;
-			buf[10] = temp8;
+			long long temp1 = variable_to_convert >> 56;
+			buf[3] = (char)temp1;
+			long long temp2 = variable_to_convert >> 48;
+			buf[4] = (char)temp2;
+			long long temp3 = variable_to_convert >> 40;
+			buf[5] = (char)temp3;
+			long long temp4 = variable_to_convert >> 32;
+			buf[6] = (char)temp4;
+			long long temp5 = variable_to_convert >> 24;
+			buf[7] = (char)temp5;
+			long long temp6 = variable_to_convert >> 16;
+			buf[8] = (char)temp6;
+			long long temp7 = variable_to_convert >> 8;
+			buf[9] = (char)temp7;
+			long long temp8 = variable_to_convert;
+			buf[10] = (char)temp8;
 			return true;
 		}
 
@@ -1882,6 +2011,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			return false;//exit please?
 		}
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
+
+		std::cout << "dbg OUTPUT:\n";
+		for (long long z = 0; z < amount_to_send; ++z)
+		{
+			std::cout << z << "_" << (int)buf[z] << "\n";
+		}
+
 		int b = sendMutex((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
@@ -1913,9 +2049,26 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			buf[2] = temp2;
 		}
 
+		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > name_of_file.length())
+		{
+			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), name_of_file.length());
+		}
+		else
+		{
+			std::cout << "Error: BUF_LEN too small for file_name. sendFileThread\n";
+			return false;//exit please
+		}
+
 		// Converting to network byte order, and copying it into
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
+
+		std::cout << "dbg OUTPUT:\n";
+		for (long long z = 0; z < amount_to_send; ++z)
+		{
+			std::cout << z << "_" << (int)buf[z] << "\n";
+		}
+
 		int b = sendMutex((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
@@ -1939,16 +2092,16 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		}
 
 		const int NO_SLASHES_DETECTED = -1;
-		int last_seen_slash_location = NO_SLASHES_DETECTED;
+		long long last_seen_slash_location = NO_SLASHES_DETECTED;
 		long long name_and_location_of_file_length = name_and_location_of_file.length();
 		std::string file_name;
 
 		if (name_and_location_of_file_length < INT_MAX - 1)
 		{
 			// iterate backwords looking for a slash
-			for (int i = name_and_location_of_file_length; i > 0; --i)
+			for (long long i = name_and_location_of_file_length; i > 0; --i)
 			{
-				if (name_and_location_of_file[i] == '\\' || name_and_location_of_file[i] == '/')
+				if (name_and_location_of_file[(u_int)i] == '\\' || name_and_location_of_file[(u_int)i] == '/')
 				{
 					last_seen_slash_location = i;
 					break;
@@ -1957,22 +2110,22 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 			if (last_seen_slash_location == NO_SLASHES_DETECTED)
 			{
-				perror("File name and location is invalid. There was not a single '\\' or '/' found.\n");
+				perror("File name and location is invalid. There was not a single \'\\\' or \'/\' found.\n");
 				return error_empty_string;
 			}
 			else if (last_seen_slash_location < name_and_location_of_file_length)
 			{
-				// Copy the file name from name_and_location_of_file to file_name.
-				memcpy(
-					&file_name,
-					&name_and_location_of_file + last_seen_slash_location,
-					last_seen_slash_location - name_and_location_of_file_length
+				//// Copy the file name from name_and_location_of_file to file_name.
+				std::string file_name(
+					name_and_location_of_file,
+					last_seen_slash_location + 1,
+					(last_seen_slash_location + 1) - name_and_location_of_file_length
 				);
 				return file_name;
 			}
 			else
 			{
-				perror("File name is invalid. Found '/' or '\\' at the end of the file name.\n");
+				perror("File name is invalid. Found \'/\' or \'\\\' at the end of the file name.\n");
 				return error_empty_string; // exit please
 			}
 		}
@@ -1985,4 +2138,36 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// Shouldn't get here, but if it does, it is an error.
 		perror("Impossible location,returnFileNameFromFileNameAndPath()\n");
 		return error_empty_string;
+	}
+
+	// Returns size of the file.
+	long long Connection::getFileStatsAndDisplaySize(const char * file_name_and_location)
+	{
+		// Get some statistics on the file, such as size, time created, etc.
+#ifdef _WIN32
+		struct __stat64 FileStatBuf;
+		int r = _stat64(file_name_and_location, &FileStatBuf);
+#endif//_WIN32
+#ifdef __linux__
+		struct stat FileStatBuf;
+		int r = stat(file_name_and_location, &FileStatBuf);
+#endif//__linux__
+
+		if (r == -1)
+		{
+			perror("Error getting file statistics");
+			return -1;
+		}
+		else
+		{
+			// Output to terminal the size of the file in Bytes, KB, MB, GB.
+#ifdef _WIN32
+			displayFileSize(file_name_and_location, nullptr, &FileStatBuf);
+#endif _WIN32
+#ifdef __linux__
+			displayFileSize(file_name_and_location, &FileStatBuf, nullptr);
+#endif// __linux__
+
+			return FileStatBuf.st_size;
+		}
 	}
