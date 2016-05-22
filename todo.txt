@@ -1,4 +1,6 @@
 ﻿# Todo:
+-Update state machine design so the control flow is better
+-check on possiblity of CLOSE_FILE_FOR_WRITE being used for errors. maybe a separate one for an error'd file? issues exist i think.
 -encryption
 -Fix chat output issue when someone sends you a message while you are typing
 -select() should be replaced by poll() and WSAPoll()
