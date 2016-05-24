@@ -145,10 +145,6 @@ private:
 	void LoopedGetUserInput();
 
 
-	// DEPRECATED?
-	void readAndSendTheFileThread(std::string file_name);
-
-
 	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBufLinux, struct _stat64 * FileStatBufWindows);
 	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);

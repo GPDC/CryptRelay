@@ -826,99 +826,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return false;
 	}
 
-	// DEPRECATED?
-	void Connection::readAndSendTheFileThread(std::string string)
-	{
-		// Please make a sha hash of the file here so it can be checked with the
-		// hash of the copy later.
-
-		//StringManip StrManip;
-
-
-
-		/*
-		std::vector <std::string> split_strings;
-
-		// Split the string into multiple strings for every space.
-		if (StrManip.split(string, ' ', split_strings) == false)
-			std::cout << "Split failed?\n";
-
-		// get the size of the array
-		size_t split_strings_size = split_strings.size();
-
-		// There should be two strings in the vector.
-		// [0] should be -f
-		// [1] should be the file name
-		if (split_strings_size < 2)
-		{
-			std::cout << "Error, too few arguments supplied to -f.\n";
-			return;
-		}
-
-		std::cout << "NOTICE: You will not be able to send chat messages while the file is being transfered.\n";
-
-		
-
-
-
-		// Modifying the the user's input here.
-		// string is now the file name that will be transfered.
-		string = StrManip.duplicateCharacter(split_strings[1], '\\');
-
-		// 0 means no flag set.
-		std::string encryption_flag = 0;
-		for (u_int i = 0; i < split_strings_size; ++i)
-		{
-			if (split_strings[i] == "-f" && i < split_strings_size - 1)
-			{
-				std::string file_name_and_loc = split_strings[i + 1];
-				++i;
-			}
-
-			// Does the user want to encrypt it?
-			else if (split_strings[i] == "-e")
-			{
-				// making a guess to see if the user wants to supply an
-				// argument for -e or not.
-				// Obviously not if the next element is a '-'.
-				if (i < split_strings_size - 1)
-				{
-					if (split_strings[i + 1][0] != '-')
-					{
-						encryption_flag = split_strings[i + 1];
-						++i;
-					}
-				}
-
-				// Copy the file so we can encrypt the copied version.
-				// We don't want to encrypt the user's only copy of the file.
-				// Adding .enc as a file extension. This should be changed to
-				// a more appropriate one at some point.
-				std::string copied_file = string + ".enc";
-				if (copyFile(string.c_str(), copied_file.c_str()) == false)
-				{
-					//handle error
-					std::cout << "Failed to make a copy of the file before encrypting it.\n";
-					//exitThread(NULL);
-				}
-
-				// encryptFile(copied_file.c_str(), asynchronous?, RSA?)
-				sendFileThread(copied_file.c_str());
-				//exitThread(NULL);
-			}
-			else // Done looking for arguments as -e was the last thing to check for
-			{
-				sendFileThread(string.c_str());
-				//exitThread(NULL);
-			}
-		}
-		*/
-
-
-	}
 	
-
-
 	// NEW SECTION***********************
 
 	// WARNING:
@@ -1085,11 +993,11 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						std::cout << "Message was too big for the send buf.\n";
 						return;
 					}
-					std::cout << "dbg OUTPUT:\n";
-					for (long long z = 0; z < amount_to_send; ++z)
-					{
-						std::cout << z << "_" << (int)buf[z] << "\n";
-					}
+					//std::cout << "dbg OUTPUT:\n";
+					//for (long long z = 0; z < amount_to_send; ++z)
+					//{
+					//	std::cout << z << "_" << (int)buf[z] << "\n";
+					//}
 				}
 				else
 				{
@@ -1397,11 +1305,11 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				temp2 = bytes_read;
 				buf[2] = (char)temp2;
 
-				std::cout << "dbg send Message (not packet)\n";
-				for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
-				{
-					std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
-				}
+				//std::cout << "dbg send Message (not packet)\n";
+				//for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
+				//{
+				//	std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
+				//}
 
 				// Send the message
 				bytes_sent = sendMutex(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
@@ -1470,10 +1378,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			{
 				if (position_in_message < message_size)
 				{
-					if (position_in_recv_buf == 512)
-					{
-						std::cout << "wat\n";
-					}
 					//61,440 bytes, and then error
 					long long amount_to_write = message_size - position_in_message;
 					if (amount_to_write > received_bytes - position_in_recv_buf)
