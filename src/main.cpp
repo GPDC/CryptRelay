@@ -29,6 +29,8 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <climits>
+#include <sstream>
 
 #include <unistd.h>
 #include <sys/types.h>
@@ -47,7 +49,6 @@
 #include "SocketClass.h"
 #include "chat_program.h"
 #include "port_knock.h"
-#include "file_transfer.h"
 
 #include "UPnP.h"
 #endif//__linux__
@@ -66,7 +67,6 @@
 #include "SocketClass.h"
 #include "chat_program.h"
 #include "port_knock.h"
-#include "file_transfer.h"
 
 #include "UPnP.h"
 #endif//_WIN32

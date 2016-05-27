@@ -8,6 +8,8 @@
 
 *.tlog
 
+.settings/
+
 **/Debug/
 **/Release/
 **/x64/

@@ -1,4 +1,4 @@
-# This guide was created for use w/ Debian Linux & Eclipse 3.8.1
+﻿# This guide was created for use w/ Debian Linux & Eclipse 3.8.1
 Want to use Eclipse to build / make changes to CryptRelay? This is the README for you.
 
 # If you are new to programming on linux you might need to download and install a couple packages that contain some tools / libraries:
@@ -7,8 +7,8 @@ Want to know what separate packages make up the build-essential package? Type:
 gedit /usr/share/doc/build-essential/essential-packages-list
 
 # get the files from github
-First: git clone https://github.com/GPDC/CryptRelay.git linux_implementation
-Second: git pull https://github.com/GPDC/CryptRelay.git linux_implementation
+First: git clone https://github.com/GPDC/CryptRelay.git master
+Second: git pull https://github.com/GPDC/CryptRelay.git master
 
 # Make an Eclipse project
 Now open up the Eclipse IDE.
@@ -33,9 +33,12 @@ If you don't refresh Eclipse will NEVER know about it. Ever. A lot of common pro
 # Now for proper setup in Eclipse:
 Make sure you do all steps for both Release and Debug configurations.
 
-1. right click the project folder->properties->c/c++build/settings/GCC C++ compiler/miscellaneous/other flags/ now add on to the end of whatever is currently there (don't delete!) this line: -std=c++14
+1. right click the project folder->properties->c/c++build/Tool Chain Editor/
+and click on the Current toolchain drop down menu, and select cross gcc.
 
-2. Window->preferences->C/C++->build->settings->discovery tab-> CDT GCC Built-in Compiler Settings-> and add this: -std=c++14
+2. right click the project folder->properties->c/c++build/settings/Cross G++ Compiler/miscellaneous/other flags/ now add on to the end of whatever is currently there (don't delete anything!) this line: -std=c++14
+
+3. Window->preferences->C/C++->build->settings->discovery tab-> CDT Cross GCC Built-in Compiler Settings-> and add this: -std=c++14
 for example:       ${COMMAND} ${FLAGS} -E -P -v -dD -std=c++14 "${INPUTS}"
 Please note that doing this changes the setting for your entire workspace, not just this project.
 
@@ -43,7 +46,7 @@ Please note that doing this changes the setting for your entire workspace, not j
 Look at README_miniupnp to see how to include the miniupnpc library. After having included the miniupnpc library, come back here and continue following instructions.
 
 Lets include the pthread library:
-1. project properties->c/c++build->settings-> GCC C++ Linker->Libraries-> 
+1. project properties->c/c++build->settings-> Cross G++ Linker->Libraries-> 
 	in the Libraries (-l) section put this:
 	pthread
 1.1 the library search path -L shouldn't be necessary to input as it already checks /usr/lib/   for libraries

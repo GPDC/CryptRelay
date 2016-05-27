@@ -1,6 +1,7 @@
 #ifdef __linux__
 #include <string.h> //memset
 #include <errno.h>
+#include <sstream>
 #endif//__linux__
 
 #ifdef _WIN32
@@ -300,9 +301,11 @@ void UPnP::standaloneShowInformation()
 // the connection(?) has started.
 void UPnP::displayTimeStarted(u_int uptime)
 {
+#ifdef commentout // disabling this for now
 	char am_pm[] = "AM";
 	char timebuf[26];
-	time_t TimeNow, TimeStarted;
+	time_t TimeNow;
+	time_t TimeStarted;
 	
 	// Get and place the current time inside TimeNow
 	time(&TimeNow);
@@ -352,6 +355,7 @@ void UPnP::displayTimeStarted(u_int uptime)
 	// Output to console
 	std::cout << "Time started    : ";
 	printf("%.19s %s\n", timebuf, am_pm);				// %.19s just means that it will print out a max of 19 chars
+#endif
 }
 
 // Give it the struct IGDdatas IGDData because that is

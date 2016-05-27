@@ -27,6 +27,7 @@ DIFFERENT way of file implementation: just use the same chat everything, and its
 -implement a progress indicator for the file copy or file transfer. It would preferably be something like this due to using a terminal: in the getuserinput section that does getline(), check to see if the user typed out "progress()", and if the user did, then display the current progress of the file transfer, or file copy, whatever. This would be done by giving a displayProgress() function the args: total_bytes_sent, file_size.  It would just do a simple divide calculation and turn it into a % and display that.  
 OR OR could just have getuserinput() set a global variable that be: display_progress = true; , and any function like copyFile() would check if(display_progress == true), then displayProgress(total_bytes_sent, file_size); and inside the displayProgress() it would make sure to set display_progress = false; at the end.
 Or because i'm no longer implementing file transfer during chat, just make a cool progress bar. or because i am now, ha, find a fix for the chat output issue and then this won't be a problem to implement.
+-adding / fixing displayTimeStarted() in the UpnP class
 
 # Critical Errors:
 

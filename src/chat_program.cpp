@@ -1,11 +1,18 @@
 // chat_program.cpp
 #ifdef __linux__
+#include <stdio.h>
+#include <stdlib.h>
 #include <iostream>		// cout
 #include <string>
 #include <string.h> //memset
 #include <pthread.h>	// <process.h>  multithreading
+#include <thread>
 #include <vector>
 #include <mutex>
+#include <climits>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
@@ -20,6 +27,7 @@
 #include <WS2tcpip.h>
 #include <vector>
 #include <mutex>		// btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
+#incldue <climits>
 
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
@@ -41,7 +49,10 @@ std::mutex m;
 	pthread_t Connection::thread2 = 0;	// Send()
 	int Connection::ret0 = 0;	// Server
 	int Connection::ret1 = 0;	// Client
-        int Connection::ret2 = 0;	// Send()
+    int Connection::ret2 = 0;	// Send()
+
+    // for the myShutdown() function
+    const int SD_BOTH = 2;
 #endif //__linux__
 
 #ifdef _WIN32
@@ -532,7 +543,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		return;
 	}
 
-	Connection* self = (Connection*)instance;
+	//Connection* self = (Connection*)instance;
 	// or what? update: i don't think so, i think i remember it saying that it essential calls self-> on everything for you.
 
 #if 0// TEMP SEND AUTO MSG
@@ -634,130 +645,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	*/
 }
 
-// DEPRECATED
-void Connection::createLoopedSendChatMessagesThread(void * instance)
-{
-	if (global_verbose == true)
-		std::cout << "Starting client thread.\n";
-#ifdef __linux__
-	ret2 = pthread_create(&thread2, NULL, posixLoopedSendMessagesThread, instance);
-	if (ret2)
-	{
-		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret2);
-		exit(EXIT_FAILURE);
-	}
-#endif
-
-#ifdef _WIN32
-	// If a handle is desired, do something like this:
-	// ghEvents[0] = (HANDLE) _beginthread(startServerThread, 0, instance);
-	// or like this because it seems a little better way to deal with error checking
-	// because a negative number isn't being casted to a void *   :
-	// uintptr_t thread_handle = _beginthread(startServerThread, 0, instance);
-	// ghEvents[0] = (HANDLE)thread_handle;
-	//   if (thread_handle == -1L)
-	//		error stuff here;
-	uintptr_t thread_handle = _beginthread(loopedSendChatMessagesThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEventsSend[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
-	if (thread_handle == -1L)
-	{
-		int errsv = errno;
-		std::cout << "_beginthread() error: " << errsv << "\n";
-		return;
-	}
-
-	// previous way of doing it:
-	/*
-	ghEvents[2] = (HANDLE)_beginthread(startClientThread, 0, instance);		//c style typecast    from: uintptr_t    to: HANDLE.
-	if (ghEvents[2] == (HANDLE)(-1L) )
-	{
-	int errsv = errno;
-	std::cout << "_beginthread() error: " << errsv << "\n";
-	return;
-	}
-	*/
-
-#endif//_WIN32
-}
-
-// DEPRECATED
-// This function exists because threads on linux have to return a void*.
-// Conversely on windows it doesn't return anything because threads return void.
-void* Connection::posixLoopedSendChatMessagesThread(void * instance)
-{
-	if (instance != nullptr)
-		loopedSendChatMessagesThread(instance);
-	return nullptr;
-}
-
-// DEPRECATED
-void Connection::loopedSendChatMessagesThread(void * instance)
-{
-	Connection* self = (Connection*)instance;
-
-	if (instance == nullptr)
-	{
-		std::cout << "Instance was NULL.\n";
-		self->exitThread(nullptr);
-	}
-
-	int bytes;
-	std::string message_to_send = "Nothing.\n";
-
-#if 1	/* TEMP SEND AUTO MSG **********************/
-	message_to_send = "This is an automated message from my send loop.\n";
-	const char* send_buf = "";
-
-	//send this message once
-	send_buf = message_to_send.c_str();
-	int wombocombo = send(global_socket, send_buf, (int)strlen(send_buf), 0);
-	if (wombocombo == SOCKET_ERROR)
-	{
-		self->SockStuff.getError(wombocombo);
-		std::cout << "send failed.\n";
-		self->SockStuff.myCloseSocket(global_socket);
-		//return;
-	}
-	/*std::cout << "dbg Message sent: " << send_buf << "\n";
-	if (global_verbose == true)
-		std::cout << "dbg Bytes Sent: " << wombocombo << "\n";*/
-
-#endif	/* TEMP SEND AUTO MSG *********************/
-
-
-
-
-	//ask & send the user's input the rest of the time.
-	while (1)
-	{
-		// Get user's input
-		std::getline(std::cin, message_to_send);
-
-		// Do some checks to see if the user wants to xfer a file or exit
-		if (self->doesUserWantToSendAFile(message_to_send) == true)
-		{
-			// start send file process.
-		}
-
-		// Put user's input into the send buffer
-		send_buf = message_to_send.c_str();
-		// Send it
-		bytes = send(global_socket, send_buf, (int)strlen(send_buf), 0);
-		if (bytes == SOCKET_ERROR)
-		{
-			self->SockStuff.getError(bytes);
-			std::cout << "send failed.\n";
-			self->SockStuff.myCloseSocket(global_socket);
-			break;
-		}
-		std::cout << "Me: "<< send_buf << "\n";
-		if (global_verbose == true)
-			std::cout << "dbg Bytes Sent: " << bytes << "\n";
-	}
-
-	self->exitThread(nullptr);
-}
-
 // Output to console the the peer's IP and port that you have connected to the peer with.
 void Connection::coutPeerIPAndPort(SOCKET s)
 {
@@ -851,7 +738,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		do
 		{
-			bytes_sent = send(global_socket, sendbuf, amount_to_send, NULL);
+			bytes_sent = send(global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
 				SockStuff.getError(bytes_sent);
@@ -1001,7 +888,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					"Programmer error. BUF_LEN < 3. loopedGetUserInput()";
+					std::cout << "Programmer error. BUF_LEN < 3. loopedGetUserInput()";
 					return;
 				}
 				int b = sendMutex((char *)buf, (int)amount_to_send);
@@ -1867,7 +1754,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert)
 	{
-		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > sizeof(variable_to_convert))
+		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > (long long)sizeof(variable_to_convert))
 		{
 			long long temp1 = variable_to_convert >> 56;
 			buf[3] = (char)temp1;
@@ -1934,8 +1821,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	bool Connection::sendFileName(char * buf, const long long BUF_LEN, std::string name_of_file)
 	{
-		// Make usre file name isn't too big
-		int length_of_msg = name_of_file.length();
+		// Make sure file name isn't too big
+		long long length_of_msg = name_of_file.length();
 		if (length_of_msg < 0 || length_of_msg >= 255)
 		{
 			return false;//exit please
@@ -1953,7 +1840,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			buf[2] = temp2;
 		}
 
-		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > name_of_file.length())
+		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > length_of_msg)
 		{
 			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), name_of_file.length());
 		}
@@ -2067,7 +1954,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Output to terminal the size of the file in Bytes, KB, MB, GB.
 #ifdef _WIN32
 			displayFileSize(file_name_and_location, nullptr, &FileStatBuf);
-#endif _WIN32
+#endif//_WIN32
 #ifdef __linux__
 			displayFileSize(file_name_and_location, &FileStatBuf, nullptr);
 #endif// __linux__
