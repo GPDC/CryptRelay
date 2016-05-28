@@ -139,7 +139,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	SOCKET s = SocketStuff.mySocket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
 	if (s == INVALID_SOCKET)
 	{
-		SocketStuff.getError(s);
+		SocketStuff.getError();
 		std::cout << "isPortOpen()'s sock() failed.\n";
 		SocketStuff.myCloseSocket(s);
 		return false;

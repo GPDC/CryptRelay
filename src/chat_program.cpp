@@ -27,7 +27,7 @@
 #include <WS2tcpip.h>
 #include <vector>
 #include <mutex>		// btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
-#incldue <climits>
+#include <climits>
 
 #include "chat_program.h"
 #include "GlobalTypeHeader.h"
@@ -119,6 +119,7 @@ Connection::Connection()
 Connection::~Connection()
 {
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
+	// UPDATE: ctrl-c does not call deconstructors.
 	SockStuff.myShutdown(global_socket, SD_BOTH);
 
 
@@ -281,7 +282,7 @@ void Connection::serverThread(void * instance)
 
 		if (errchk == SOCKET_ERROR)
 		{
-			self->SockStuff.getError(errchk);
+			self->SockStuff.getError();
 			std::cout << "startServerThread() select Error.\n";
 			self->SockStuff.myCloseSocket(listen_socket);
 			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
@@ -615,7 +616,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 		else
 		{
-			SockStuff.getError(bytes);
+			SockStuff.getError();
 			std::cout << "recv() failed. loopedReceiveMessagesThread(). State machine.\n";
 			break;
 		}
@@ -661,7 +662,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	int errchk = getpeername(s, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
 	if (errchk == -1)
 	{
-		SockStuff.getError(errchk);
+		SockStuff.getError();
 		std::cout << "getpeername() failed.\n";
 		// continuing, b/c this isn't a big problem.
 	}
@@ -677,7 +678,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICHOST);
 	if (errchk != 0)
 	{
-		SockStuff.getError(errchk);
+		SockStuff.getError();
 		std::cout << "getnameinfo() failed.\n";
 		// still going to continue the program, this isn't a big deal
 	}
@@ -685,7 +686,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
 }
 
-// Cross platform windows and linux thread exiting
+// Cross platform windows and linux thread exiting. Not for use with std::thread
     void Connection::exitThread(void* ptr)
     {
 #ifdef _WIN32
@@ -741,7 +742,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			bytes_sent = send(global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
-				SockStuff.getError(bytes_sent);
+				SockStuff.getError();
 				std::cout << "ERROR: send() failed.\n";
 				SockStuff.myCloseSocket(global_socket);
 				m.unlock();
@@ -796,7 +797,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 
 				std::string file_name_and_loca;
-				std::string file_encryption_option;
+				std::string file_encryption_opt;
 				// Determine if user wants to send a file or Encrypt & send a file.
 				for (long long i = 0; i < split_strings_size; ++i)
 				{
@@ -814,7 +815,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					else if (split_strings[(u_int)i] == "-fE" && i < split_strings_size -2)
 					{
 						file_name_and_loca = split_strings[(u_int)i + 1];
-						file_encryption_option = split_strings[(u_int)i + 2];
+						file_encryption_opt = split_strings[(u_int)i + 2];
 
 						// Fix the user's input to add an escape character to every '\'
 						std::string copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
@@ -953,38 +954,22 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	//<unistd.h>
 
 	// Pass NULL to the struct that doesn't correspond to your OS.
-	bool Connection::displayFileSize(const char* file_name_and_location, struct stat * FileStatBufLinux, struct _stat64 * FileStatBufWindows)
+	bool Connection::displayFileSize(const char* file_name_and_location, myStat * FileStatBuf)
 	{
-#ifdef _WIN32
-		if (FileStatBufWindows == NULL)
+		if (FileStatBuf == NULL)
 		{
 			std::cout << "displayFileSize() failed. NULL pointer.\n";
 			return false;
 		}
 		// Shifting the bits over by 10. This divides it by 2^10 aka 1024
-		long long KB = FileStatBufWindows->st_size >> 10;
+		long long KB = FileStatBuf->st_size >> 10;
 		long long MB = KB >> 10;
 		long long GB = MB >> 10;
-		std::cout << "Displaying file size as Bytes: " << FileStatBufWindows->st_size << "\n";
+		std::cout << "Displaying file size as Bytes: " << FileStatBuf->st_size << "\n";
 		std::cout << "As KB: " << KB << "\n";
 		std::cout << "As MB: " << MB << "\n";
 		std::cout << "As GB: " << GB << "\n";
-#endif//_WIN32
-#ifdef __linux__
-		if (FileStatBufLinux == NULL)
-		{
-			std::cout << "displayFileSize() failed. NULL pointer.\n";
-			return false;
-		}
-		// Shifting the bits over by 10. This divides it by 2^10 aka 1024
-		long long KB = FileStatBufLinux->st_size >> 10;
-		long long MB = KB >> 10;
-		long long GB = MB >> 10;
-		std::cout << "Displaying file size as Bytes: " << FileStatBufLinux->st_size << "\n";
-		std::cout << "As KB: " << KB << "\n";
-		std::cout << "As MB: " << MB << "\n";
-		std::cout << "As GB: " << GB << "\n";
-#endif//__linux__
+
 		return true;
 	}
 
@@ -995,7 +980,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 
 		FILE *ReadFile;
-		FILE *WriteFile;
+		FILE *WriteF;
 
 		ReadFile = fopen(read_file_name_and_location, "rb");
 		if (ReadFile == NULL)
@@ -1003,8 +988,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			perror("Error opening file for reading binary");
 			return false;
 		}
-		WriteFile = fopen(write_file_name_and_location, "wb");
-		if (WriteFile == NULL)
+		WriteF = fopen(write_file_name_and_location, "wb");
+		if (WriteF == NULL)
 		{
 			perror("Error opening file for writing binary");
 			return false;
@@ -1037,7 +1022,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		{
 			bytes_read = fread(buffer, 1, buffer_size, ReadFile);
 			if (bytes_read)
-				bytes_written = fwrite(buffer, 1, (size_t)bytes_read, WriteFile);
+				bytes_written = fwrite(buffer, 1, (size_t)bytes_read, WriteF);
 			else
 				bytes_written = 0;
 
@@ -1079,7 +1064,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 
 
-		if (fclose(WriteFile))
+		if (fclose(WriteF))
 			perror("Error closing file designated for writing");
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
@@ -1560,69 +1545,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return true;
 	}
 
-	// This function is only for use with the RecvStateMachine
-	bool Connection::writePartOfTheFileFromPeer(char * recv_buf, long long bytes_received)
-	{
-		//FILE *WriteFile = NULL;
-		
-		// Write the file to disk.
-
-		//int did_file_stat_error = false;
-		//struct stat FileStatBuf;
-		//// Get some statistics on the file, such as size, time created, etc.
-		//int r = stat(read_file_name_and_location, &FileStatBuf);
-		//if (r == -1)
-		//{
-		//	perror("Error getting file statistics");
-		//	did_file_stat_error = true;
-		//}
-		//else
-		//{
-		//	// Output to terminal the size of the file in Bytes, KB, MB, GB.
-		//	displayFileSize(read_file_name_and_location, &FileStatBuf);
-		//}
-
-
-
-		// Please make a sha hash of the file here so it can be checked with the
-		// hash of the copy later.
-
-
-		// put these variables in the header so it won't lose its state.
-		// state machine recv()'s , checks flag, then it calls this function.
-		// this function writes the recv()'d buffer into the open file.
-		// ONLY open file if it hasn't been opened yet.
-		// close file once it is done, delete WriteFile;
-
-		
-		// recv()
-		
-
-		
-		if (total_bytes_written_to_file >= incoming_file_size_from_peer)
-		{
-			std::cout << "File transfer from peer complete.\n";
-
-			// close file?
-			isFileDoneBeingWritten = true;
-			
-			return false;
-		}
-		else
-			return true;//continue receiving and writing to file.
-
-		// Please implement sha hash checking here to make sure the file is legit.
-
-
-		if (fclose(WriteFile))
-		{
-			perror("Error closing file designated for writing");
-			return false;
-		}
-
-		return true;
-	}
-
 	// For use with RecvBufStateMachine only.
 	int Connection::assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes)
 	{
@@ -1834,9 +1756,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Copy the type of message flag into the buf
 			buf[0] = CR_FILE_NAME;
 			// Copy the size of the message into the buf as big endian.
-			char temp1 = length_of_msg >> 8;
+			char temp1 = (char)length_of_msg >> 8;
 			buf[1] = temp1;
-			char temp2 = length_of_msg;
+			char temp2 = (char)length_of_msg;
 			buf[2] = temp2;
 		}
 
@@ -1852,7 +1774,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		// Converting to network byte order, and copying it into
 		// the buffer.
-		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
+		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
 		std::cout << "dbg OUTPUT:\n";
 		for (long long z = 0; z < amount_to_send; ++z)
@@ -1909,8 +1831,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				//// Copy the file name from name_and_location_of_file to file_name.
 				std::string file_name(
 					name_and_location_of_file,
-					last_seen_slash_location + 1,
-					(last_seen_slash_location + 1) - name_and_location_of_file_length
+					(size_t)last_seen_slash_location + 1,
+					(size_t)((last_seen_slash_location + 1) - name_and_location_of_file_length)
 				);
 				return file_name;
 			}
@@ -1927,7 +1849,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		}
 
 		// Shouldn't get here, but if it does, it is an error.
-		perror("Impossible location,returnFileNameFromFileNameAndPath()\n");
+		std::cout << "Impossible location, returnFileNameFromFileNameAndPath()\n";
 		return error_empty_string;
 	}
 
@@ -1952,12 +1874,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		else
 		{
 			// Output to terminal the size of the file in Bytes, KB, MB, GB.
-#ifdef _WIN32
-			displayFileSize(file_name_and_location, nullptr, &FileStatBuf);
-#endif//_WIN32
-#ifdef __linux__
-			displayFileSize(file_name_and_location, &FileStatBuf, nullptr);
-#endif// __linux__
+			displayFileSize(file_name_and_location, &FileStatBuf);
 
 			return FileStatBuf.st_size;
 		}

@@ -253,6 +253,7 @@ int main(int argc, char *argv[])
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneShowInformation();
+		delete Upnp;
 		return EXIT_SUCCESS;
 	}
 	else if (CLI.get_list_of_port_forwards == true)
@@ -392,7 +393,11 @@ int main(int argc, char *argv[])
 			Connection::ghEvents,	// Array of objects
 			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
 			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
-		);	
+		);
+	if (r == WAIT_FAILED)
+	{
+		std::cout << "Error " << GetLastError() << ". WaitForMultipleObjects() failed.\n";
+	}
 #endif//_WIN32	
 
 	

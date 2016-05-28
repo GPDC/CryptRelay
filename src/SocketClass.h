@@ -101,7 +101,7 @@ public:
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError(int errchk_number);	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
+	int getError();	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
 
 protected:
 private:

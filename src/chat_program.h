@@ -86,6 +86,15 @@ public:
 
 protected:
 private:
+
+#ifdef _WIN32
+	typedef struct _stat64 myStat;
+#endif//WIN32
+#ifdef __linux__
+	typedef struct stat myStat;
+#endif//__linux__
+
+
 	SocketClass SockStuff;
 
 	// These are called by createStartServerThread() and createStartClientThread()
@@ -93,12 +102,6 @@ private:
 	// Conversely on windows it doesn't return anything because threads return void.
 	static void* posixStartServerThread(void * instance);
 	static void* posixStartClientThread(void * instance);
-
-	// Send Chat Messages thread
-	static void createLoopedSendChatMessagesThread(void * instance);	// DEPRECATED
-	static void* posixLoopedSendChatMessagesThread(void * instance);	// DEPRECATED
-	static void loopedSendChatMessagesThread(void * instance);			// DEPRECATED
-
 
 	// Server and Client threads
 	static void serverThread(void * instance);
@@ -144,8 +147,7 @@ private:
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void LoopedGetUserInput();
 
-
-	bool displayFileSize(const char* file_name_and_location, struct stat * FileStatBufLinux, struct _stat64 * FileStatBufWindows);
+	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
 	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 	bool sendFileThread(std::string file_name);
@@ -222,7 +224,6 @@ private:
 	long long bytes_read = 0;
 	long long bytes_written = 0;
 	long long total_bytes_written_to_file = 0;
-	bool writePartOfTheFileFromPeer(char * recv_buf, long long bytes_received);
 
 	FILE * WriteFile = nullptr;
 

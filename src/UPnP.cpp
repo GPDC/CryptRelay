@@ -87,7 +87,7 @@ void UPnP::standaloneGetListOfPortForwards()
 // With the current setup this means it is done via the
 // CommandLineInput class a.k.a. CLI.
 // In there the user inputs the options via command line
-void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol)
+void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* internet_protocol)
 {
 	//// Enable socket use on Windows
 	//SockStuff.myWSAStartup();
@@ -103,7 +103,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			extern_port,
-			protocol,
+			internet_protocol,
 			0
 		);
 	if (r != UPNPCOMMAND_SUCCESS)
@@ -115,7 +115,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 		else
 			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed. Router might not have this feature?\n";
 	}
-	std::cout << "Port forward rule: " << protocol << " " << extern_port << " successfully deleted.\n";
+	std::cout << "Port forward rule: " << internet_protocol << " " << extern_port << " successfully deleted.\n";
 }
 
 
@@ -370,7 +370,7 @@ void UPnP::getListOfPortForwards()
 	char internal_client[40];
 	char internal_port[6];
 	char ext_port[6];
-	char protocol[4];
+	char internet_protocol[4];
 	char description[80];
 	char enabled[6];
 	char remote_host[64];
@@ -398,7 +398,7 @@ void UPnP::getListOfPortForwards()
 			ext_port,
 			internal_client,
 			internal_port,
-			protocol,
+			internet_protocol,
 			description,		// Description of the port forward entry. (this is supplied by the person who made the entry)
 			enabled,
 			remote_host,
@@ -409,7 +409,7 @@ void UPnP::getListOfPortForwards()
 		if (r == 0)
 		{
 			printf("%2d %s %10s->%s:%-5s '%s'     %s         '%s'\n",
-				i, protocol, ext_port, internal_client, internal_port,
+				i, internet_protocol, ext_port, internal_client, internal_port,
 				description, lease_time, remote_host);
 		}
 		else

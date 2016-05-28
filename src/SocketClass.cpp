@@ -70,7 +70,7 @@ bool SocketClass::myWSAStartup()
 	int errchk = WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (errchk != 0)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "WSAStartup failed\n";
 		return false;
 	}
@@ -88,7 +88,7 @@ bool SocketClass::mySetSockOpt(SOCKET sock, int level, int option_name, const ch
 	int errchk = setsockopt(sock, level, option_name, option_value, option_length);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "mySetSockOpt() failed.\n";
 		// hmm should i close socket here? or leave it up to whoever called this function?
 		return false;
@@ -108,7 +108,7 @@ SOCKET SocketClass::mySocket(int address_family, int socket_type, int protocol)
 	SOCKET s = socket(address_family, socket_type, protocol);
 	if (s == INVALID_SOCKET)
 	{
-		getError(s);
+		getError();
 		std::cout << "Socket failed.\n";
 		myCloseSocket(s);
 		return INVALID_SOCKET;//false
@@ -127,7 +127,7 @@ bool SocketClass::myBind(SOCKET fd, const sockaddr *name, int name_len)
 	int errchk = bind(fd, name, name_len);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "Bind failed.\n";
 		myCloseSocket(fd);
 		return false;
@@ -146,7 +146,7 @@ int SocketClass::mySend(SOCKET s, const char* buffer, int buffer_length, int fla
 	int errchk = send(s, buffer, buffer_length, flags);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "send failed.\n";
 		return SOCKET_ERROR;
 	}
@@ -160,7 +160,7 @@ int SocketClass::mySendTo(SOCKET s, const char* buf, int buf_len, int flags, con
 	int errchk = sendto(s, buf, buf_len, flags, target, target_len);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "Sendto failed.\n";
 		myCloseSocket(s);
 		return SOCKET_ERROR;
@@ -175,7 +175,7 @@ int SocketClass::myRecv(SOCKET s, char* buf, int buf_len, int flags)
 	int errchk = recv(s, buf, buf_len, flags);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "recv failed.\n";
 		return SOCKET_ERROR;
 	}
@@ -195,7 +195,7 @@ BYTE_SIZE SocketClass::myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, s
 	BYTE_SIZE errchk = recvfrom(s, buf, buf_len, flags, from, from_len);// changed from int to ssize_t
 	if (errchk == SOCKET_ERROR)
 	{
-		int saved_errno = getError(errchk);
+		int saved_errno = getError();
 
 #ifdef __linux__
 		if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK)
@@ -253,7 +253,7 @@ int SocketClass::myConnect(SOCKET fd, const sockaddr* name, int name_len)
 	int errchk = connect(fd, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
-		int r = getError(errchk);
+		int r = getError();
 		if (r == 10060)
 			return -10060; // -10060 is a timeout error.
 		std::cout << "Connect failed. Socket Error.\n";
@@ -278,7 +278,7 @@ bool SocketClass::myListen(SOCKET fd)
 	int errchk = listen(fd, SOMAXCONN);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "listen failed.\n";
 		myCloseSocket(fd);
 		return false;
@@ -305,7 +305,7 @@ SOCKET SocketClass::myAccept(SOCKET fd)
 	SOCKET accepted_socket = accept(fd, (sockaddr*)&incomingAddr, &addr_size);
 	if (accepted_socket == INVALID_SOCKET)
 	{
-		getError(accepted_socket);
+		getError();
 		std::cout << "accept failed.\n";
 		myCloseSocket(fd);
 		return INVALID_SOCKET;
@@ -328,7 +328,7 @@ bool SocketClass::myGetAddrInfo(std::string target_ip, std::string target_port, 
 	int errchk = getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);    //added & too ppresult on linux
 	if (errchk != 0)
 	{
-		getError(errchk);;
+		getError();;
 		std::cout << "getaddrinfo failed.\n";
 		return false;
 	}
@@ -349,7 +349,7 @@ int SocketClass::myinet_pton(int family, char* ip_addr, void* paddr_buf)
 		std::cout << "inet_pton: paddr_buf points to invalid IPV4 or IPV6 string.\n";
 	else if (errchk == -1)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "inet_pton failed\n";
 		return 0;
 	}
@@ -366,7 +366,7 @@ bool SocketClass::myShutdown(SOCKET fd, int operation)
 	int errchk = shutdown(fd, operation);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError(errchk);
+		getError();
 		std::cout << "Shutdown failed.\n";
 		std::cout << "Closing socket.\n";
 		myCloseSocket(fd);
@@ -410,7 +410,7 @@ void SocketClass::myFreeAddrInfo(addrinfo* pAddrInfo)
 
 
 // errno needs to be set to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
-int SocketClass::getError(int errchk_number)
+int SocketClass::getError()
 {
 	// Added int errchk_number as input because of an odd case where WSAGetLastError() doesn't think there is an error but there is.
 	// I think i figured out why: if WSAStartup() is not initialized, i don't believe WSAGetLastError() can report any errors.
