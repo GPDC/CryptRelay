@@ -174,13 +174,13 @@ private:
 
 	// Variables necessary for processRecvBuf().
 	// They are here so that the state can be saved even after exiting the funciton.
-	long long position_in_recv_buf;
-	long long process_recv_buf_state;
-	long long position_in_message;	// current cursor position inside the imaginary message sent by the peer.
-	int8_t type_of_message_flag;
-	long long message_size_part_one = 0;
-	long long message_size_part_two = 0;
-	long long message_size = 0;		// peer told us this size
+	long long position_in_recv_buf = CR_BEGIN;
+	long long process_recv_buf_state = CHECK_FOR_FLAG;
+	long long position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
+	int8_t type_of_message_flag = CR_NO_FLAG;
+	long long message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+	long long message_size_part_two = CR_SIZE_NOT_ASSIGNED;
+	long long message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
 	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
 	std::string incoming_file_name_from_peer;
@@ -205,7 +205,6 @@ private:
 
 	enum RecvStateMachine
 	{
-		RECEIVE,
 		CHECK_FOR_FLAG,
 		CHECK_MESSAGE_SIZE_PART_ONE,
 		CHECK_MESSAGE_SIZE_PART_TWO,
