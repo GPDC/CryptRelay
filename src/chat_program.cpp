@@ -768,16 +768,33 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		std::string user_input;
 		std::thread FileThread;
 
+		const long long CHAT_BUF_LEN = 4096;	// try catch see if enough memory available?
+		char* chat_buf = new char[CHAT_BUF_LEN];
+
 		while (1)
 		{
 			std::getline(std::cin, user_input);
 			if (user_input == "exit()")
 			{
 				// Exit program.
-				return;//why does this cause the program to crash?
+				break;
 			}
 			if (doesUserWantToSendAFile(user_input) == true)
 			{
+				// Join the thread if the thread has finished execution.
+				if (is_send_file_thread_in_use == false)
+				{
+					if (FileThread.joinable() == true)
+					{
+						FileThread.join();
+					}
+				}
+				else // The thread is still active, don't go trying to do anything.
+				{
+					std::cout << "Please wait for the file(s) to finish sending before sending another.\n";
+					continue; // start at the beginning of the while loop.
+				}
+
 				StringManip StrManip;
 				std::vector <std::string> split_strings;
 
@@ -808,8 +825,28 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						// Fix the user's input to add an escape character to every '\'
 						StrManip.duplicateCharacter(file_name_and_loca, '\\');
 
+						// The first string will always be -f. All strings after that
+						// will be concatenated, and then have the spaces re-added after
+						// to prevent issues with spaces in file names and paths.
+						for (int b = 2; b < split_strings_size; ++b)
+						{
+							split_strings[1] += " " + split_strings[b];
+						}
+						if (split_strings_size >= 2)
+						{
+							file_name_and_loca = split_strings[1];
+							std::cout << "dbg split_strings concatentated with spaces re-added: " << split_strings[1] << "\n";
+							std::cout << "dbg file_name_and_loca == " << file_name_and_loca << "\n";
+						}
+
 						// Send the file
-						FileThread = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
+						// Making sure the thread doesn't already exist before creating it.
+						if (FileThread.joinable() == false)
+						{
+							is_send_file_thread_in_use = true;
+							FileThread = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
+						}
+
 						break;
 					}
 					else if (split_strings[(u_int)i] == "-fE" && i < split_strings_size -2)
@@ -828,8 +865,11 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						// beep boop encryption(file_encryption_option);
 
 						// Send the file
-
-						FileThread = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
+						if (FileThread.joinable() == false)
+						{
+							is_send_file_thread_in_use = true;
+							FileThread = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
+						}
 						//if (sendFileThread(copied_file_name_and_location) == false)
 							//return;//exit please?
 						break;
@@ -844,22 +884,20 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				if (user_input_length > USHRT_MAX)
 				{
 					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
-					return;
+					break;
 				}
 
 				long long amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
-				const long long BUF_LEN = 4096;	// try catch see if enough memory available?
-				char* buf = new char[BUF_LEN];
 
-				if (BUF_LEN >= CR_RESERVED_BUFFER_SPACE)
+				if (CHAT_BUF_LEN >= CR_RESERVED_BUFFER_SPACE)
 				{
 					// Copy the type of message flag into the buf
-					buf[0] = CR_CHAT;
+					chat_buf[0] = CR_CHAT;
 					// Copy the size of the message into the buf as big endian.
 					long long temp1 = user_input_length >> 8;
-					buf[1] = (char)temp1;
+					chat_buf[1] = (char)temp1;
 					long long temp2 = user_input_length;
-					buf[2] = (char)temp2;
+					chat_buf[2] = (char)temp2;
 
 
 					// This is the same as ^, but maybe easier to understand? idk.
@@ -871,15 +909,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 
 					// Copy the user's message into the buf
-					if ((BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
+					if ((CHAT_BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
 						&& user_input_length < UINT_MAX)
 					{
-						memcpy(buf + CR_RESERVED_BUFFER_SPACE, user_input.c_str(), (size_t)user_input_length);
+						memcpy(chat_buf + CR_RESERVED_BUFFER_SPACE, user_input.c_str(), (size_t)user_input_length);
 					}
 					else
 					{
 						std::cout << "Message was too big for the send buf.\n";
-						return;
+						break;
 					}
 					//std::cout << "dbg OUTPUT:\n";
 					//for (long long z = 0; z < amount_to_send; ++z)
@@ -890,20 +928,21 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				else
 				{
 					std::cout << "Programmer error. BUF_LEN < 3. loopedGetUserInput()";
-					return;
+					break;
 				}
-				int b = sendMutex((char *)buf, (int)amount_to_send);
+				int b = sendMutex((char *)chat_buf, (int)amount_to_send);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
 						std::cout << "Exiting loopedGetUserInput()\n";
-					delete[]buf;
-					return;
+					break;
 				}
-
-				delete[]buf;
 			}
 		}
+
+		delete[]chat_buf;
+		if (FileThread.joinable() == true)
+			FileThread.join();
 
 		return;
 	}
@@ -1081,9 +1120,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	bool Connection::sendFileThread(std::string name_and_location_of_file)
 	{
-		// MAKE THIS A THREADED FUNCTION
-
-
 		// sha checking?
 
 
@@ -1103,6 +1139,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (ReadFile == NULL)
 		{
 			perror("Error opening file for reading binary sendFileThread");
+			delete[]buf;
+			is_send_file_thread_in_use = false;
 			return false;
 		}
 
@@ -1112,6 +1150,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (file_name.empty() == true)
 		{
 			std::cout << "dbg file_name.empty() returned true.";
+			delete[]buf;
+			is_send_file_thread_in_use = false;
 			return false; //exit please, file name couldn't be found.
 		}
 		std::cout << "dbg name of the file: " << file_name << "\n";
@@ -1120,6 +1160,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// Send the file name to peer
 		if (sendFileName(buf, BUF_LEN, file_name) == false)
 		{
+			delete[]buf;
+			is_send_file_thread_in_use = false;
 			return false; //exit please
 		}
 
@@ -1127,12 +1169,18 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		long long size_of_file = 0;
 		size_of_file = getFileStatsAndDisplaySize(name_and_location_of_file.c_str());
 		if (size_of_file == -1)
+		{
+			delete[]buf;
+			is_send_file_thread_in_use = false;
 			return false; //exit please
+		}
+
 
 		// Send file size to peer
 		if (sendFileSize(buf, BUF_LEN, size_of_file) == false)
 		{
 			delete[]buf;
+			is_send_file_thread_in_use = false;
 			return false;// exit please
 		}
 
@@ -1200,24 +1248,20 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// then it didn't write as much as it read for some reason.
 		} while (bytes_read > 0);
 
-
-		if (total_bytes_sent == size_of_file)
-			std::cout << "File transfer to peer is complete.\n";
-		else
-		{
-			std::cout << "total_bytes_sent != size_of_file\n";
-		}
-
 		// Please implement sha hash checking here to make sure the file is legit.
 
-		if (bytes_sent <= 0)
-			perror("Error while transfering the file");
+		//if (bytes_sent <= 0)
+		//	perror("Error while transfering the file");
+		//else
+		//{
+			std::cout << "File transfer complete\n";
+		//}
 
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 
 		delete[]buf;
-
+		is_send_file_thread_in_use = false;
 		return true;
 	}
 
@@ -1250,7 +1294,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			{
 				if (position_in_message < message_size)
 				{
-					//61,440 bytes, and then error
 					long long amount_to_write = message_size - position_in_message;
 					if (amount_to_write > received_bytes - position_in_recv_buf)
 						amount_to_write = received_bytes - position_in_recv_buf;
@@ -1270,7 +1313,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 							perror("Error closing file for writing");
 						}
 						// delete file?
-						return false;
+						process_recv_buf_state = ERROR_STATE;
+						break;
 					}
 					else
 					{
@@ -1418,8 +1462,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					std::cout << "dbg Check for flag: ";
-					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+					//std::cout << "dbg Check for flag: ";
+					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 
 					type_of_message_flag = (u_char)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
@@ -1437,8 +1481,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					std::cout << "dbg Check msg size pt1: ";
-					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+					//std::cout << "dbg Check msg size pt1: ";
+					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_one = (u_char)recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
 					++position_in_recv_buf;
@@ -1456,13 +1500,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					std::cout << "dbg Check msg size pt2: ";
-					std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
+					//std::cout << "dbg Check msg size pt2: ";
+					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_two = (u_char)recv_buf[position_in_recv_buf];
 					message_size = message_size_part_one | message_size_part_two;
 					++position_in_recv_buf;
 
-					std::cout << "dbg position_in_recv_buf: " << position_in_recv_buf << "\n";
+					//std::cout << "dbg position_in_recv_buf: " << position_in_recv_buf << "\n";
 
 					if (type_of_message_flag == CR_FILE)
 						process_recv_buf_state = WRITE_FILE_FROM_PEER;
@@ -1516,15 +1560,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				if (position_in_message < message_size)
 				{
-					perror("dbg: position_in_message < message_size, closefileforwrite\n");
+					std::cout << "dbg: position_in_message < message_size, closefileforwrite\n";
 				}
 				if (position_in_message == message_size)
 				{
-					perror("dbg: position_in_message == message_size, everything A OK closefileforwrite\n");
+					std::cout << "dbg: position_in_message == message_size, everything A OK closefileforwrite\n";
 				}
 				if (position_in_message > message_size)
 				{
-					perror("dbg: ERROR, position_in_message > message_size , closefileforwrite\n");
+					std::cout << "dbg: ERROR, position_in_message > message_size , closefileforwrite\n";
 				}
 				process_recv_buf_state = CHECK_FOR_FLAG;
 				break;

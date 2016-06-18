@@ -152,6 +152,9 @@ private:
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 	bool sendFileThread(std::string file_name);
 
+	// This is only for use with sendFileThread()
+	bool is_send_file_thread_in_use = false;
+
 	// Do not touch. This is for sendMutex()
 	int bytes_sent = 0;
 
@@ -173,14 +176,14 @@ private:
 
 
 	// Variables necessary for processRecvBuf().
-	// They are here so that the state can be saved even after exiting the funciton.
+	// They are here so that the state can be saved even after exiting the function.
 	long long position_in_recv_buf;
 	long long process_recv_buf_state;
 	long long position_in_message;	// current cursor position inside the imaginary message sent by the peer.
 	int8_t type_of_message_flag;
 	long long message_size_part_one = 0;
 	long long message_size_part_two = 0;
-	long long message_size = 0;		// peer told us this size
+	long long message_size = 0;		// peer tells us this size
 	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
 	std::string incoming_file_name_from_peer;
