@@ -2,9 +2,9 @@
 
 // Program name: CryptRelay     version: 0.6.1
 // Rough outline for future versions:
-// 0.7 == file transfer
-// 0.8 == encryption
-// 0.9 == polish
+// 0.8 == file transfer
+// 0.9 == encryption
+// 1.0 == polished release
 
 // Formatting guide: Located at the bottom of main.cpp
 
@@ -77,7 +77,7 @@
 #endif//__linux__
 
 bool global_verbose = false;
-
+bool global_debug = true;
 
 // Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
@@ -382,10 +382,16 @@ int main(int argc, char *argv[])
 #ifdef __linux__
 	int pret = pthread_join(Connection::thread0, NULL);
             if (pret)
-                std::cout << "error";
+			{
+				std::cout << "error";
+				DBG_ERR("It failed at ");
+			}
 	pret = pthread_join(Connection::thread1, NULL);
             if (pret)
-                std::cout << "error";
+			{
+				std::cout << "error";
+				DBG_ERR("It failed at ");
+			}
 #endif//__linux__
 #ifdef _WIN32
 	int r = WaitForMultipleObjects(
@@ -397,6 +403,7 @@ int main(int argc, char *argv[])
 	if (r == WAIT_FAILED)
 	{
 		std::cout << "Error " << GetLastError() << ". WaitForMultipleObjects() failed.\n";
+		DBG_ERR("It failed at ");
 	}
 #endif//_WIN32	
 

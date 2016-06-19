@@ -169,6 +169,7 @@ void Connection::createStartServerThread(void * instance)
 	if (ret0)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret0);
+		DBG_ERR("It failed at ");
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -188,6 +189,7 @@ void Connection::createStartServerThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
+		DBG_ERR("It failed at ");
 		return;
 	}
 
@@ -221,6 +223,7 @@ void Connection::serverThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "startServerThread() thread instance NULL\n";
+		DBG_ERR("It failed at ");
 		self->exitThread(nullptr);
 	}
 
@@ -270,7 +273,7 @@ void Connection::serverThread(void * instance)
 	int errchk;
 	while (1)
 	{
-		std::cout << "dbg Listen thread active...\n";
+		DBG_TXT("dbg Listen thread active...");
 		// Putting the socket into the array so select() can check it for readability
 		// Format is:  FD_SET(int fd, fd_set *ReadSet);
 		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
@@ -284,8 +287,9 @@ void Connection::serverThread(void * instance)
 		{
 			self->SockStuff.getError();
 			std::cout << "startServerThread() select Error.\n";
+			DBG_ERR("It failed at ");
 			self->SockStuff.myCloseSocket(listen_socket);
-			std::cout << "Closing listening socket b/c of error. Ending Server Thread.\n";
+			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
@@ -326,8 +330,7 @@ void Connection::serverThread(void * instance)
 				global_socket = accepted_socket;
 
 
-			if (global_verbose == true)
-				std::cout << "dbg closing socket after retrieving new one from accept()\n";
+			DBG_TXT("dbg closing socket after retrieving new one from accept()");
 			// Not using this socket anymore since we created a new socket after accept() ing the connection.
 			self->SockStuff.myCloseSocket(listen_socket);
 
@@ -368,6 +371,7 @@ void Connection::createStartClientThread(void * instance)
 	if (ret1)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret1);
+		DBG_ERR("It failed at ");
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -387,6 +391,7 @@ void Connection::createStartClientThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
+		DBG_ERR("It failed at ");
 		return;
 	}
 
@@ -419,6 +424,7 @@ void Connection::clientThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "startClientThread() thread instance NULL\n";
+		DBG_ERR("It failed at ");
 		self->exitThread(nullptr);
 	}
 
@@ -448,7 +454,7 @@ void Connection::clientThread(void * instance)
 	int r;
 	while (1)
 	{
-		std::cout << "dbg client thread active...\n";
+		DBG_TXT("dbg client thread active...");
 		// Check to see if server has connected to someone
 		if (global_winner == SERVER_WON)
 		{
@@ -464,6 +470,7 @@ void Connection::clientThread(void * instance)
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
+			DBG_ERR("It failed at ");
 			self->exitThread(nullptr);
 		}
 
@@ -472,11 +479,12 @@ void Connection::clientThread(void * instance)
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
+			DBG_ERR("It failed at ");
 			self->exitThread(nullptr);
 		}
 		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
-			std::cout << "dbg not real error, timeout client connect\n";
+			DBG_TXT("dbg not real error, timeout client connect");
 			self->SockStuff.myCloseSocket(s);
 			continue;
 		}
@@ -501,6 +509,7 @@ void Connection::clientThread(void * instance)
 		else
 		{
 			std::cout << "Unkown ERROR. connect()\n";
+			DBG_ERR("It failed at ");
 			self->exitThread(nullptr);
 		}
 	}
@@ -541,6 +550,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "Instance was null. loopedReceiveMessagesThread()\n";
+		DBG_ERR("It failed at ");
 		return;
 	}
 
@@ -617,7 +627,8 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		else
 		{
 			SockStuff.getError();
-			std::cout << "recv() failed. loopedReceiveMessagesThread(). State machine.\n";
+			std::cout << "recv() failed.\n";
+			DBG_ERR("It failed at ");
 			break;
 		}
 	}
@@ -664,6 +675,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		SockStuff.getError();
 		std::cout << "getpeername() failed.\n";
+		DBG_ERR("It failed at ");
 		// continuing, b/c this isn't a big problem.
 	}
 
@@ -680,6 +692,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		SockStuff.getError();
 		std::cout << "getnameinfo() failed.\n";
+		DBG_ERR("It failed at ");
 		// still going to continue the program, this isn't a big deal
 	}
 	else
@@ -743,7 +756,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			if (bytes_sent == SOCKET_ERROR)
 			{
 				SockStuff.getError();
-				std::cout << "ERROR: send() failed.\n";
+				perror("ERROR: send() failed.");
+				DBG_ERR("It failed here at ");
 				SockStuff.myCloseSocket(global_socket);
 				m.unlock();
 				return SOCKET_ERROR;
@@ -800,7 +814,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					std::cout << "Split failed?\n";	// Currently no return false?
+					DBG_ERR("Split failed?");	// Currently no return false?
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();
@@ -820,23 +834,21 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				{
 					if (split_strings[(u_int)i] == "-f" && i < split_strings_size - 1)
 					{
-						file_name_and_loca = split_strings[(u_int)i + 1];
-
-						// Fix the user's input to add an escape character to every '\'
-						StrManip.duplicateCharacter(file_name_and_loca, '\\');
-
 						// The first string will always be -f. All strings after that
 						// will be concatenated, and then have the spaces re-added after
 						// to prevent issues with spaces in file names and paths.
 						for (int b = 2; b < split_strings_size; ++b)
 						{
-							split_strings[1] += " " + split_strings[b];
+							split_strings[1] += ' ' + split_strings[b];
 						}
 						if (split_strings_size >= 2)
 						{
 							file_name_and_loca = split_strings[1];
-							std::cout << "dbg split_strings concatentated with spaces re-added: " << split_strings[1] << "\n";
-							std::cout << "dbg file_name_and_loca == " << file_name_and_loca << "\n";
+
+							// Fix the user's input to add an escape character to every '\'
+							StrManip.duplicateCharacter(file_name_and_loca, '\\');
+
+							DBG_TXT("dbg file_name_and_loca == " << file_name_and_loca);
 						}
 
 						// Send the file
@@ -851,12 +863,32 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					}
 					else if (split_strings[(u_int)i] == "-fE" && i < split_strings_size -2)
 					{
+						std::cout << "-fE hasn't been implemented yet.\n";
+						break;
+
+						// THIS SCOPE IS INCOMPLETE, NON-FUNCTIONAL, AND COMPLETELY WRONG IN SOME AREAS
+
 						file_name_and_loca = split_strings[(u_int)i + 1];
 						file_encryption_opt = split_strings[(u_int)i + 2];
+						std::string copied_file_name_and_location;
 
-						// Fix the user's input to add an escape character to every '\'
-						std::string copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
-						copied_file_name_and_location += ".enc";
+						// The first string will always be -f. All strings after that
+						// will be concatenated, and then have the spaces re-added after
+						// to prevent issues with spaces in file names and paths.
+						for (int b = 2; b < split_strings_size; ++b)
+						{
+							split_strings[1] += ' ' + split_strings[b];
+						}
+						if (split_strings_size >= 2)
+						{
+							file_name_and_loca = split_strings[1];
+
+							// Fix the user's input to add an escape character to every '\'
+							copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
+							copied_file_name_and_location += ".enc";
+
+							DBG_TXT("dbg copied_file_name_and_location == " << copied_file_name_and_location);
+						}
 
 						// Copy the file before encrypting it.
 						copyFile(file_name_and_loca.c_str(), copied_file_name_and_location.c_str());
