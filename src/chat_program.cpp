@@ -1274,7 +1274,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			else
 				bytes_sent = 0;
 
-			total_bytes_sent += bytes_sent - CR_RESERVED_BUFFER_SPACE;
+			total_bytes_sent += bytes_sent + CR_RESERVED_BUFFER_SPACE;
 
 			// 0 means error. If they aren't equal to eachother
 			// then it didn't write as much as it read for some reason.
@@ -1287,6 +1287,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		//else
 		//{
 			std::cout << "File transfer complete\n";
+			DBG_TXT("Total bytes sent: " << total_bytes_sent);
 		//}
 
 		if (fclose(ReadFile))
@@ -1416,6 +1417,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				// SHOULD PROBABLY CLEAN THE FILE NAME OF INCORRECT SYMBOLS 
 				// AND PREVENT PERIODS FROM BEING USED, ETC.
 
+				DBG_TXT("Take file name from peer:\n");
 				// Set the file name variable.
 				for (;
 					(position_in_recv_buf < received_bytes)
@@ -1424,12 +1426,19 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					++position_in_recv_buf, ++position_in_message)
 				{
 					incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
+					DBG_TXT(position_in_recv_buf << " " << (int)recv_buf[position_in_recv_buf]);
 				}
 				// If the file name was too big, then say so, but don't error.
 				if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
 				{
 					std::cout << "Receive File: WARNING: Peer's file name is too long. Exceeded " << INCOMING_FILE_NAME_FROM_PEER_SIZE << " characters.\n";
 					std::cout << "Receive File: File name will be incorrect on your computer.\n";
+				}
+
+				// Null terminate it.
+				if (position_in_message <= INCOMING_FILE_NAME_FROM_PEER_SIZE)
+				{
+					incoming_file_name_from_peer_cstr[position_in_message] = '\0';
 				}
 
 				std::string temporary_incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
@@ -1630,6 +1639,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			{
 			case CHECK_INCOMING_FILE_SIZE_PART_ONE:
 			{
+				incoming_file_size_from_peer = 0;   // reset it to 0.
+
 				if (position_in_recv_buf >= received_bytes)
 				{
 					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
@@ -1840,7 +1851,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > length_of_msg)
 		{
-			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), name_of_file.length());
+			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), length_of_msg);
 		}
 		else
 		{

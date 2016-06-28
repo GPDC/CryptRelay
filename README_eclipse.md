@@ -1,10 +1,12 @@
-﻿# This guide was created for use w/ Debian Linux & Eclipse 3.8.1
+# This guide was created for use w/ Debian Linux & Eclipse 3.8.1
 Want to use Eclipse to build / make changes to CryptRelay? This is the README for you.
 
 # If you are new to programming on linux you might need to download and install a couple packages that contain some tools / libraries:
 sudo apt-get install build-essential
 Want to know what separate packages make up the build-essential package? Type:
 gedit /usr/share/doc/build-essential/essential-packages-list
+Also make sure you have dbg installed or else you can't do a lot of debugging. To do that type: apt-get install dbg
+When you download eclipse using apt-get install, make sure to install the one called: eclipse-cdt
 
 # get the files from github
 First: git clone https://github.com/GPDC/CryptRelay.git master
