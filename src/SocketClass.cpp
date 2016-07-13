@@ -397,7 +397,7 @@ void SocketClass::myWSACleanup()
 #endif//_WIN32
 }
 
-void SocketClass::myFreeAddrInfo(addrinfo* pAddrInfo)
+void SocketClass::myFreeAddrInfo(addrinfo*& pAddrInfo)
 {
 	freeaddrinfo(pAddrInfo);
 
@@ -412,9 +412,8 @@ void SocketClass::myFreeAddrInfo(addrinfo* pAddrInfo)
 // errno needs to be set to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
 int SocketClass::getError()
 {
-	// Added int errchk_number as input because of an odd case where WSAGetLastError() doesn't think there is an error but there is.
-	// I think i figured out why: if WSAStartup() is not initialized, i don't believe WSAGetLastError() can report any errors.
-	// therefore there is 1 error that it can't report: 10093 WSANOTINITIALIZED - WSAStartup not yet performed.
+	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
+	// that WSAStartup() has been performed. WSAGetLastError() doesn't work unless you start WSAStartup();
 
 #ifdef __linux__
 	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
@@ -430,6 +429,7 @@ int SocketClass::getError()
 
 #ifdef _WIN32
 	int errsv = WSAGetLastError();
+
 	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
 	if (errsv == 10060)	// This doesn't seem like the best way to do this...
 		return errsv;

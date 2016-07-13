@@ -94,7 +94,7 @@ public:
 
 	void myCloseSocket(SOCKET fd);
 	void myWSACleanup();
-	void myFreeAddrInfo(addrinfo* pAddrInfo);
+	void myFreeAddrInfo(addrinfo*& pAddrInfo);
 
 	
 	// getError() 99% of cases you won't need to do anything with the return value.
