@@ -1863,11 +1863,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
+#ifdef OUTPUT_DEBUG
 		std::cout << "dbg OUTPUT:\n";
 		for (long long z = 0; z < amount_to_send; ++z)
 		{
 			std::cout << z << "_" << (int)buf[z] << "\n";
 		}
+#endif//OUTPUT_DEBUG
 
 		int b = sendMutex((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
@@ -1887,7 +1889,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (name_and_location_of_file.back() == '\\' || name_and_location_of_file.back() == '/')
 		{
 			perror("ERROR: Found a '\\' or a '/' at the end of the file name.\n");
-			std::cout << "dbg name and location of file: " << name_and_location_of_file << "\n";
+			DBG_TXT("dbg name and location of file: " << name_and_location_of_file << "\n");
 			return error_empty_string; //exit please
 		}
 

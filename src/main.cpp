@@ -225,7 +225,7 @@ int main(int argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
-	std::cout << "Welcome to CryptRelay Alpha release 0.6.1\n";
+	std::cout << "Welcome to CryptRelay Alpha release 0.8.0\n";
 
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
 	Connection ChatServer;
