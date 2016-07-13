@@ -255,7 +255,7 @@ private:
 	std::string returnFileNameFromFileNameAndPath(std::string name_and_location_of_file);
 
 	// This is for sendMutex()
-	int total_amount_sent;
+	int total_amount_sent = 0;
 };
 
 #endif //chat_program_h__

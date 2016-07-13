@@ -19,17 +19,9 @@
 #include "GlobalTypeHeader.h"
 
 //miniupnp library
-//#include "minixml.h"
-//#include "minissdpc.h"
-//#include "miniwget.h"
-//#include "minisoap.h"
-//#include "minixml.h"
 #include "upnpcommands.h"
 #include "upnperrors.h"
-//#include "connecthostport.h"
-//#include "receivedata.h"
-//#include "portlistingparse.h"
-//#include "upnpreplyparse.h"
+
 
 #ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		// NEEDED for miniupnp library!!!

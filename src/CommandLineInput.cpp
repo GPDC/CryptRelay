@@ -74,8 +74,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
-	int err_chk = 0;
-
 	std::vector<std::string> arg;
 
 	IPAddress IPAdressFormatCheck;
@@ -94,6 +92,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 		return 0;
 	}
 	// Check all argv inputs to see what the user wants to do
+	bool err_chk_bool = 0;
 	if (argc >= 2 && arg_size >= 2)
 	{
 		for (int i = 1; i < argc; ++i)
@@ -112,8 +111,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-t" && i < arg_size - 1)
 			{
-				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk == false)
+				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
+				if (err_chk_bool == false)
 				{
 					std::cout << "Bad IP address format.\n\n";
 					return 0;
@@ -126,8 +125,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-tP" && i < arg_size - 1)
 			{
-				err_chk = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk == false)
+				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
+				if (err_chk_bool == false)
 					return 0;
 				else
 				{
@@ -137,8 +136,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-mL" && i < arg_size - 1)
 			{
-				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk == false)
+				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
+				if (err_chk_bool == false)
 					return 0;
 				else
 				{
@@ -148,8 +147,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-mP" && i < arg_size - 1)
 			{
-				err_chk = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk == false)
+				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
+				if (err_chk_bool == false)
 					return 0;
 				else
 				{
@@ -159,8 +158,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-mE" && i < arg_size - 1)
 			{
-				err_chk = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk == false)
+				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
+				if (err_chk_bool == false)
 					return 0;
 				else
 				{

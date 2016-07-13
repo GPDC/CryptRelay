@@ -115,6 +115,7 @@ const int8_t Connection::CR_RESERVED_BUFFER_SPACE = 3;
 Connection::Connection()
 {
 	ConnectionInfo = nullptr;
+	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
 }
 Connection::~Connection()
 {
@@ -1062,6 +1063,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		WriteF = fopen(write_file_name_and_location, "wb");
 		if (WriteF == NULL)
 		{
+			if (fclose(ReadFile))
+				perror("Error closing file designated for writing");
+
 			perror("Error opening file for writing binary");
 			return false;
 		}
@@ -1183,6 +1187,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		{
 			std::cout << "dbg file_name.empty() returned true.";
 			delete[]buf;
+			if (fclose(ReadFile))
+				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false; //exit please, file name couldn't be found.
 		}
@@ -1193,6 +1199,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (sendFileName(buf, BUF_LEN, file_name) == false)
 		{
 			delete[]buf;
+			if (fclose(ReadFile))
+				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false; //exit please
 		}
@@ -1203,6 +1211,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (size_of_file == -1)
 		{
 			delete[]buf;
+			if (fclose(ReadFile))
+				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false; //exit please
 		}
@@ -1212,6 +1222,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (sendFileSize(buf, BUF_LEN, size_of_file) == false)
 		{
 			delete[]buf;
+			if (fclose(ReadFile))
+				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false;// exit please
 		}
