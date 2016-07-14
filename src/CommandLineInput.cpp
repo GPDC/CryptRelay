@@ -111,7 +111,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				helpAndReadMe();
 				return 0;
 			}
-			else if (arg[i] == "-t" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
@@ -125,7 +125,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;	// Because we already took the information from i + 1, there is no need to check what i + 1 is, so we skip it by doing ++i;
 				}
 			}
-			else if (arg[i] == "-tP" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-tP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
@@ -136,7 +136,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
-			else if (arg[i] == "-mL" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-mL")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
@@ -147,7 +147,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
-			else if (arg[i] == "-mP" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-mP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
@@ -158,7 +158,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
-			else if (arg[i] == "-mE" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-mE")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
@@ -169,13 +169,13 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
-			else if (arg[i] == "-f" && i < arg_size - 1)
+			else if (i < arg_size - 1 && arg[i] == "-f")
 			{
 				transfer_a_file = true;
 				file_name_and_location = argv[i + 1];
 				++i;
 			}
-			else if (arg[i] == "-fE" && i < arg_size - 2)
+			else if (i < arg_size - 2 && arg[i] == "-fE")
 			{
 				transfer_an_encrypted_file = true;
 				file_name_and_location_to_be_encrypted = argv[i + 1];
@@ -202,7 +202,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				get_list_of_port_forwards = true;
 				return 1;
 			}
-			else if (arg[i] == "-dpf" && i < arg_size - 2)
+			else if (i < arg_size - 2 && arg[i] == "-dpf")
 			{
 				delete_this_specific_port_forward = true;
 				delete_this_specific_port_forward_protocol = arg[i + 1];
