@@ -2,12 +2,6 @@
 #include <string.h> //memset
 #include <errno.h>
 #include <sstream>
-#endif//__linux__
-
-#ifdef _WIN32
-#include <WinSock2.h>
-#endif//_WIN32
-
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -20,17 +14,29 @@
 //miniupnp library
 #include "upnpcommands.h"
 #include "upnperrors.h"
+#endif//__linux__
+
+#ifdef _WIN32
+#include <WinSock2.h>
+#include <iostream>
+#include <stdio.h>
+#include <string>
+#include <time.h>	// needed for localtime_s and localtime_r
+#include <limits.h>	// macros for int, short, char, etc that are defined as their min/max values.
+
+#include "UPnP.h"
+#include "GlobalTypeHeader.h"
+
+//miniupnp library
+#include "upnpcommands.h"
+#include "upnperrors.h"
+#endif//_WIN32
 
 
 #ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		// NEEDED for miniupnp library!!!
-#pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!! I think this one is for linux too tho...
-#endif//_WIN32
-
-#ifdef __linux__
 #pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!!
-#endif//__linux__
-
+#endif//_WIN32
 
 UPnP::UPnP()
 {

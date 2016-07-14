@@ -1,9 +1,7 @@
 //string_manipulation.cpp
 #include <string>
 #include <limits.h>
-
 #include <sstream>
-
 #include <iostream>
 
 #include "string_manipulation.h"

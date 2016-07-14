@@ -38,16 +38,17 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "       Format: cryptrelay.exe -dpf protocol my_external_port\n";
 	std::cout << "-si    Show Info   Displays external & local ip, and some UPnP info.\n";
 	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
-	std::cout << "\n";
-	std::cout << "NOT YET:\n";
 	std::cout << "Arguments that are able to be used during a chat session:\n";
 	std::cout << "-f     Send a file to the peer you are connected to.\n";
-	std::cout << "       -e make a copy of the file you want to send and encrypt it.\n";
+	std::cout << "       Format: -f C:\\Users\\JohnDoe\\Downloads\\recipe.txt\n";
+	std::cout << "\n";
+	std::cout << "NOT YET IMPLEMENTED:\n";
+	std::cout << "Arguments that are able to be used during a chat session:\n";
+	std::cout << "-f     Send a file to the peer you are connected to.\n";
+	std::cout << "       -e Specify the encryption type here.\n";
+	std::cout << "       This copies the file first -> encrypts the copy -> sends it.\n";
 	std::cout << "       Format: -f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
 	std::cout << "exit() This will exit CryptRelay. Another option would pressing ctrl-c.\n";
-	std::cout << "NOT YET IMPLEMENTED:\n";
-	std::cout << "-f    file       The file, and location of the file you wish to xfer.\n";
-	std::cout << "\nTo exit the program, please type 'exit()' at any time.\n";
 	std::cout << "-------------------------------------------------------------------------------\n";
 	std::cout << "\n";
 	std::cout << "\n";
@@ -64,7 +65,8 @@ void CommandLineInput::Examples()
 	std::cout << "cryptrelay.exe -dpf TCP 30023\n";
 	std::cout << "\n";
 	std::cout << "# List of various examples for use during a chat session:\n";
-	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt\n";
+	std::cout << "-f C:\\Users\\John\\Downloads\\recipe.txt\n";
+	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
 	std::cout << "\n";
 

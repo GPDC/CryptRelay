@@ -1,7 +1,6 @@
 // SocketClass.cpp
 // See SocketClass.h for more details about SocketClass.cpp
 
-//#define _WINSOCK_DEPRECATED_NO_WARNINGS	// TEMPORARY, and this has to be at the top
 #ifdef __linux__
 #include <iostream>
 #include <vector>
