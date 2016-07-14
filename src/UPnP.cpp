@@ -32,10 +32,6 @@
 #include "upnperrors.h"
 #endif//_WIN32
 
-//miniupnp library
-#include "upnpcommands.h"
-#include "upnperrors.h"
-
 
 #ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		// NEEDED for miniupnp library!!!
