@@ -24,13 +24,8 @@
 
 #ifdef _WIN32
 #pragma comment(lib, "Ws2_32.lib")		// NEEDED for miniupnp library!!!
-#pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!! I think this one is for linux too tho...
-#endif//_WIN32
-
-#ifdef __linux__
 #pragma comment(lib, "Iphlpapi.lib")	// NEEDED for miniupnp library!!!
-#endif//__linux__
-
+#endif//_WIN32
 
 UPnP::UPnP()
 {
