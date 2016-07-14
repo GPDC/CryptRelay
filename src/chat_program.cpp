@@ -219,7 +219,7 @@ void* Connection::posixStartServerThread(void * instance)
 
 void Connection::serverThread(void * instance)
 {
-	Connection * self = (Connection*)instance;
+	Connection * self = static_cast <Connection*> (instance);
 
 	if (instance == nullptr)
 	{
@@ -421,7 +421,7 @@ void* Connection::posixStartClientThread(void * instance)
 
 void Connection::clientThread(void * instance)
 {
-    	Connection* self = (Connection*)instance;
+	Connection* self = static_cast <Connection*> (instance);
 	if (instance == nullptr)
 	{
 		std::cout << "startClientThread() thread instance NULL\n";
@@ -452,7 +452,6 @@ void Connection::clientThread(void * instance)
     // If socket(2) (or bind(2)) fails, we close the socket and try
 	// the next address in the list.
 	int TIMEOUT_ERROR = -10060;
-	int r;
 	while (1)
 	{
 		DBG_TXT("dbg client thread active...");
@@ -476,7 +475,7 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Attempt to connect to target
-		r = self->SockStuff.myConnect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
+		int r = self->SockStuff.myConnect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
