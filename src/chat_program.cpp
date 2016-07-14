@@ -1907,7 +1907,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		const int NO_SLASHES_DETECTED = -1;
 		long long last_seen_slash_location = NO_SLASHES_DETECTED;
 		long long name_and_location_of_file_length = name_and_location_of_file.length();
-		std::string file_name;
 
 		if (name_and_location_of_file_length < INT_MAX - 1)
 		{
