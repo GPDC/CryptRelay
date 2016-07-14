@@ -65,7 +65,8 @@ void CommandLineInput::Examples()
 	std::cout << "cryptrelay.exe -dpf TCP 30023\n";
 	std::cout << "\n";
 	std::cout << "# List of various examples for use during a chat session:\n";
-	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt\n";
+	std::cout << "-f C:\\Users\\John\\Downloads\\recipe.txt\n";
+	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
 	std::cout << "\n";
 
