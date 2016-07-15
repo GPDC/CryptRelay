@@ -3,17 +3,10 @@
 -check on possiblity of CLOSE_FILE_FOR_WRITE being used for errors. maybe a separate one for an error'd file? issues exist i think.
 -encryption
 -Fix chat output issue when someone sends you a message while you are typing
--select() should be replaced by poll() and WSAPoll()
--file transfer. It should send a message to the peer when the user wants to send a file (during chat session). That sent message would include the size and name of the file and a (Y / N) option. The peer's next message would be the response.
-Issues with threading. Assign 1 thread to be sole owner of send(), and it will read from a lockfree queue to determine what to send. There will be another thread for getline() to get user input and giving that to the send thread, and another thread for giving file data to the send thread. Use mutexes at first to implement, however it is slow. Sounds easy tho. Come back at some time later to learn about / implement lock-free programming.
-DIFFERENT way of file implementation: just use the same chat everything, and its like sending a chat message. However, now the first byte of the message / buffer will always be reserved as a flag. It can be set to say, 'm' for a message or 'f' for a file. the receiver will check the message if(f) write(buffer), and if(m) cout << buffer[i], for i = 1;
+-select() maybe should be replaced by poll() and WSAPoll() ?
 -sha hashes to make sure file copy & transfer is legit.
 -improve display of file size so that it will show different size when appropriate. I.E. 357.2 MB, 1.2 GB
 -remove displaying of errors of closesocket and shutdown in the deconstructor for Connection class
--file related: determine how to send a "flag" at the beginning of each packet so the receiver has noteworth info about that packet. Temporary workaround is just disable sending of chat messages while sending the file.
----uhhhhhh making it required to start the program with -f instead of during chat for now.
-- what would happen if a buffer was created but not enough memory was available to give to it? right now the user is in control of the buffer size of sending messages. This raises red flags in my head, but how big of a deal is this? look into it.
-- change (basically) all unsigned into signed.
 - prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will open CryptRelay.exe and start trying to write to it.
 -prevent incompatible symbols from being used with files.
 
