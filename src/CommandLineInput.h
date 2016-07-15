@@ -28,15 +28,6 @@ public:
 	std::string delete_this_specific_port_forward_port;
 	std::string delete_this_specific_port_forward_protocol;
 
-	// -f
-	bool transfer_a_file = false;
-	std::string file_name_and_location;
-
-	// -fE
-	bool transfer_an_encrypted_file = false;
-	std::string file_name_and_location_to_be_encrypted;
-	std::string file_encryption_option;
-
 	bool show_info_upnp = false;
 	bool get_list_of_port_forwards = false;
 	bool use_lan_only = false;

@@ -169,20 +169,6 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 					++i;
 				}
 			}
-			else if (i < arg_size - 1 && arg[i] == "-f")
-			{
-				transfer_a_file = true;
-				file_name_and_location = argv[i + 1];
-				++i;
-			}
-			else if (i < arg_size - 2 && arg[i] == "-fE")
-			{
-				transfer_an_encrypted_file = true;
-				file_name_and_location_to_be_encrypted = argv[i + 1];
-				file_encryption_option = argv[i + 2];
-
-				i += 2;
-			}
 			else if (arg[i] == "--examples")
 			{
 				Examples();

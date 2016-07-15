@@ -231,25 +231,7 @@ int main(int argc, char *argv[])
 	Connection ChatServer;
 	Connection ChatClient;
 
-	if (CLI.transfer_a_file == true)
-	{
-		ChatServer.does_user_want_to_send_a_file = true;
-		ChatServer.file_name_and_loc = CLI.file_name_and_location;
-
-		ChatClient.does_user_want_to_send_a_file = true;
-		ChatClient.file_name_and_loc = CLI.file_name_and_location;
-	}
-	else if (CLI.transfer_an_encrypted_file == true)
-	{
-		ChatServer.does_user_want_to_send_an_encrypted_file = true;
-		ChatServer.file_name_and_loc_to_be_encrypted = CLI.file_name_and_location_to_be_encrypted;
-		ChatServer.file_encryption_option = CLI.file_encryption_option;
-
-		ChatClient.does_user_want_to_send_an_encrypted_file = true;
-		ChatClient.file_name_and_loc_to_be_encrypted = CLI.file_name_and_location_to_be_encrypted;
-		ChatClient.file_encryption_option = CLI.file_encryption_option;
-	}
-	else if (CLI.show_info_upnp == true)
+	if (CLI.show_info_upnp == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneShowInformation();
