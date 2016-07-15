@@ -1410,6 +1410,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				if (position_in_recv_buf >= received_bytes)
 				{
+					if (position_in_message == message_size)// must have a new message from the peer.
+						process_recv_buf_state = CHECK_FOR_FLAG;
+
 					return true; // go recv() again to get more bytes
 				}
 				else if (position_in_message == message_size)// must have a new message from the peer.
