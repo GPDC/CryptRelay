@@ -1,5 +1,5 @@
 # *Current Status: v0.8 - No encryption.
-If you want to send an encrypted file, you must encrypt it first before sending it. If you want to send an encrypted message, encrypt it first before sending the message, or encrypt a file with your message inside and send that.
+If you want to send an encrypted file, you must encrypt it first with an encryption program before sending it through CryptRelay. If you want to send an encrypted message, encrypt it first before sending the message, or encrypt a file with your message inside and send that.
 
 # CryptRelay
 CryptRelay is a command line peer-to-peer encrypted chat and file transfer program for Windows and Linux. Currently a work in progress.
