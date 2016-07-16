@@ -127,7 +127,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 void UPnP::findUPnPDevices()
 {
 	int miniupnp_error = 0;		// upnpDiscover() sends error info here.
-	UpnpDevicesList = upnpDiscover(2000, nullptr, nullptr, 0, 0, &miniupnp_error);
+	UpnpDevicesList = upnpDiscover(2000, nullptr, nullptr, 0, 0, 2, &miniupnp_error);
 
 	if (UpnpDevicesList)
 	{

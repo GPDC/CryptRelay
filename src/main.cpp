@@ -525,8 +525,8 @@ Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks b
 //please note that it needs to be a full path to the miniupnpc.lib.Feel free to use macros.Macros not shown in example :
 //c : \dev\workspace\myproject\miniupnpc - 1.9\msvc\Release\miniupnpc.lib
 //
-//	3. in project settings, C / C++->Preprocessor->Preprocessor Definitions->STATICLIB
-//	please note we are just adding STATICLIB to the list of whatever is currently there.Don't delete everything in there.
+//	3. in project settings, C / C++->Preprocessor->Preprocessor Definitions->MINIUPNP_STATICLIB
+//	please note we are just adding MINIUPNP_STATICLIB to the list of whatever is currently there. Don't delete everything in there.
 //
 //	4. in project settings, VC++ Directories->Include Directories -> \miniupnpc - 1.9
 //	please note that it needs to be a full path to the folder.Feel free to use macros.Macros not shown in example :
