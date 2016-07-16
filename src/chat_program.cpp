@@ -1198,10 +1198,19 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		long long total_bytes_sent = 0;
 
 		// We are treating bytes_read as a u_short, instead of size_t
-		// because we don't want to take up needless buffer space?
-		// not sure if this is an advantage or disadvantage.
-		// ehhhh maybe i shouldn't have this. Int would be
-		// more appropriate?
+		// because we don't want to clog the send() with only file
+		// packets. We want the user to still be able to send a message
+		// within a reasonable amount of time while transfering a file.
+		// File transfer jumps into mutex send() queue.
+		// File transfer begins sending.
+		// Chat message jumps into mutex send() queue. It is waiting
+		//    for file transfer to leave the mutex first.
+		// File transfer finishes sending USHRT_MAX bytes, and exits mutex.
+		// Chat message now begins sending.
+		//
+		// This is just to illustrate that if we try sending too much into
+		// the mutex send() queue at a time, then a chat message will take
+		// forever to be sent out to the peer, causing an uncomfortable delay.
 		static_assert(BUF_LEN <= USHRT_MAX,
 			"Buffer size must NOT be bigger than USHRT_MAX.");
 
