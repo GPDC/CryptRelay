@@ -170,7 +170,7 @@ void Connection::createStartServerThread(void * instance)
 	if (ret0)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret0);
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -190,7 +190,7 @@ void Connection::createStartServerThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		return;
 	}
 
@@ -224,7 +224,7 @@ void Connection::serverThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "startServerThread() thread instance NULL\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		self->exitThread(nullptr);
 	}
 
@@ -288,7 +288,7 @@ void Connection::serverThread(void * instance)
 		{
 			self->SockStuff.getError();
 			std::cout << "startServerThread() select Error.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION;
 			self->SockStuff.myCloseSocket(listen_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
@@ -372,7 +372,7 @@ void Connection::createStartClientThread(void * instance)
 	if (ret1)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret1);
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -392,7 +392,7 @@ void Connection::createStartClientThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		return;
 	}
 
@@ -425,7 +425,7 @@ void Connection::clientThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "clientThread() thread instance NULL\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		self->exitThread(nullptr);
 	}
 
@@ -470,7 +470,7 @@ void Connection::clientThread(void * instance)
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION;
 			self->exitThread(nullptr);
 		}
 
@@ -479,7 +479,7 @@ void Connection::clientThread(void * instance)
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION;
 			self->exitThread(nullptr);
 		}
 		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
@@ -509,7 +509,7 @@ void Connection::clientThread(void * instance)
 		else
 		{
 			std::cout << "Unkown ERROR. connect()\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION;
 			self->exitThread(nullptr);
 		}
 	}
@@ -550,7 +550,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "Instance was null. loopedReceiveMessagesThread()\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		return;
 	}
 
@@ -628,7 +628,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		{
 			SockStuff.getError();
 			std::cout << "recv() failed.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION;
 			break;
 		}
 	}
@@ -675,7 +675,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		SockStuff.getError();
 		std::cout << "getpeername() failed.\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		// continuing, b/c this isn't a big problem.
 	}
 
@@ -692,7 +692,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		SockStuff.getError();
 		std::cout << "getnameinfo() failed.\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION;
 		// still going to continue the program, this isn't a big deal
 	}
 	else
@@ -757,7 +757,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			{
 				SockStuff.getError();
 				perror("ERROR: send() failed.");
-				DBG_ERR("It failed here at ");
+				DBG_DISPLAY_ERROR_LOCATION("It failed here at ");
 				SockStuff.myCloseSocket(global_socket);
 				m.unlock();
 				return SOCKET_ERROR;
@@ -814,7 +814,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					DBG_ERR("Split failed?");	// Currently no return false?
+					DBG_DISPLAY_ERROR_LOCATION("Split failed?");	// Currently no return false?
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();
