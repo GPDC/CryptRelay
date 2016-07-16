@@ -4,18 +4,17 @@
 
 #ifdef _DEBUG
 
-#	define OUTPUT_DEBUG  // Remove this #define if you don't want to see debug output in debug mode.
-#	ifdef OUTPUT_DEBUG
+
 // Outputs text (x) to console. For use when an error occurs. Includes the
 // file name and location, as well as the line number in the source file.
-#		define DBG_DISPLAY_ERROR_LOCATION std::cout << "It failed at" << " " << "Line: " << __LINE__ \
+#	define DBG_DISPLAY_ERROR_LOCATION std::cout << "It failed at" << " " << "Line: " << __LINE__ \
 								<< ", File: " << __FILE__ << "\n";
 
 // Simply outputs text (x) to console.
-#		define DBG_TXT(x) std::cout << x << "\n";
-#	else
-#		define DBG_DISPLAY_ERROR_LOCATION
-#	endif// OUTPUT_DEBUG
+#	define DBG_TXT(x) std::cout << x << "\n";
+#else
+#	define DBG_DISPLAY_ERROR_LOCATION
+#	define DBG_TXT(x);
 
 #endif//_DEBUG
 
