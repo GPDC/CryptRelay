@@ -483,7 +483,7 @@ void Connection::clientThread(void * instance)
 		}
 		else if (r == self->SockStuff.TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
-			DBG_TXT("dbg not real error, timeout client connect");
+			DBG_TXT("Not real error, timeout client connect");
 			self->SockStuff.myCloseSocket(s);
 			continue;
 		}
