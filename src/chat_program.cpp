@@ -83,7 +83,7 @@ int function_that_errored = 0;
 // Connection isn't given any port from the UPnP class,
 // which has its own default port, or given any port from the
 // command line.
-const std::string Connection::default_port = "30248";
+const std::string Connection::DEFAULT_PORT = "30248";
 
 // Variables necessary for determining who won the connection race
 const int Connection::SERVER_WON = -29;
@@ -349,7 +349,7 @@ void Connection::serverThread(void * instance)
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
+	self->loopedGetUserInput();
 
 	// wait here until x thread finishes.
 	if (RcvThread.joinable())
@@ -527,7 +527,7 @@ void Connection::clientThread(void * instance)
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
+	self->loopedGetUserInput();
 
 	// wait here until x thread finishes.
 	if (rcv_thread.joinable())
@@ -777,7 +777,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	// The user's input is getlined here and checked for things
 	// that the user might want to do.
-	void Connection::LoopedGetUserInput()
+	void Connection::loopedGetUserInput()
 	{
 		std::string user_input;
 		std::thread FileThread;

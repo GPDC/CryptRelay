@@ -1,0 +1,3 @@
+[submodule "miniupnp"]
+	path = miniupnp
+	url = git@github.com:GPDC/miniupnp.git

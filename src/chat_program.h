@@ -66,14 +66,14 @@ public:
 	static void createStartClientThread(void * instance);
 
 	// If you want to give this class IP and port information, call this function.
-	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = default_port, std::string my_internal_port = default_port);
+	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = DEFAULT_PORT, std::string my_internal_port = DEFAULT_PORT);
 
 	// IP and port information can be given to the Connection class through these variables.
 	std::string target_external_ip;						// If the option to use LAN only == true, this is target's local ip
-	std::string target_external_port = default_port;	// If the option to use LAN only == true, this is target's local port
+	std::string target_external_port = DEFAULT_PORT;	// If the option to use LAN only == true, this is target's local port
 	std::string my_external_ip;
 	std::string my_local_ip;
-	std::string my_local_port = default_port;
+	std::string my_local_port = DEFAULT_PORT;
 
 	// Send a file the normal way
 	bool does_user_want_to_send_a_file = false;
@@ -134,7 +134,7 @@ private:
 	//addrinfo		 *ptr;		// this would only be used if traversing the list of address structures.
 
 
-	static const std::string default_port;
+	static const std::string DEFAULT_PORT;
 
 
 	// NEW SECTION with threads etc
@@ -145,7 +145,7 @@ private:
 	int sendMutex(const char * sendbuf, int amount_to_send);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
-	void LoopedGetUserInput();
+	void loopedGetUserInput();
 
 	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
 	long long getFileStatsAndDisplaySize(const char * file_name_and_location);

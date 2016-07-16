@@ -1,4 +1,4 @@
-﻿This is a rough, rambling, first draft for building miniupnp 1.9
+This is a rough, rambling, first draft for building miniupnp 1.9
 I wrote this out while trying to get it build this myself and ran into several problems. Everything below is the method that worked for me.
 
 how to build miniupnp for Windows / this tutorial was done with miniupnp 1.9, visual studio 2015, and Windows 7
@@ -9,12 +9,13 @@ how to build miniupnp for Windows / this tutorial was done with miniupnp 1.9, vi
 1. create a txt file and rename it to miniupnpcstrings.h
 
 2. paste this into it:
-/* Project: miniupnp
-* http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
-* Author: Thomas Bernard
-* Copyright (c) 2005-2009 Thomas Bernard
-* This software is subjects to the conditions detailed
-* in the LICENCE file provided within this distribution */
+
+//* Project: miniupnp
+//* http://miniupnp.free.fr/ or http://miniupnp.tuxfamily.org/
+//* Author: Thomas Bernard
+//* Copyright (c) 2005-2009 Thomas Bernard
+//* This software is subjects to the conditions detailed
+//* in the LICENCE file provided within this distribution
 #ifndef __MINIUPNPCSTRINGS_H__
 #define __MINIUPNPCSTRINGS_H__
 	 
@@ -55,6 +56,7 @@ example macro:
 	$(ProjectDir)..\miniupnpc-1.9\msvc\Release\miniupnpc.lib
 
 3. in project settings, C/C++ -> Preprocessor -> Preprocessor Definitions -> STATICLIB
+****** in miniupnpc 2.0 it is to be called MINIUPNP_STATICLIB
 	please note we are just adding STATICLIB to the list of whatever is currently there. Don't delete everything in there.
 
 4. in project settings, VC++ Directories -> Include Directories -> \miniupnpc-1.9
