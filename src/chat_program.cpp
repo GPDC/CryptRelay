@@ -1315,17 +1315,22 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					if (!bytes_written)// uhh this might be a negative number sometimes which makes !bytes_written not work?
 					{
 						perror("Error while writing the file from peer");
-						std::cout << "dbg Error: bytes_written returned: " << bytes_written << "\n";
-						std::cout << "dbg File stream: " << WriteFile << "\n";
-						std::cout << "dbg received_bytes: " << received_bytes << "\n";
-						std::cout << "dbg message_size: " << message_size << "\n";
+						DBG_TXT("Error: bytes_written returned: " << bytes_written);
+						DBG_TXT("File stream: " << WriteFile);
+						DBG_TXT("received_bytes: " << received_bytes);
+						DBG_TXT("message_size: " << message_size);
 
 						// close file
 						if (fclose(WriteFile))
 						{
 							perror("Error closing file for writing");
 						}
-						// delete file?
+
+						// delete file here? This could be dangerous, and should
+						// require user confirmation. Or check to make sure
+						// file didn't exist before trying to open it, then
+						// it would be safe to delete.
+
 						process_recv_buf_state = ERROR_STATE;
 						break;
 					}
