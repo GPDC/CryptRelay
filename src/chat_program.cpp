@@ -494,7 +494,7 @@ void Connection::clientThread(void * instance)
 			{
 				if (global_verbose == true)
 				{
-					std::cout << "Client: Extremely rare race condition was almost reached.";
+					std::cout << "Client: Extremely rare race condition was almost reached. ";
 					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
 				}
 				self->SockStuff.myCloseSocket(s);
@@ -507,7 +507,7 @@ void Connection::clientThread(void * instance)
 		}
 		else
 		{
-			std::cout << "Unkown ERROR. connect()\n";
+			std::cout << "Unkown ERROR. myConnect()\n";
 			DBG_DISPLAY_ERROR_LOCATION;
 			self->exitThread(nullptr);
 		}
@@ -545,41 +545,6 @@ void Connection::clientThread(void * instance)
 // To find out who we were connected to, use getnameinfo()
 void Connection::loopedReceiveMessagesThread(void * instance)
 {
-	// so is this needed with std::thread ???
-	if (instance == nullptr)
-	{
-		std::cout << "Instance was null. loopedReceiveMessagesThread()\n";
-		DBG_DISPLAY_ERROR_LOCATION;
-		return;
-	}
-
-	//Connection* self = (Connection*)instance;
-	// or what? update: i don't think so, i think i remember it saying that it essential calls self-> on everything for you.
-
-#if 0// TEMP SEND AUTO MSG
-	DEPRECATED DO NOT USE;
-	const char* sendbuf = nullptr;
-	std::string message_to_send = "This is an automated message from my receive loop.\n";
-
-	//send this message once
-	sendbuf = message_to_send.c_str();
-	int b = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
-	if (b == SOCKET_ERROR)
-	{
-		self->SockStuff.getError(b);
-		std::cout << "send failed.\n";
-		self->SockStuff.myCloseSocket(global_socket);
-		//return;
-	}
-	//else
-	//{
-	//	std::cout << "dbg Message sent: " << sendbuf << "\n";
-	//	std::cout << "dbg Bytes Sent: " << wombocombo << "\n";
-	//}
-
-#endif//1 TEMP SEND AUTO MSG
-	
-
 	// Helpful Information:
 	// Any time a 'message' is mentioned, it is referring to the idea of
 	// a whole message. That message may be broken up into packets and sent over the
