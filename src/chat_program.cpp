@@ -387,7 +387,7 @@ void Connection::createStartClientThread(void * instance)
 	//   if (thread_handle == -1L)
 	//		error stuff here;
 	uintptr_t thread_handle = _beginthread(clientThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEvents[1] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
+	ghEvents[1] = (HANDLE)thread_handle;
 	if (thread_handle == -1L)
 	{
 		int errsv = errno;
@@ -424,7 +424,7 @@ void Connection::clientThread(void * instance)
 	Connection* self = static_cast <Connection*> (instance);
 	if (instance == nullptr)
 	{
-		std::cout << "startClientThread() thread instance NULL\n";
+		std::cout << "clientThread() thread instance NULL\n";
 		DBG_ERR("It failed at ");
 		self->exitThread(nullptr);
 	}
