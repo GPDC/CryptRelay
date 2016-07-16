@@ -96,7 +96,8 @@ public:
 	void myWSACleanup();
 	void myFreeAddrInfo(addrinfo*& pAddrInfo);
 
-	
+	const int TIMEOUT_ERROR = -10060;
+
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if

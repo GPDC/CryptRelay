@@ -451,7 +451,6 @@ void Connection::clientThread(void * instance)
 	// A more normal method would be: try each address until we successfully bind(2).
     // If socket(2) (or bind(2)) fails, we close the socket and try
 	// the next address in the list.
-	int TIMEOUT_ERROR = -10060;
 	while (1)
 	{
 		DBG_TXT("dbg client thread active...");
@@ -482,7 +481,7 @@ void Connection::clientThread(void * instance)
 			DBG_DISPLAY_ERROR_LOCATION;
 			self->exitThread(nullptr);
 		}
-		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
+		else if (r == self->SockStuff.TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
 			DBG_TXT("dbg not real error, timeout client connect");
 			self->SockStuff.myCloseSocket(s);
