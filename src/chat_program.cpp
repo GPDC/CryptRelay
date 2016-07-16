@@ -890,11 +890,12 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					// Copy the type of message flag into the buf
 					chat_buf[0] = CR_CHAT;
 					// Copy the size of the message into the buf as big endian.
-					long long temp1 = user_input_length >> 8;
-					chat_buf[1] = (char)temp1;
-					long long temp2 = user_input_length;
-					chat_buf[2] = (char)temp2;
-
+					//long long temp1 = user_input_length >> 8;
+					//chat_buf[1] = (char)temp1;
+					chat_buf[1] = (char)(user_input_length >> 8);
+					//long long temp2 = user_input_length;
+					//chat_buf[2] = (char)temp2;
+					chat_buf[2] = (char)user_input_length;
 
 					// This is the same as ^, but maybe easier to understand? idk.
 					//buf[0] = CR_CHAT;	// Message flag
@@ -1215,8 +1216,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			"Buffer size must NOT be bigger than USHRT_MAX.");
 
 		std::cout << "Sending file: " << file_name << "\n";
-		long long temp1;
-		long long temp2;
 		do
 		{
 			// The first 3 chars of the buffer are reserved for:
@@ -1235,11 +1234,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				buf[0] = CR_FILE;
 
 				// Copy the size of the message into the buf as big endian.
-				temp1 = bytes_read >> 8;
-				buf[1] = (char)temp1;
-
-				temp2 = bytes_read;
-				buf[2] = (char)temp2;
+				buf[1] = (char)(bytes_read >> 8);
+				buf[2] = (char)(bytes_read);
 
 				//std::cout << "dbg send Message (not packet)\n";
 				//for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
@@ -1752,22 +1748,14 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > (long long)sizeof(variable_to_convert))
 		{
-			long long temp1 = variable_to_convert >> 56;
-			buf[3] = (char)temp1;
-			long long temp2 = variable_to_convert >> 48;
-			buf[4] = (char)temp2;
-			long long temp3 = variable_to_convert >> 40;
-			buf[5] = (char)temp3;
-			long long temp4 = variable_to_convert >> 32;
-			buf[6] = (char)temp4;
-			long long temp5 = variable_to_convert >> 24;
-			buf[7] = (char)temp5;
-			long long temp6 = variable_to_convert >> 16;
-			buf[8] = (char)temp6;
-			long long temp7 = variable_to_convert >> 8;
-			buf[9] = (char)temp7;
-			long long temp8 = variable_to_convert;
-			buf[10] = (char)temp8;
+			buf[3] = (char)(variable_to_convert >> 56);
+			buf[4] = (char)(variable_to_convert >> 48);
+			buf[5] = (char)(variable_to_convert >> 40);
+			buf[6] = (char)(variable_to_convert >> 32);
+			buf[7] = (char)(variable_to_convert >> 24);
+			buf[8] = (char)(variable_to_convert >> 16);
+			buf[9] = (char)(variable_to_convert >> 8);
+			buf[10] = (char)variable_to_convert;
 			return true;
 		}
 
@@ -1784,10 +1772,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Copy the type of message flag into the buf
 			buf[0] = CR_FILE_SIZE;
 			// Copy the size of the message into the buf as big endian.
-			char temp1 = length_of_msg >> 8;
-			buf[1] = temp1;
-			char temp2 = length_of_msg;
-			buf[2] = temp2;
+			buf[1] = (char)(length_of_msg >> 8);
+			buf[2] = (char)length_of_msg;
 		}
 
 		// Converting to network byte order, and copying it into
@@ -1830,10 +1816,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Copy the type of message flag into the buf
 			buf[0] = CR_FILE_NAME;
 			// Copy the size of the message into the buf as big endian.
-			char temp1 = (char)length_of_msg >> 8;
-			buf[1] = temp1;
-			char temp2 = (char)length_of_msg;
-			buf[2] = temp2;
+			buf[1] = (char)(length_of_msg >> 8);
+			buf[2] = (char)length_of_msg;
 		}
 
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > length_of_msg)
