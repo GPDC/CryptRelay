@@ -8,14 +8,15 @@
 // file name and location, as well as the line number in the source file.
 #	define DBG_DISPLAY_ERROR_LOCATION std::cout << "It failed at" << " " << "Line: " << __LINE__ \
 								<< ", File: " << __FILE__ << "\n";
-#   define DBG_OUTPUT(x)
+// Turns on certain areas of code that will output to console.
+#   define DBG_OUTPUT
+
 // Simply outputs text (x) to console.
 #	define DBG_TXT(x) std::cout << x << "\n";
 
 #else
 #	define DBG_DISPLAY_ERROR_LOCATION
-#   define DBG_OUTPUT();
-#	define DBG_TXT(x);
+#	define DBG_TXT(x)
 
 #endif//_DEBUG
 

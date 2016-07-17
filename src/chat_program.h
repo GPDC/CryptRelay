@@ -206,7 +206,7 @@ private:
 	long long file_size_part_six = 0;
 	long long file_size_part_seven = 0;
 	long long file_size_part_eight = 0;
-	long long incoming_file_size_from_peer = 0;
+
 
 	bool processRecvBuf(char * recv_buf, long long buf_len, long long byte_count);
 
@@ -250,6 +250,9 @@ private:
 
 	// using the given buffer, convert the first 8 bytes from Network to Host Long Long
 	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
+	// Variables necessary for assignFileSizeFromPeer();
+	long long file_size_fragment = 0;
+	long long incoming_file_size_from_peer = 0;
 
 	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
 

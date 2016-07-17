@@ -871,13 +871,15 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 						std::cout << "Message was too big for the send buf.\n";
 						break;
 					}
-					DBG_OUTPUT(
+
+					#ifdef DBG_OUTPUT
 						std::cout << "OUTPUT:\n";
 						for (long long z = 0; z < amount_to_send; ++z)
 						{
-							std::cout << z << "_" << (int)buf[z] << "\n";
+							std::cout << z << "_" << (int)chat_buf[z] << "\n";
 						}
-					);
+					#endif//DBG_OUTPUT
+
 				}
 				else
 				{
@@ -1194,13 +1196,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				buf[1] = (char)(bytes_read >> 8);
 				buf[2] = (char)(bytes_read);
 
-				DBG_OUTPUT(
+				#ifdef DBG_OUTPUT
 					std::cout << "send Message (not packet)\n";
 					for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
 					{
 						std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
 					}
-				);
+				#endif// DBG_OUTPUT
 
 
 				// Send the message
@@ -1581,132 +1583,28 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	// For use with RecvBufStateMachine only.
 	int Connection::assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes)
 	{
-		while (1)
+		// The peer is sending the size of his file as a long long.
+		// This means we will receive 8 file size fragments.
+		if (file_size_fragment == 0)
 		{
-			switch (state_ntohll)
-			{
-			case CHECK_INCOMING_FILE_SIZE_PART_ONE:
-			{
-				incoming_file_size_from_peer = 0;   // reset it to 0.
-
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_one = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_one <<= 56;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_TWO;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_TWO:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_two = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_two <<= 48;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_THREE;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_THREE:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_three = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_three <<= 40;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_FOUR;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_FOUR:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_four = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_four <<= 32;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_FIVE;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_FIVE:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_five = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_five <<= 24;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_SIX;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_SIX:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_six = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_six <<= 16;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_SEVEN;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_SEVEN:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_seven = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_seven <<= 8;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_EIGHT;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_EIGHT:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				u_char test123 = recv_buf[position_in_recv_buf];
-				file_size_part_eight = test123;
-				file_size_part_eight = (u_char)recv_buf[position_in_recv_buf];
-				++position_in_recv_buf;
-				++position_in_message;
-
-				// Now combine all the parts together
-				incoming_file_size_from_peer |= file_size_part_one;
-				incoming_file_size_from_peer |= file_size_part_two;
-				incoming_file_size_from_peer |= file_size_part_three;
-				incoming_file_size_from_peer |= file_size_part_four;
-				incoming_file_size_from_peer |= file_size_part_five;
-				incoming_file_size_from_peer |= file_size_part_six;
-				incoming_file_size_from_peer |= file_size_part_seven;
-				incoming_file_size_from_peer |= file_size_part_eight;
-
-				// Set it to the default value so when we come by here again it
-				// will still work properly.
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_ONE;
-				return FINISHED;
-			}
-			}//end switch
+			incoming_file_size_from_peer = 0;
 		}
+
+		while (file_size_fragment < sizeof(long long))
+		{
+			if (position_in_recv_buf >= received_bytes)
+			{
+				return RECV_AGAIN;
+			}
+			incoming_file_size_from_peer |= ((long long)(u_char)recv_buf[position_in_recv_buf]) << (64 - 8 * (file_size_fragment + 1));
+			++position_in_recv_buf;
+			++position_in_message;
+			++file_size_fragment;
+		}
+
+		file_size_fragment = 0;
+
+		return FINISHED;
 	}
 
 	bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert)
@@ -1750,13 +1648,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
 
-		DBG_OUTPUT(
+		#ifdef DBG_OUTPUT
 			std::cout << "OUTPUT:\n";
 			for (long long z = 0; z < amount_to_send; ++z)
 			{
 				std::cout << z << "_" << (int)buf[z] << "\n";
 			}
-		);
+		#endif //DBG_OUTPUT
 
 
 		int b = send((char *)buf, amount_to_send);
@@ -1802,13 +1700,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
-		DBG_OUTPUT(
+		#ifdef DBG_OUTPUT
 			std::cout << "OUTPUT:\n";
 			for (long long z = 0; z < amount_to_send; ++z)
 			{
 				std::cout << z << "_" << (int)buf[z] << "\n";
 			}
-		);
+		#endif//DBG_OUTPUT
 
 
 
