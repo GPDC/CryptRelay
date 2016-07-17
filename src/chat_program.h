@@ -139,16 +139,11 @@ private:
 	static const std::string DEFAULT_PORT;
 
 
-	// NEW SECTION with threads etc
-
-	// This is the only thread that has access to send().
-	// all other threads must send their info to this thread
-	// in order to send it over the network.
-
 	// This method is thread safe.
 	int send(const char * sendbuf, int amount_to_send);
 	// This is for send()
 	int total_amount_sent = 0;
+	int bytes_sent = 0;
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void loopedGetUserInput();
@@ -160,9 +155,6 @@ private:
 
 	// This is only for use with sendFileThread()
 	bool is_send_file_thread_in_use = false;
-
-	// Do not touch. This is for send()
-	int bytes_sent = 0;
 
 
 	// Flags for send() that indicated what the message is being used for.
@@ -178,6 +170,8 @@ private:
 	static const int8_t CR_FILE;
 	static const int8_t CR_ENCRYPTED_FILE;
 
+	// Amount of space to reserve for information such as
+	// flags, and size of the message that will be sent to the peer.
 	static const int8_t CR_RESERVED_BUFFER_SPACE;	//not to be confused with the size or length of a buffer
 
 
@@ -239,7 +233,6 @@ private:
 
 	FILE * WriteFile = nullptr;
 
-	// from a buffer, convert 8 bytes from Network to Host Long Long
 	enum NtoHLLStateMachine
 	{
 		CHECK_INCOMING_FILE_SIZE_PART_ONE,
@@ -254,7 +247,8 @@ private:
 		FINISHED,
 	};
 	int state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_ONE;
-	// from a buffer, convert 8 bytes from Network to Host Long Long
+
+	// using the given buffer, convert the first 8 bytes from Network to Host Long Long
 	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
 
 	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
