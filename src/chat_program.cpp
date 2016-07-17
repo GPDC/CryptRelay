@@ -8,7 +8,6 @@
 #include <pthread.h>	// <process.h>  multithreading
 #include <thread>
 #include <vector>
-#include <mutex>
 #include <climits>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,7 +25,6 @@
 #include <Winsock2.h>
 #include <WS2tcpip.h>
 #include <vector>
-#include <mutex>		// btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
 #include <climits>
 
 #include "chat_program.h"
@@ -673,7 +671,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		do
 		{
-			bytes_sent = send(global_socket, sendbuf, amount_to_send, 0);
+			bytes_sent = ::send(global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
 				SockStuff.getError();

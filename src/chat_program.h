@@ -25,6 +25,7 @@
 #define chat_program_h__
 
 #include <string>
+#include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
 #include "SocketClass.h"
 
 
@@ -146,6 +147,8 @@ private:
 
 	// This method is thread safe.
 	int send(const char * sendbuf, int amount_to_send);
+	// This is for send()
+	int total_amount_sent = 0;
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void loopedGetUserInput();
@@ -259,9 +262,6 @@ private:
 	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
 	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
 	std::string getFileNameFromPath(std::string name_and_location_of_file);
-
-	// This is for send()
-	int total_amount_sent = 0;
 };
 
 #endif //chat_program_h__
