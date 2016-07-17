@@ -94,7 +94,7 @@ int Connection::global_winner = NOBODY_WON;
 SOCKET Connection::global_socket;
 
 
-// Flags for sendMutex() that indicated what the message is being used for.
+// Flags for send() that indicated what the message is being used for.
 // CR == CryptRelay
 const int8_t Connection::CR_NO_FLAG = 0;
 const int8_t Connection::CR_BEGIN = 0;
@@ -661,7 +661,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	// how to interpret the incoming message. For example as a file,
 	// or as a chat message.
 	// To see a list of flags, look in the header file.
-	int Connection::sendMutex(const char * sendbuf, int amount_to_send)
+	int Connection::send(const char * sendbuf, int amount_to_send)
 	{
 		// Whatever thread gets here first, will lock
 		// the door so that nobody else can come in.
@@ -884,7 +884,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					std::cout << "Programmer error. BUF_LEN < 3. loopedGetUserInput()";
 					break;
 				}
-				int b = sendMutex((char *)chat_buf, (int)amount_to_send);
+				int b = send((char *)chat_buf, (int)amount_to_send);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
@@ -1181,7 +1181,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			// [2] the u_short is to tell the peer what the size of the buffer is.
 			//
 			// Example: you want to send your peer a 50,000 byte file.
-			// So you sendMutex() 10,000 bytes at a time. The u_short [1] and [2]
+			// So you send() 10,000 bytes at a time. The u_short [1] and [2]
 			// will tell the peer to treat the next 10,000 bytes as whatever the flag is set to.
 			// In this case the flag would be set to 'file'.
 			bytes_read = fread(buf + CR_RESERVED_BUFFER_SPACE, 1, BUF_LEN - CR_RESERVED_BUFFER_SPACE, ReadFile);
@@ -1201,10 +1201,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				//}
 
 				// Send the message
-				bytes_sent = sendMutex(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
+				bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
 				if (bytes_sent == SOCKET_ERROR)
 				{
-					std::cout << "sendMutex() in sendFileThread() failed. File transfer stopped.\n";
+					std::cout << "send() in sendFileThread() failed. File transfer stopped.\n";
 					break;
 				}
 			}
@@ -1753,7 +1753,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			std::cout << z << "_" << (int)buf[z] << "\n";
 		}
 
-		int b = sendMutex((char *)buf, amount_to_send);
+		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
 			if (global_verbose == true)
@@ -1804,7 +1804,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 #endif//_DEBUG
 
-		int b = sendMutex((char *)buf, amount_to_send);
+		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
 			if (global_verbose == true)

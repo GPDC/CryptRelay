@@ -143,7 +143,8 @@ private:
 	// This is the only thread that has access to send().
 	// all other threads must send their info to this thread
 	// in order to send it over the network.
-	int sendMutex(const char * sendbuf, int amount_to_send);
+
+	int send(const char * sendbuf, int amount_to_send);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 	void loopedGetUserInput();
@@ -156,11 +157,11 @@ private:
 	// This is only for use with sendFileThread()
 	bool is_send_file_thread_in_use = false;
 
-	// Do not touch. This is for sendMutex()
+	// Do not touch. This is for send()
 	int bytes_sent = 0;
 
 
-	// Flags for sendMutex() that indicated what the message is being used for.
+	// Flags for send() that indicated what the message is being used for.
 	// enum is not used for these b/c it could break compatability when
 	// communicating with older version of this program.
 	static const int8_t CR_NO_FLAG;
@@ -255,7 +256,7 @@ private:
 	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
 	std::string returnFileNameFromFileNameAndPath(std::string name_and_location_of_file);
 
-	// This is for sendMutex()
+	// This is for send()
 	int total_amount_sent = 0;
 };
 
