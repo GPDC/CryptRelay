@@ -60,11 +60,11 @@
 
 #ifdef __linux__
 typedef int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
-#define BYTE_SIZE ssize_t// because myRecvFrom needs to return ssize_t on linux, and int on win
+#define BYTE_SIZE ssize_t// because recvfrom needs to return ssize_t on linux, and int on win
 #endif//__linux__
 
 #ifdef _WIN32
-#define BYTE_SIZE int	// because myRecvFrom needs to return ssize_t on linux, and int on win
+#define BYTE_SIZE int	// because recvfrom needs to return ssize_t on linux, and int on win
 #endif//_WIN32
 
 class SocketClass
@@ -74,28 +74,28 @@ public:
 	~SocketClass();
 
 
-	SOCKET mySocket(int address_family, int type, int protocol);
-	SOCKET myAccept(SOCKET fd);
+	SOCKET socket(int address_family, int type, int protocol);
+	SOCKET accept(SOCKET fd);
 
 	// All the bool functions return false when there is an error. True if everything went fine.
-	bool myWSAStartup();
-	bool mySetSockOpt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
-	bool myBind(SOCKET fd, const sockaddr *name, int name_len);
-	bool myShutdown(SOCKET fd, int operation);
-	bool myListen(SOCKET fd);
-	bool myGetAddrInfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
+	bool WSAStartup();
+	bool setsockopt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
+	bool bind(SOCKET fd, const sockaddr *name, int name_len);
+	bool shutdown(SOCKET fd, int operation);
+	bool listen(SOCKET fd);
+	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	int myinet_pton(int family, char * ip_addr, void * paddr_buf);
-	int myConnect(SOCKET fd, const sockaddr* name, int name_len);
-	int mySend(SOCKET s, const char* buffer, int buffer_length, int flags);
-	int mySendTo(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
-	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
-	BYTE_SIZE myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
+	int inet_pton(int family, char * ip_addr, void * paddr_buf);
+	int connect(SOCKET fd, const sockaddr* name, int name_len);
+	int send(SOCKET s, const char* buffer, int buffer_length, int flags);
+	int sendto(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
+	int recv(SOCKET s, char* buf, int buf_len, int flags);
+	BYTE_SIZE recvfrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
+	void closesocket(SOCKET fd);
+	void WSACleanup();
+	void freeaddrinfo(addrinfo*& pAddrInfo);
 	static void coutPeerIPAndPort(SOCKET s);
-	void myCloseSocket(SOCKET fd);
-	void myWSACleanup();
-	void myFreeAddrInfo(addrinfo*& pAddrInfo);
 
 	const int TIMEOUT_ERROR = -10060;
 

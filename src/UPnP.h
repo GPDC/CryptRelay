@@ -25,7 +25,7 @@
 // Important steps list:
 // Three important steps in order to doing anything with UPnP:
 // 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
-//	  SockStuff.myWSAStartup();
+//	  SockStuff.WSAStartup();
 //
 // 2. Find UPnP devices on the local network
 //	  findUPnPDevices();

@@ -59,7 +59,7 @@ UPnP::~UPnP()
 	FreeUPNPUrls(&Urls);
 
 	// Done with Sockets, clean it up.
-	//SockStuff.myWSACleanup();
+	//SockStuff.WSACleanup();
 }
 
 
@@ -69,7 +69,7 @@ UPnP::~UPnP()
 void UPnP::standaloneGetListOfPortForwards()
 {
 	//// Enable socket use on Windows
-	//SockStuff.myWSAStartup();
+	//SockStuff.WSAStartup();
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
@@ -91,7 +91,7 @@ void UPnP::standaloneGetListOfPortForwards()
 void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* internet_protocol)
 {
 	//// Enable socket use on Windows
-	//SockStuff.myWSAStartup();
+	//SockStuff.WSAStartup();
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
@@ -645,7 +645,7 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 {
 
 	// Enable socket use on Windows
-	//SockStuff.myWSAStartup();		// commented out, this is done in SocketClass constructor
+	//SockStuff.WSAStartup();		// commented out, this is done in SocketClass constructor
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
