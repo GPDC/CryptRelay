@@ -251,7 +251,7 @@ private:
 	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
 
 	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
-	bool sendFileName(char * buf, const long long BUF_LEN, std::string name_and_location_of_file);
+	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
 	std::string returnFileNameFromFileNameAndPath(std::string name_and_location_of_file);
 
 	// This is for sendMutex()

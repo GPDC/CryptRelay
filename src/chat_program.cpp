@@ -1806,7 +1806,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return true;
 	}
 
-	bool Connection::sendFileName(char * buf, const long long BUF_LEN, std::string name_of_file)
+	bool Connection::sendFileName(char * buf, const long long BUF_LEN, const std::string& name_of_file)
 	{
 		// Make sure file name isn't too big
 		long long length_of_msg = name_of_file.length();
