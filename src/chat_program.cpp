@@ -35,7 +35,6 @@
 #include "UPnP.h"
 #endif //_WIN32
 
-std::mutex m;
 
 #ifdef __linux__
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
@@ -669,7 +668,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		// That means all other threads will form a queue here,
 		// and won't be able to go past this point until the
 		// thread that got here first unlocks it.
-		m.lock();
+		SendMutex.lock();
 		total_amount_sent = amount_to_send;
 
 		do
@@ -681,7 +680,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				perror("ERROR: send() failed.");
 				DBG_DISPLAY_ERROR_LOCATION("It failed here at ");
 				SockStuff.myCloseSocket(global_socket);
-				m.unlock();
+				SendMutex.unlock();
 				return SOCKET_ERROR;
 			}
 
@@ -690,7 +689,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		} while (amount_to_send > 0);
 
 		// Unlock the door now that the thread is done with this function.
-		m.unlock();
+		SendMutex.unlock();
 
 		return total_amount_sent;// returning the amount of bytes sent.
 	}
@@ -1240,7 +1239,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	// a race condition.
 	int Connection::setWinnerMutex(int the_winner)
 	{
-		m.lock();
+		RaceMutex.lock();
 
 		// If nobody has won the race yet, then set the winner.
 		if (global_winner == NOBODY_WON)
@@ -1248,7 +1247,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			global_winner = the_winner;
 		}
 
-		m.unlock();
+		RaceMutex.unlock();
 		return global_winner;
 	}
 

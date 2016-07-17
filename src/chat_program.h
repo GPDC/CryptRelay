@@ -94,6 +94,8 @@ private:
 	typedef struct stat myStat;
 #endif//__linux__
 
+	std::mutex SendMutex;
+	std::mutex RaceMutex;
 
 	SocketClass SockStuff;
 
