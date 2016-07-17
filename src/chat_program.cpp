@@ -1794,13 +1794,15 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
-#ifdef _DEBUG
-		DBG_TXT("OUTPUT:");
-		for (long long z = 0; z < amount_to_send; ++z)
-		{
-			std::cout << z << "_" << (int)buf[z] << "\n";
-		}
-#endif//_DEBUG
+		DBG_OUTPUT(
+			std::cout << "OUTPUT:";
+			for (long long z = 0; z < amount_to_send; ++z)
+			{
+				std::cout << z << "_" << (int)buf[z] << "\n";
+			}
+		);
+
+
 
 		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
