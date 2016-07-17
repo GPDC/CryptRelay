@@ -233,26 +233,13 @@ private:
 
 	FILE * WriteFile = nullptr;
 
-	enum NtoHLLStateMachine
-	{
-		CHECK_INCOMING_FILE_SIZE_PART_ONE,
-		CHECK_INCOMING_FILE_SIZE_PART_TWO,
-		CHECK_INCOMING_FILE_SIZE_PART_THREE,
-		CHECK_INCOMING_FILE_SIZE_PART_FOUR,
-		CHECK_INCOMING_FILE_SIZE_PART_FIVE,
-		CHECK_INCOMING_FILE_SIZE_PART_SIX,
-		CHECK_INCOMING_FILE_SIZE_PART_SEVEN,
-		CHECK_INCOMING_FILE_SIZE_PART_EIGHT,
-		RECV_AGAIN,
-		FINISHED,
-	};
-	int state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_ONE;
-
 	// using the given buffer, convert the first 8 bytes from Network to Host Long Long
 	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
 	// Variables necessary for assignFileSizeFromPeer();
 	long long file_size_fragment = 0;
 	long long incoming_file_size_from_peer = 0;
+	const int RECV_AGAIN = 0;
+	const int FINISHED = 1;
 
 	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
 
