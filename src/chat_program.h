@@ -144,6 +144,7 @@ private:
 	// all other threads must send their info to this thread
 	// in order to send it over the network.
 
+	// This method is thread safe.
 	int send(const char * sendbuf, int amount_to_send);
 
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
@@ -187,16 +188,19 @@ private:
 	long long message_size_part_two = CR_SIZE_NOT_ASSIGNED;
 	long long message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
 
+	// More variables necessary for processRecvBuf().
 	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
 	std::string incoming_file_name_from_peer;
 	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 
+	// More variables necessary for processRecvBuf().
 	bool received_file_name = false;
 	bool received_file_size = false;
 	bool isFileOpen = false;
 	bool isFileDoneBeingWritten = false;
 
+	// More variables necessary for processRecvBuf().
 	long long file_size_part_one = 0;
 	long long file_size_part_two = 0;
 	long long file_size_part_three = 0;
@@ -254,7 +258,7 @@ private:
 
 	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
 	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
-	std::string returnFileNameFromFileNameAndPath(std::string name_and_location_of_file);
+	std::string getFileNameFromPath(std::string name_and_location_of_file);
 
 	// This is for send()
 	int total_amount_sent = 0;

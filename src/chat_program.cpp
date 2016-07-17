@@ -1103,7 +1103,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		// Retrieve the name of the file from the string that contains
 		// the path and the name of the file.
-		std::string file_name = returnFileNameFromFileNameAndPath(name_and_location_of_file);
+		std::string file_name = getFileNameFromPath(name_and_location_of_file);
 		if (file_name.empty() == true)
 		{
 			std::cout << "dbg file_name.empty() returned true.";
@@ -1814,7 +1814,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		return true;
 	}
 
-	std::string Connection::returnFileNameFromFileNameAndPath(std::string name_and_location_of_file)
+	std::string Connection::getFileNameFromPath(std::string name_and_location_of_file)
 	{
 		std::string error_empty_string;
 		// Remove the last \ or / in the name if there is one, so that the name
@@ -1870,7 +1870,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 
 		// Shouldn't get here, but if it does, it is an error.
-		std::cout << "Impossible location, returnFileNameFromFileNameAndPath()\n";
+		std::cout << "Impossible location, getFileNameFromPath()\n";
 		return error_empty_string;
 	}
 
