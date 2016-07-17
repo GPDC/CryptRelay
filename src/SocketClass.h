@@ -92,6 +92,7 @@ public:
 	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
 	BYTE_SIZE myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
+	static void coutPeerIPAndPort(SOCKET s);
 	void myCloseSocket(SOCKET fd);
 	void myWSACleanup();
 	void myFreeAddrInfo(addrinfo*& pAddrInfo);
@@ -102,7 +103,7 @@ public:
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError();	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
+	static int getError();	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
 
 protected:
 private:

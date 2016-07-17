@@ -118,7 +118,6 @@ private:
 	int setWinnerMutex(int the_winner);
 
 	void loopedReceiveMessagesThread(void * instance);
-	void coutPeerIPAndPort(SOCKET s);
 
 	// Cross platform windows and linux thread exiting
 	void exitThread(void* ptr);

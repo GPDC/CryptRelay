@@ -440,3 +440,45 @@ int SocketClass::getError()
 	return errsv;
 #endif//_WIN32
 }
+
+// Output to console the the peer's IP and port that you have connected to the peer with.
+void SocketClass::coutPeerIPAndPort(SOCKET s)
+{
+	sockaddr PeerIPAndPortStorage;
+#ifdef _WIN32
+	int peer_ip_and_port_storage_len = sizeof(sockaddr);
+#endif//_WIN32
+#ifdef __linux__
+	socklen_t peer_ip_and_port_storage_len = sizeof(sockaddr);
+#endif//__linux__
+	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
+
+	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
+	int errchk = getpeername(s, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	if (errchk == -1)
+	{
+		getError();
+		std::cout << "getpeername() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION;
+		// continuing, b/c this isn't a big problem.
+	}
+
+
+
+	// If we are here, we must be connected to someone.
+	char remote_host[NI_MAXHOST];
+	char remote_hosts_port[NI_MAXSERV];
+
+	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
+	// will make it return the port instead of the service name.
+	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICHOST);
+	if (errchk != 0)
+	{
+		getError();
+		std::cout << "getnameinfo() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION;
+		// still going to continue the program, this isn't a big deal
+	}
+	else
+		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
+}
