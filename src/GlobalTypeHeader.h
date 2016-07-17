@@ -14,6 +14,7 @@
 
 #else
 #	define DBG_DISPLAY_ERROR_LOCATION
+#   define DBG_OUTPUT();
 #	define DBG_TXT(x);
 
 #endif//_DEBUG

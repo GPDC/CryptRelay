@@ -871,11 +871,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 						std::cout << "Message was too big for the send buf.\n";
 						break;
 					}
-					//std::cout << "dbg OUTPUT:\n";
-					//for (long long z = 0; z < amount_to_send; ++z)
-					//{
-					//	std::cout << z << "_" << (int)buf[z] << "\n";
-					//}
+					DBG_OUTPUT(
+						std::cout << "OUTPUT:\n";
+						for (long long z = 0; z < amount_to_send; ++z)
+						{
+							std::cout << z << "_" << (int)buf[z] << "\n";
+						}
+					);
 				}
 				else
 				{
@@ -1192,11 +1194,14 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				buf[1] = (char)(bytes_read >> 8);
 				buf[2] = (char)(bytes_read);
 
-				//std::cout << "dbg send Message (not packet)\n";
-				//for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
-				//{
-				//	std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
-				//}
+				DBG_OUTPUT(
+					std::cout << "send Message (not packet)\n";
+					for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
+					{
+						std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
+					}
+				);
+
 
 				// Send the message
 				bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
@@ -1745,11 +1750,14 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
 
-		std::cout << "dbg OUTPUT:\n";
-		for (long long z = 0; z < amount_to_send; ++z)
-		{
-			std::cout << z << "_" << (int)buf[z] << "\n";
-		}
+		DBG_OUTPUT(
+			std::cout << "OUTPUT:\n";
+			for (long long z = 0; z < amount_to_send; ++z)
+			{
+				std::cout << z << "_" << (int)buf[z] << "\n";
+			}
+		);
+
 
 		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
@@ -1795,7 +1803,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
 		DBG_OUTPUT(
-			std::cout << "OUTPUT:";
+			std::cout << "OUTPUT:\n";
 			for (long long z = 0; z < amount_to_send; ++z)
 			{
 				std::cout << z << "_" << (int)buf[z] << "\n";
