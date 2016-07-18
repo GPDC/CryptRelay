@@ -587,9 +587,18 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 		else
 		{
-			SockStuff.getError();
-			std::cout << "recv() failed.\n";
-			DBG_DISPLAY_ERROR_LOCATION;
+            #ifdef __linux__
+			const int CONNECTION_RESET = 104;
+            #endif// __linux__
+			#ifdef _WIN32
+			const int CONNECTION_RESET = 10054;
+			#endif// _WIN32
+
+			if (SockStuff.getError() != CONNECTION_RESET)
+			{
+				std::cout << "recv() failed.\n";
+				DBG_DISPLAY_ERROR_LOCATION;
+			}
 			break;
 		}
 	}

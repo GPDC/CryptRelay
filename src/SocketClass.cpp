@@ -416,10 +416,17 @@ int SocketClass::getError()
 
 #ifdef __linux__
 	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
-	if (errsv == 10060)	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
+	
+	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
+	if (errsv == 110)// EATIMEDOUT
 		return errsv;
+	else if (errsv == 104)// ECONNRESET
+	{
+		std::cout << "Connection closed by peer.\n";
+		return errsv;
+	}
 	std::cout << "ERRNO: " << errsv << ".\n";
-	if (errsv == 10013)
+	if (errsv == 13)// EACCES
 	{
 		std::cout << "Permission Denied.\n";
 	}
@@ -430,11 +437,15 @@ int SocketClass::getError()
 	int errsv = ::WSAGetLastError();
 
 	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
-	if (errsv == 10060)	// This doesn't seem like the best way to do this...
+	if (errsv == 10060)// Connection timed out
 		return errsv;
-
+	else if (errsv == 10054)// Connection reset by peer
+	{
+		std::cout << "Connection closed by peer.\n";
+		return errsv;
+	}
 	std::cout << "WSAERROR: " << errsv << ".\n";
-	if (errsv == 10013)
+	if (errsv == 10013)// Permission denied.
 		std::cout << "Permission Denied.\n";
 
 	return errsv;
