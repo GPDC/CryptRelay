@@ -1402,7 +1402,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					break;
 				}
 				// this shouldn't be reached?
-				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Unreachable area:";
+				DBG_DISPLAY_ERROR_LOCATION;
+				, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
 				process_recv_buf_state = ERROR_STATE;
 				break;
