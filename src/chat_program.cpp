@@ -1260,7 +1260,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	{
 		position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
 
-		// RecvStateMachin
+		// RecvStateMachine
 		while (1)
 		{
 			switch (process_recv_buf_state)
@@ -1568,6 +1568,12 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			case ERROR_STATE:
 			{
 				std::cout << "Exiting with error, state machine for recv().\n";
+				if (fclose(WriteFile) != 0)		// 0 == successful close
+				{
+					perror("Error closing file for writing in binary mode.\n");
+					std::cout << "Error occured in RecvStateMachine, case ERROR_STATE:\n";
+				}
+
 				return false;
 			}
 			default:// currently nothing will cause this to execute.
