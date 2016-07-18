@@ -4,6 +4,7 @@
 #include <sstream>
 #include <iostream>
 
+#include "GlobalTypeHeader.h"
 #include "string_manipulation.h"
 
 // The deliminiator is the character that will signal when the string should be split.
@@ -12,7 +13,6 @@
 // is turned into: str1 == the, str2 == quick, str3 == brown, str4 == fox
 bool StringManip::split(std::string string, char deliminator, std::vector<std::string> &elements)
 {
-	//std::vector<std::string> elems;
 	std::stringstream ss(string);
 	std::string item;
 
@@ -45,6 +45,6 @@ std::string StringManip::duplicateCharacter(std::string string, char deliminator
 	if (i == UINT_MAX)
 		std::cout << "WARNING: string length in duplicateCharacter() reached UINT_MAX\n";
 
-	std::cout << "dbg string.insert yielded: " << string << "\n";
+	DBG_TXT("string.insert yielded: " << string);
 	return string;
 }
