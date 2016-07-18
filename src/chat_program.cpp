@@ -603,6 +603,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 	}
 
+	EXIT_NOW = true;
 	return;
 
 	/*
@@ -716,6 +717,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		while (1)
 		{
 			std::getline(std::cin, user_input);
+			// If some other thread has errored, or has already closed the connection,
+			// then it will set EXIT_NOW = true;
+			if (EXIT_NOW == true)
+			{
+				//Exit program
+				break;
+			}
 			if (user_input == "exit()")
 			{
 				// Exit program.

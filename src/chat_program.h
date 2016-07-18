@@ -121,6 +121,7 @@ private:
 	int setWinnerMutex(int the_winner);
 
 	void loopedReceiveMessagesThread(void * instance);
+	bool EXIT_NOW = false;
 
 	// Cross platform windows and linux thread exiting
 	void exitThread(void* ptr);
