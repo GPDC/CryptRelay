@@ -1551,15 +1551,16 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 				if (position_in_message < message_size)
 				{
-					std::cout << "dbg: position_in_message < message_size, closefileforwrite\n";
+					DBG_TXT("dbg: position_in_message < message_size, closefileforwrite");
 				}
 				if (position_in_message == message_size)
 				{
-					std::cout << "dbg: position_in_message == message_size, everything A OK closefileforwrite\n";
+					DBG_TXT("dbg: position_in_message == message_size, everything A OK closefileforwrite");
+					std::cout << "File transfer from peer is complete.\n";
 				}
 				if (position_in_message > message_size)
 				{
-					std::cout << "dbg: ERROR, position_in_message > message_size , closefileforwrite\n";
+					std::cout << "ERROR: position_in_message > message_size , closefileforwrite\n";
 				}
 				process_recv_buf_state = CHECK_FOR_FLAG;
 				break;
