@@ -1,13 +1,11 @@
 ﻿# Todo:
 -Update state machine design so the control flow is better
--check on possiblity of CLOSE_FILE_FOR_WRITE being used for errors. maybe a separate one for an error'd file? issues exist i think.
 -encryption
 -Fix chat output issue when someone sends you a message while you are typing
--select() maybe should be replaced by poll() and WSAPoll() ?
 -sha hashes to make sure file copy & transfer is legit.
 -improve display of file size so that it will show different size when appropriate. I.E. 357.2 MB, 1.2 GB
 -remove displaying of errors of closesocket and shutdown in the deconstructor for Connection class
-- prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will open CryptRelay.exe and start trying to write to it.
+-prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will open CryptRelay.exe and start trying to write to it.
 -prevent incompatible symbols from being used with files.
 
 # Research:
@@ -20,6 +18,7 @@
 -implement a progress indicator for the file copy or file transfer. It would preferably be something like this due to using a terminal: in the getuserinput section that does getline(), check to see if the user typed out "progress()", and if the user did, then display the current progress of the file transfer, or file copy, whatever. This would be done by giving a displayProgress() function the args: total_bytes_sent, file_size.  It would just do a simple divide calculation and turn it into a % and display that.  
 OR OR could just have getuserinput() set a global variable that be: display_progress = true; , and any function like copyFile() would check if(display_progress == true), then displayProgress(total_bytes_sent, file_size); and inside the displayProgress() it would make sure to set display_progress = false; at the end.
 Or because i'm no longer implementing file transfer during chat, just make a cool progress bar. or because i am now, ha, find a fix for the chat output issue and then this won't be a problem to implement.
+-select() maybe should be replaced by poll() and WSAPoll() ?
 -adding / fixing displayTimeStarted() in the UpnP class
 
 # Critical Errors:
