@@ -181,6 +181,7 @@ void Connection::createStartServerThread(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
+	errno = 0;
 	uintptr_t thread_handle = _beginthread(serverThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
@@ -686,7 +687,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			{
 				SockStuff.getError();
 				perror("ERROR: send() failed.");
-				DBG_DISPLAY_ERROR_LOCATION("It failed here at ");
+				DBG_DISPLAY_ERROR_LOCATION;
 				SockStuff.closesocket(global_socket);
 				SendMutex.unlock();
 				return SOCKET_ERROR;
@@ -750,7 +751,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					DBG_DISPLAY_ERROR_LOCATION("Split failed?");	// Currently no return false?
+					DBG_DISPLAY_ERROR_LOCATION;	// Currently no return false?
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();
