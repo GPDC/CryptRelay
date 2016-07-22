@@ -16,7 +16,7 @@
 // 5. WSAStartup() is called in the constructor
 // 6. WSACleanup() is called in the deconstructor
 // Please note that means whoever is using this class will need to
-// call freeAddrInfo(struct addrinfo) when they need to.
+// call freeaddrinfo(struct addrinfo) when they need to.
 
 // Warnings:
 // This source file does not do any input validation.
@@ -86,7 +86,7 @@ public:
 
 	void closesocket(SOCKET fd);
 	void WSACleanup();
-	void freeAddrInfo(addrinfo** ppAddrInfo);
+	void freeaddrinfo(addrinfo** ppAddrInfo);
 	static void coutPeerIPAndPort(SOCKET s);
 
 	const int TIMEOUT_ERROR = -10060;
