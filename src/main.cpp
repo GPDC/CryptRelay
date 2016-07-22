@@ -8,12 +8,6 @@
 
 // Formatting guide: Located at the bottom of main.cpp
 
-// Overview:
-// This is where the program starts.
-
-// Warnings:
-// This source file does not do any input validation.
-
 #ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
 							// build-> linker-> libraries->
 #include <iostream>

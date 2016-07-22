@@ -1,13 +1,9 @@
 //FormatCheck.cpp
 
-//wrote this all 3 majorly different ways 3 different times as practice. (didn't use library functions that would make this extremely quick & easy)
-//what is written below is a bit ugly, and could be improved __a_lot__, but it currently works.
-
 #ifdef __linux__
 #include <iostream>
 #include <vector>
 
-// are these really needed here? pls check on linux
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -16,11 +12,10 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <errno.h>
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
-#endif
+#endif//__linux__
 
 #ifdef _WIN32
 #include <string>
@@ -28,15 +23,7 @@
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
-#endif
-
-#define BAD_FORMAT -100
-#define MAX_PORT_LENGTH 5
-#define MAX_PORT_NUMBER 65535		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
-
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 15			// max size of ipv4 address / ipv6 is 45
-#endif//INET_ADDRSTRLEN
+#endif//_WIN32
 
 IPAddress::IPAddress()
 {
