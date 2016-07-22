@@ -56,7 +56,6 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 {
 	const int IN_USE = 1;
 	const int AVAILABLE = 0;
-	SocketClass SockStuff;
 	addrinfo Hints;
 	addrinfo* ServerInfo;
 	memset(&Hints, 0, sizeof(Hints));
@@ -69,11 +68,11 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ServerInfo
 	// Now we use ServerInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (SockStuff.getaddrinfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
+	if (SocketClass::getaddrinfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
 		return false;
 
 	// Create socket
-	SOCKET listen_socket = SockStuff.socket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
+	SOCKET listen_socket = SocketClass::socket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
 	if (listen_socket == INVALID_SOCKET)
 		return -1;
 	else if (listen_socket == SOCKET_ERROR)
@@ -90,7 +89,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 		int errsv = errno;			//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
 		{
-			SockStuff.closesocket(listen_socket);
+			Sock.closesocket(listen_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -100,7 +99,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 		int errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			SockStuff.closesocket(listen_socket);
+			SocketClass::closesocket(listen_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -110,7 +109,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	}
 
 	// No errors, must be available
-	SockStuff.closesocket(listen_socket);
+	SocketClass::closesocket(listen_socket);
 	return AVAILABLE;
 }
 

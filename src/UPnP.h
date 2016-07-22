@@ -19,7 +19,7 @@
 // Important steps list:
 // Three important steps in order to doing anything with UPnP:
 // 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
-//	  SockStuff.WSAStartup();
+//	  SocketClass.WSAStartup();
 //
 // 2. Find UPnP devices on the local network
 //	  findUPnPDevices();
@@ -78,9 +78,6 @@ private:
 	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
-
-
-	SocketClass SockStuff;
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory

@@ -93,8 +93,6 @@ private:
 	std::mutex SendMutex;
 	std::mutex RaceMutex;
 
-	SocketClass SockStuff;
-
 	// These are called by createStartServerThread() and createStartClientThread()
 	// These exist because threads on linux have to return a void*.
 	// Conversely on windows it doesn't return anything because threads return void.

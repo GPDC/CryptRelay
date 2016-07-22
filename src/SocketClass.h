@@ -66,30 +66,30 @@ public:
 	~SocketClass();
 
 
-	SOCKET socket(int address_family, int type, int protocol);
-	SOCKET accept(SOCKET fd);
+	static SOCKET socket(int address_family, int type, int protocol);
+	static SOCKET accept(SOCKET fd);
 
 	// All the bool functions return false when there is an error. True if everything went fine.
 	bool WSAStartup();
-	bool setsockopt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
-	bool bind(SOCKET fd, const sockaddr *name, int name_len);
-	bool shutdown(SOCKET fd, int operation);
-	bool listen(SOCKET fd);
-	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
+	static bool setsockopt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
+	static bool bind(SOCKET fd, const sockaddr *name, int name_len);
+	static bool shutdown(SOCKET fd, int operation);
+	static bool listen(SOCKET fd);
+	static bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	int inet_pton(int family, char * ip_addr, void * paddr_buf);
-	int connect(SOCKET fd, const sockaddr* name, int name_len);
-	int send(SOCKET s, const char* buffer, int buffer_length, int flags);
-	int sendto(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
-	int recv(SOCKET s, char* buf, int buf_len, int flags);
-	BYTE_SIZE recvfrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
+	static int inet_pton(int family, char * ip_addr, void * paddr_buf);
+	static int connect(SOCKET fd, const sockaddr* name, int name_len);
+	static int send(SOCKET s, const char* buffer, int buffer_length, int flags);
+	static int sendto(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
+	static int recv(SOCKET s, char* buf, int buf_len, int flags);
+	static BYTE_SIZE recvfrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
-	void closesocket(SOCKET fd);
-	void WSACleanup();
-	void freeaddrinfo(addrinfo** ppAddrInfo);
+	static void closesocket(SOCKET fd);
+	static void WSACleanup();
+	static void freeaddrinfo(addrinfo** ppAddrInfo);
 	static void coutPeerIPAndPort(SOCKET s);
 
-	const int TIMEOUT_ERROR = -10060;
+	static const int TIMEOUT_ERROR = -10060;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
@@ -103,9 +103,6 @@ private:
 #ifdef _WIN32
 	WSADATA wsaData;			// for WSAStartup();
 #endif//_WIN32
-
-
-
 };
 
 

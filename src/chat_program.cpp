@@ -118,14 +118,14 @@ Connection::~Connection()
 {
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
 	// UPDATE: ctrl-c does not call deconstructors.
-	SockStuff.shutdown(global_socket, SD_BOTH);
+	SocketClass::shutdown(global_socket, SD_BOTH);
 
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	// Check comments in the freeaddrinfo() to see how its done.
 	if (ConnectionInfo != nullptr)
-		SockStuff.freeaddrinfo(&ConnectionInfo);
+		SocketClass::freeaddrinfo(&ConnectionInfo);
 }
 
 
@@ -234,11 +234,11 @@ void Connection::serverThread(void * instance)
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (self->SockStuff.getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (SocketClass::getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 
 	// Create socket
-	SOCKET listen_socket = self->SockStuff.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+	SOCKET listen_socket = SocketClass::socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 	if (listen_socket == INVALID_SOCKET)
 		self->exitThread(nullptr);
 	else if (listen_socket == SOCKET_ERROR)
@@ -246,11 +246,11 @@ void Connection::serverThread(void * instance)
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (self->SockStuff.bind(listen_socket, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
+	if (SocketClass::bind(listen_socket, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
 		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
-	if (self->SockStuff.listen(listen_socket) == false)
+	if (SocketClass::listen(listen_socket) == false)
 		self->exitThread(nullptr);
 
 
@@ -282,16 +282,16 @@ void Connection::serverThread(void * instance)
 
 		if (errchk == SOCKET_ERROR)
 		{
-			self->SockStuff.getError();
+			SocketClass::getError();
 			std::cout << "startServerThread() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
-			self->SockStuff.closesocket(listen_socket);
+			SocketClass::closesocket(listen_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
 		{
-			self->SockStuff.closesocket(listen_socket);
+			SocketClass::closesocket(listen_socket);
 			if (global_verbose == true)
 			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
@@ -305,7 +305,7 @@ void Connection::serverThread(void * instance)
 
 			SOCKET accepted_socket;
 			// Accept the connection and create a new socket to communicate on.
-			accepted_socket = self->SockStuff.accept(listen_socket);
+			accepted_socket = SocketClass::accept(listen_socket);
 			if (accepted_socket == INVALID_SOCKET)
 				self->exitThread(nullptr);
 			if (global_verbose == true)
@@ -319,8 +319,8 @@ void Connection::serverThread(void * instance)
 					std::cout << "Server: Extremely rare race condition was almost reached.";
 					std::cout << "It was prevented using a mutex. The client is the real winner.\n";
 				}
-				self->SockStuff.closesocket(listen_socket);
-				self->SockStuff.closesocket(accepted_socket);
+				SocketClass::closesocket(listen_socket);
+				SocketClass::closesocket(accepted_socket);
 				self->exitThread(nullptr);
 			}
 			else
@@ -329,14 +329,14 @@ void Connection::serverThread(void * instance)
 
 			DBG_TXT("closing socket after retrieving new one from accept()");
 			// Not using this socket anymore since we created a new socket after accept() ing the connection.
-			self->SockStuff.closesocket(listen_socket);
+			SocketClass::closesocket(listen_socket);
 
 			break;
 		}
 	}
 
 	// Display who the user has connected to.
-	self->SockStuff.coutPeerIPAndPort(global_socket);
+	SocketClass::coutPeerIPAndPort(global_socket);
 
 	// Receive messages until there is an error or connection is closed.
 	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
@@ -352,8 +352,8 @@ void Connection::serverThread(void * instance)
 		RcvThread.join();
 
 	// Done communicating with peer. Proceeding to exit.
-	self->SockStuff.shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	self->SockStuff.closesocket(global_socket);
+	SocketClass::shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	SocketClass::closesocket(global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -434,7 +434,7 @@ void Connection::clientThread(void * instance)
 
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
-	if (self->SockStuff.getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (SocketClass::getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 	
 	std::cout << "Attempting to connect...\n";
@@ -461,7 +461,7 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Create socket
-		SOCKET s = self->SockStuff.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+		SOCKET s = SocketClass::socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
@@ -470,17 +470,17 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Attempt to connect to target
-		int r = self->SockStuff.connect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
+		int r = SocketClass::connect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
-		else if (r == self->SockStuff.TIMEOUT_ERROR)	// No real errors, just can't connect yet
+		else if (r == SocketClass::TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
 			DBG_TXT("Not real error, timeout client connect");
-			self->SockStuff.closesocket(s);
+			SocketClass::closesocket(s);
 			continue;
 		}
 		else if (r == 0)				// Must have succeeded in connecting
@@ -493,7 +493,7 @@ void Connection::clientThread(void * instance)
 					std::cout << "Client: Extremely rare race condition was almost reached. ";
 					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
 				}
-				self->SockStuff.closesocket(s);
+				SocketClass::closesocket(s);
 				self->exitThread(nullptr);
 			}
 			else
@@ -510,7 +510,7 @@ void Connection::clientThread(void * instance)
 	}
 
 	// Display who the user is connected with.
-	self->SockStuff.coutPeerIPAndPort(global_socket);
+	SocketClass::coutPeerIPAndPort(global_socket);
 
 
 
@@ -529,8 +529,8 @@ void Connection::clientThread(void * instance)
 		rcv_thread.join();
 
 	// Done communicating with peer. Proceeding to exit.
-	self->SockStuff.shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	self->SockStuff.closesocket(global_socket);
+	SocketClass::shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	SocketClass::closesocket(global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -591,7 +591,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			const int CONNECTION_RESET = 10054;
 			#endif// _WIN32
 
-			if (SockStuff.getError() != CONNECTION_RESET)
+			if (SocketClass::getError() != CONNECTION_RESET)
 			{
 				std::cout << "recv() failed.\n";
 				DBG_DISPLAY_ERROR_LOCATION();
@@ -678,10 +678,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			bytes_sent = ::send(global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
-				SockStuff.getError();
+				SocketClass::getError();
 				perror("ERROR: send() failed.");
 				DBG_DISPLAY_ERROR_LOCATION();
-				SockStuff.closesocket(global_socket);
+				SocketClass::closesocket(global_socket);
 				SendMutex.unlock();
 				return SOCKET_ERROR;
 			}
@@ -1590,7 +1590,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > length_of_msg)
 		{
-			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), length_of_msg);
+			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), (size_t)length_of_msg);
 		}
 		else
 		{
