@@ -2,14 +2,6 @@
 
 //wrote this all 3 majorly different ways 3 different times as practice. (didn't use library functions that would make this extremely quick & easy)
 //what is written below is a bit ugly, and could be improved __a_lot__, but it currently works.
-//note to self: next time you know what to do just do it even if it means messing up your schedule (to a certain extent). Otherwise you will forget how it was to be written.
-//note to self: don't write notes for how to write the code next time. write the code instead, or perhaps try quick and dirty sudo code?.
-//
-//for the next project, lay it all out first. design it with loose terms, sudo code, w/e. typing away and hoping it all falls into place was pretty dumb, but admittedly I learned a lot during the 4 re-writes.
-//this is all working, but it is missing safety checks for overflows. these saftey checks being missing for the moment are not 100% scary, I believe, since it is all done client side, and nobody through the internet
-//can interact with the variables that don't have safety checks. The attacker would have to have some access to this computer, and at that point, everything is compromised anyways.
-//Regardless, I would still like to create safety checks for this class. However I will do this after the connect class has been created and is working.
-
 
 #ifdef __linux__
 #include <iostream>

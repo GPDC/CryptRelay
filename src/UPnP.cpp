@@ -673,17 +673,6 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 // autoAddPortForwardingRule()
 void UPnP::autoDeletePortForwardRule()
 {
-	// Wish the library had an implementation to delete based off of
-	// the description. Maybe I can make one.
-
-	// Should check list of all current port forwards
-	// and then basically grep out the ones that have
-	// description_of_port_forward_entry in it
-	// and take the external port and protocol attached to
-	// that description and give it to UPNP_DeletePortMapping().
-
-
-
 	std::cout << "Automatically deleting port forward rule...\n";
 
 	// Delete the port forward rule

@@ -5,13 +5,7 @@
 // Handles all things related to UPnP.
 
 // Warnings:
-// This source file expects any input that is given to it has already been checked
-//  for safety and validity. For example if a user supplies a port, then
-//  this source file will expect the port will be >= 0, and <= 65535.
-//  As with an IP address it will expect it to be valid input, however it doesn't
-//  expect you to have checked to see if there is a host at that IP address
-//  before giving it to this source file.
-
+// This source file does not do any input validation.
 
 // Terminology:
 // UPnP: Universal Plug and Play
@@ -107,9 +101,3 @@ private:
 };
 
 #endif//UPnP_h__
-
-
-
-// FYI in the c language, calling something static means that it can't
-// be seen outside the file. Think of it like a private section of a class.
-

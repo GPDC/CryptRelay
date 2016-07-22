@@ -2,9 +2,7 @@
 
 // I'm really doubting the usefuless of a class like this.
 // I mean it does make the code smaller in chat_program
-// and therefore easier to skim over and see what is going on,
-// but it kinda seems silly. I don't know. I would like some
-// input from people on this.
+// and therefore easier to skim over and see what is going on.
 
 // Overview:
 // Purpose of this class is to place all sockets related things here, and take
@@ -21,12 +19,7 @@
 // call freeaddrinfo(struct addrinfo) when they need to.
 
 // Warnings:
-// This source file expects any input that is given to it has already been checked
-//  for safety and validity. For example if a user supplies a port, then
-//  this source file will expect the port will be >= 0, and <= 65535.
-//  As with an IP address it will expect it to be valid input, however it doesn't
-//  expect you to have checked to see if there is a host at that IP address
-//  before giving it to this source file.
+// This source file does not do any input validation.
 
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
@@ -38,7 +31,6 @@
 //  to tell the programmer that something went wrong.
 //  On linux it returns -1 for an invalid socket instead of (~0) because SOCKET is
 //  defined as an int on linux, and valid SOCKETs will only be positive.
-// buf is buffer. It is a place where information is stored for a time.
 
 #ifndef SocketClass_h__
 #define SocketClass_h__
