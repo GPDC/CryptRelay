@@ -105,7 +105,7 @@ const int8_t Connection::CR_FILE = 32;
 const int8_t Connection::CR_ENCRYPTED_FILE = 33;
 
 // How many characters at the beginning of the buffer that should be
-// reserved for usage of a flag, and size of the "packet"
+// reserved for usage of a flag, (1) and size of the message (2). (1 + 2 == 3)
 const int8_t Connection::CR_RESERVED_BUFFER_SPACE = 3;
 
 
@@ -119,8 +119,6 @@ Connection::~Connection()
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
 	// UPDATE: ctrl-c does not call deconstructors.
 	SockStuff.shutdown(global_socket, SD_BOTH);
-
-
 
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
@@ -560,8 +558,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		std::cout << "Recv loop started...\n";
 
 
-
-
 	position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
 
 	type_of_message_flag = CR_NO_FLAG;
@@ -656,9 +652,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		
 		return false;
 	}
-
-	
-	// NEW SECTION***********************
 
 	// WARNING:
 	// This function expects the caller to protect against accessing
@@ -784,8 +777,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 							// Fix the user's input to add an escape character to every '\'
 							StrManip.duplicateCharacter(file_name_and_loca, '\\');
-
-							DBG_TXT("dbg file_name_and_loca == " << file_name_and_loca);
 						}
 
 						// Send the file
@@ -823,8 +814,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 							// Fix the user's input to add an escape character to every '\'
 							copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
 							copied_file_name_and_location += ".enc";
-
-							DBG_TXT("dbg copied_file_name_and_location == " << copied_file_name_and_location);
 						}
 
 						// Copy the file before encrypting it.
@@ -870,14 +859,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					//chat_buf[2] = (char)temp2;
 					chat_buf[2] = (char)user_input_length;
 
-					// This is the same as ^, but maybe easier to understand? idk.
-					//buf[0] = CR_CHAT;	// Message flag
-					//// Copy the size of the message into the buf as big endian.
-					//u_short msg_sz = htons((u_short)user_input_length);
-					//if (BUF_LEN - 1 >= sizeof(msg_sz))
-					//	memcpy(buf + 1, &msg_sz, sizeof(msg_sz));
-
-
 					// Copy the user's message into the buf
 					if ((CHAT_BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
 						&& user_input_length < UINT_MAX)
@@ -889,15 +870,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 						std::cout << "Message was too big for the send buf.\n";
 						break;
 					}
-
-					#ifdef DBG_OUTPUT
-						std::cout << "OUTPUT:\n";
-						for (long long z = 0; z < amount_to_send; ++z)
-						{
-							std::cout << z << "_" << (int)chat_buf[z] << "\n";
-						}
-					#endif//DBG_OUTPUT
-
 				}
 				else
 				{
@@ -920,51 +892,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		return;
 	}
-
-
-
-	// have 1 thread to send stuff over the network //this encompasses chat and file messages
-	// have 1 thread to getline() user input and send that to the network thread
-	// have 1 thread for sending file data to the network thread
-	// there will be a vector in the networkThread that will store all messages.
-	// if you want to send a message or file, put that message or file into vector.pushback();
-	// networkThread will send(vector[i]) and increment after sending each message... but
-	// problem with packet size. and gotta delete the message you just sent, from the vector.
-	// lockless queue with thread safety
-
-	// getline() thread```````````
-	// while(1)
-	// {
-	// getline(cin, getline_msg);
-	// if (doesUserWantToSendFile() == true)
-	//	    createthread(sendfilethread);
-	// else
-	// {
-	//		networkThread_msg_to_send = getline_msg;
-	//		++networkThread_message_counter;
-	// }
-
-
-	// networkThread```````````````````
-	// bool should_i_send_the_message;
-	// std::string message_to_send;
-	// char * sendbuf;
-	// while(1)
-	// {
-	//		if(should_i_send_the_message == true)
-	//		{
-	//			sendbuf = message_to_send.c_str();
-	//			send(sendbuf);
-	//			should_i_send_the_message = false;
-	//		}	
-
-
-
-	// Requires an a stat structure that was already filled out by stat();
-	// might need to include these on linux?:
-	//<sys/types.h>
-	//<sys/stat.h>
-	//<unistd.h>
 
 	// Pass NULL to the struct that doesn't correspond to your OS.
 	bool Connection::displayFileSize(const char* file_name_and_location, myStat * FileStatBuf)
@@ -1079,20 +1006,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			perror("Error while copying the file");
 
 
-
 		if (fclose(WriteF))
 			perror("Error closing file designated for writing");
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 
 		delete[]buffer;
-
-		std::cout << "dbg beep boop end of copyFile()\n";
 		return true;
-
-		//// Give a compiler error if streamsize > sizeof(long long)
-		//// This is so we can safely do this: (long long) streamsize
-		//static_assert(sizeof(std::streamsize) <= sizeof(long long), "myERROR: streamsize > sizeof(long long)");
 	}
 
 	bool Connection::sendFileThread(std::string name_and_location_of_file)
@@ -1126,14 +1046,12 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		std::string file_name = getFileNameFromPath(name_and_location_of_file);
 		if (file_name.empty() == true)
 		{
-			std::cout << "dbg file_name.empty() returned true.";
 			delete[]buf;
 			if (fclose(ReadFile))
 				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false; //exit please, file name couldn't be found.
 		}
-		std::cout << "dbg name of the file: " << file_name << "\n";
 
 		// *** The order in which file name and file size is sent DOES matter! ***
 		// Send the file name to peer
@@ -1214,15 +1132,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				buf[1] = (char)(bytes_read >> 8);
 				buf[2] = (char)(bytes_read);
 
-				#ifdef DBG_OUTPUT
-					std::cout << "send Message (not packet)\n";
-					for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
-					{
-						std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
-					}
-				#endif// DBG_OUTPUT
-
-
 				// Send the message
 				bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
 				if (bytes_sent == SOCKET_ERROR)
@@ -1242,14 +1151,8 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		// Please implement sha hash checking here to make sure the file is legit.
 
-		//if (bytes_sent <= 0)
-		//	perror("Error while transfering the file");
-		//else
-		//{
-			std::cout << "File transfer complete\n";
-			DBG_TXT("Total bytes sent: " << total_bytes_sent);
-		//}
-
+		std::cout << "File transfer complete\n";
+		
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 
@@ -1295,10 +1198,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					if (!bytes_written)// uhh this might be a negative number sometimes which makes !bytes_written not work?
 					{
 						perror("Error while writing the file from peer");
-						DBG_TXT("Error: bytes_written returned: " << bytes_written);
-						DBG_TXT("File stream: " << WriteFile);
-						DBG_TXT("received_bytes: " << received_bytes);
-						DBG_TXT("message_size: " << message_size);
 
 						// close file
 						if (fclose(WriteFile))
@@ -1342,7 +1241,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					break;
 				}
 
-				// this shouldn't be reached?
+				// this shouldn't be reached
 				std::cout << "Unrecognized message?\n";
 				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
@@ -1374,7 +1273,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					process_recv_buf_state = CHECK_FOR_FLAG;
 					break;
 				}
-				// this shouldn't be reached?
+				// this shouldn't be reached
 				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
 				process_recv_buf_state = ERROR_STATE;
@@ -1382,10 +1281,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			}
 			case TAKE_FILE_NAME_FROM_PEER:
 			{
-				// SHOULD PROBABLY CLEAN THE FILE NAME OF INCORRECT SYMBOLS 
-				// AND PREVENT PERIODS FROM BEING USED, ETC.
-
-				DBG_TXT("Take file name from peer:\n");
 				// Set the file name variable.
 				for (;
 					(position_in_recv_buf < received_bytes)
@@ -1394,7 +1289,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					++position_in_recv_buf, ++position_in_message)
 				{
 					incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
-					DBG_TXT(position_in_recv_buf << " " << (int)recv_buf[position_in_recv_buf]);
 				}
 				// If the file name was too big, then say so, but don't error.
 				if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
@@ -1472,9 +1366,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 				else
 				{
-					//std::cout << "dbg Check for flag: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
-
 					type_of_message_flag = (u_char)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_ONE;
@@ -1491,8 +1382,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 				else
 				{
-					//std::cout << "dbg Check msg size pt1: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_one = (u_char)recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
 					++position_in_recv_buf;
@@ -1510,13 +1399,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 				else
 				{
-					//std::cout << "dbg Check msg size pt2: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_two = (u_char)recv_buf[position_in_recv_buf];
 					message_size = message_size_part_one | message_size_part_two;
 					++position_in_recv_buf;
-
-					//std::cout << "dbg position_in_recv_buf: " << position_in_recv_buf << "\n";
 
 					if (type_of_message_flag == CR_FILE)
 						process_recv_buf_state = WRITE_FILE_FROM_PEER;
@@ -1570,11 +1455,11 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 				if (position_in_message < message_size)
 				{
-					DBG_TXT("dbg: position_in_message < message_size, closefileforwrite");
+					DBG_TXT("position_in_message < message_size, closefileforwrite");
 				}
 				if (position_in_message == message_size)
 				{
-					DBG_TXT("dbg: position_in_message == message_size, everything A OK closefileforwrite");
+					DBG_TXT("position_in_message == message_size, everything A OK closefileforwrite");
 					std::cout << "File transfer from peer is complete.\n";
 				}
 				if (position_in_message > message_size)
@@ -1674,15 +1559,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
 
-		#ifdef DBG_OUTPUT
-			std::cout << "OUTPUT:\n";
-			for (long long z = 0; z < amount_to_send; ++z)
-			{
-				std::cout << z << "_" << (int)buf[z] << "\n";
-			}
-		#endif //DBG_OUTPUT
-
-
 		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
@@ -1725,16 +1601,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		// Converting to network byte order, and copying it into
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
-
-		#ifdef DBG_OUTPUT
-			std::cout << "OUTPUT:\n";
-			for (long long z = 0; z < amount_to_send; ++z)
-			{
-				std::cout << z << "_" << (int)buf[z] << "\n";
-			}
-		#endif//DBG_OUTPUT
-
-
 
 		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
@@ -1781,7 +1647,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			}
 			else if (last_seen_slash_location < name_and_location_of_file_length)
 			{
-				//// Copy the file name from name_and_location_of_file to file_name.
+				// Copy the file name from name_and_location_of_file to file_name.
 				std::string file_name(
 					name_and_location_of_file,
 					(size_t)last_seen_slash_location + 1,
