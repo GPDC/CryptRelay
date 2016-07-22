@@ -1,4 +1,9 @@
 # *Current Status: v0.8 - No encryption.
+Implemented:
+- File transfer
+- Chat
+Not implemented:
+- Encryption.
 If you want to send an encrypted file, you must encrypt it first with an encryption program before sending it through CryptRelay. If you want to send an encrypted message, encrypt it first before sending the message, or encrypt a file with your message inside and send that.
 
 # CryptRelay
