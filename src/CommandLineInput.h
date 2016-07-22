@@ -3,12 +3,6 @@
 // Overview:
 // The purpose of this class is to parse command line input.
 
-// Terminology:
-//
-
-
-
-
 #ifndef CommandLineInput_h___
 #define CommandLineInput_h___
 #include <string>
@@ -21,7 +15,7 @@ public:
 	~CommandLineInput();
 
 	
-	int getCommandLineInput(int argc, char* argv[]);
+	bool getCommandLineInput(int argc, char* argv[]);
 
 	// -dpf
 	bool delete_this_specific_port_forward = false;
@@ -31,7 +25,7 @@ public:
 	bool show_info_upnp = false;
 	bool get_list_of_port_forwards = false;
 	bool use_lan_only = false;
-	bool use_upnp_to_connect_to_peer = true;	// Connection will always want to use upnp unless the user makes this false
+	bool use_upnp_to_connect_to_peer = true;	// Connection class will always want to use upnp unless the user makes this false
 
 
 	std::string target_ip_address;
@@ -39,13 +33,6 @@ public:
 	std::string my_ip_address;
 	std::string my_host_port;
 	std::string my_ext_ip_address;
-
-	///* currently unused */
-	//struct UPnPDeleteSpecificPortForward
-	//{
-	//	std::string extern_port;
-	//	std::string protocol;
-	//};
 
 protected:
 private:

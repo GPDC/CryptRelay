@@ -72,7 +72,7 @@ void CommandLineInput::Examples()
 
 }
 
-int CommandLineInput::getCommandLineInput(int argc, char* argv[])
+bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
@@ -91,7 +91,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 	if (argc <= 1)
 	{
 		helpAndReadMe();
-		return 0;
+		return true;
 	}
 	// Check all argv inputs to see what the user wants to do
 	bool err_chk_bool = 0;
@@ -109,7 +109,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				|| arg[i] == "--Help")
 			{
 				helpAndReadMe();
-				return 0;
+				return true;
 			}
 			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
@@ -117,7 +117,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				if (err_chk_bool == false)
 				{
 					std::cout << "Bad IP address format.\n\n";
-					return 0;
+					return true;
 				}
 				else
 				{
@@ -129,7 +129,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return 0;
+					return true;
 				else
 				{
 					target_port = argv[i + 1];
@@ -140,7 +140,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return 0;
+					return true;
 				else
 				{
 					my_ip_address = argv[i + 1];
@@ -151,7 +151,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return 0;
+					return true;
 				else
 				{
 					my_host_port = argv[i + 1];
@@ -162,7 +162,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return 0;
+					return true;
 				else
 				{
 					my_ext_ip_address = argv[i + 1];
@@ -172,7 +172,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "--examples")
 			{
 				Examples();
-				return 0;
+				return true;
 			}
 			else if (arg[i] == "-v")
 			{
@@ -186,7 +186,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (arg[i] == "-spf")
 			{
 				get_list_of_port_forwards = true;
-				return 1;
+				return false;
 			}
 			else if (i < arg_size - 2 && arg[i] == "-dpf")
 			{
@@ -196,7 +196,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
-				return 1;
+				return false;
 			}
 			else if (arg[i] == "-si")
 			{
@@ -205,11 +205,11 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else
 			{
 				helpAndReadMe();
-				return 0;
+				return true;
 			}
 		}
 	}
 
 	// Finished without errors, return success
-	return 1;
+	return false;
 }

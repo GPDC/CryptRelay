@@ -62,10 +62,6 @@
 #endif//_WIN32
 
 
-#ifdef __linux__
-#define FALSE 0
-#endif//__linux__
-
 bool global_verbose = false;
 bool global_debug = true;
 
@@ -210,7 +206,7 @@ int main(int argc, char *argv[])
 	CommandLineInput CLI;
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
-	if ( (errchk = CLI.getCommandLineInput(argc, argv) ) == FALSE)	
+	if ( (errchk = CLI.getCommandLineInput(argc, argv) ) == true)	
 		return EXIT_FAILURE;
 
 
