@@ -73,7 +73,7 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
 // /* to */ Connection* ChatServerInstance
 // /* to */ Connection* ChatClientInstance
 void cliGivesIPAndPortToChatProgram(
-		CommandLineInput* CLI,
+		const CommandLineInput* CLI,
 		Connection* ChatServerInstance,
 		Connection* ChatClientInstance
 	);
@@ -84,13 +84,11 @@ void cliGivesIPAndPortToChatProgram(
 // /* to */ Connection* ChatServerInstance
 // /* to */ Connection* ChatClientInstance
 void upnpGivesIPAndPortToChatProgram(
-		CommandLineInput* CLI,
-		UPnP* UpnpInstance,
+		const CommandLineInput* CLI,
+		const UPnP* UpnpInstance,
 		Connection* ChatServerInstance,
 		Connection* ChatClientInstance
 	);
-
-
 
 // Give user supplied port to the UPnP class
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
@@ -435,11 +433,3 @@ Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks b
 +++++++++++++++++++++++++++++++++++ End Formatting Guide +++++++++++++++++++++++++++++++++++
 
 */
-
-
-
-
-
-
-// Imporant note on building PJNATH library:
-// must limit parallel project builds to 1 at a time. More than this can cause it to fail in odd ways. (rly odd)
