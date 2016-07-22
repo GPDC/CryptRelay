@@ -188,8 +188,7 @@ private:
 	// More variables necessary for processRecvBuf().
 	bool received_file_name = false;
 	bool received_file_size = false;
-	bool isFileOpen = false;
-	bool isFileDoneBeingWritten = false;
+	bool is_file_done_being_written = true;
 
 	// More variables necessary for processRecvBuf().
 	long long file_size_part_one = 0;

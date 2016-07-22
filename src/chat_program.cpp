@@ -595,6 +595,14 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			{
 				std::cout << "recv() failed.\n";
 				DBG_DISPLAY_ERROR_LOCATION();
+				if (is_file_done_being_written == false)
+				{
+					if (fclose(WriteFile) != 0)
+					{
+						perror("Error closing file for writing in binary mode.\n");
+					}
+					std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
+				}
 			}
 			break;
 		}
@@ -1226,6 +1234,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 							std::cout << "Wrote " << total_bytes_written_to_file << "\n";
 							std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
 							process_recv_buf_state = CLOSE_FILE_FOR_WRITE;
+							is_file_done_being_written = true;
 							break;
 						}
 					}
@@ -1436,6 +1445,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					perror("Error opening file for writing in binary mode.\n");
 				}
 				
+				is_file_done_being_written = false;
 				process_recv_buf_state = CHECK_FOR_FLAG;
 				
 				break;
