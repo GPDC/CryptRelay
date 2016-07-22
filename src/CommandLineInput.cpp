@@ -114,7 +114,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 				{
 					std::cout << "Bad IP address format.\n\n";
 					return true;
@@ -128,7 +128,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-tP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 					return true;
 				else
 				{
@@ -139,7 +139,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mL")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 					return true;
 				else
 				{
@@ -150,7 +150,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 					return true;
 				else
 				{
@@ -161,7 +161,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mE")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 					return true;
 				else
 				{

@@ -41,7 +41,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	if (ipaddress_size > INET_ADDRSTRLEN)
 	{
 		std::cout << "IPV4 address is too big to be valid.\n";
-		return false;
+		return true;
 	}
 
 	if (global_verbose == true)
@@ -61,7 +61,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
 		{
 			std::cout << "Only numbers and periods allowed.\n";
-			return false;
+			return true;
 		}
 	}
 
@@ -70,7 +70,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		end = findNextPeriod(ipaddress, start);
 		if (end == BAD_FORMAT)
 		{
-			return false;
+			return true;
 		}
 		if (end != BAD_FORMAT && end != -1)
 		{
@@ -80,9 +80,9 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		{
 			end = ipaddress_size;
 		}
-		if (checkSubnetRange(ipaddress, start, end) == false)
+		if (checkSubnetRange(ipaddress, start, end) == true)
 		{
-			return false;
+			return true;
 		}
 		//back to the future
 		start = end + 1;
@@ -94,11 +94,11 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 
 	if (period_count != 3)
 	{
-		return false;
+		return true;
 	}
 	else
 	{
-		return true;
+		return false;
 	}
 }
 
@@ -157,7 +157,7 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	if (subnet_array_count > 3 || subnet_array_count < 1)
 	{
 		std::cout << "Subnet out of range\n";
-		return false;
+		return true;
 	}
 
 	const int subnet_array_size = 3;
@@ -186,9 +186,9 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	if (total > 255 || total < 0)
 	{
 		std::cout << "Subnet out of range.\n";
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 
@@ -203,7 +203,7 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	if (length_of_port > MAX_PORT_LENGTH)
 	{
 		std::cout << "ERROR: Port number is too high\n";
-		return false;
+		return true;
 	}
 	for (int i = 0; i < length_of_port; ++i)	
 	{
@@ -211,7 +211,7 @@ bool IPAddress::isPortFormatCorrect(char* port)
 		if (port[i] < 48 || port[i] > 57)
 		{
 			std::cout << "Please enter a valid port number.\n";
-			return false;
+			return true;
 		}
 	}
 
@@ -226,8 +226,8 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	if (total > MAX_PORT_NUMBER)
 	{
 		std::cout << "Port number is too large. Exiting.\n";
-		return false;
+		return true;
 	}
 
-	return true;
+	return false;
 }
