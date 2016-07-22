@@ -366,13 +366,13 @@ int main(int argc, char *argv[])
             if (pret)
 			{
 				std::cout << "error";
-				DBG_DISPLAY_ERROR_LOCATION;
+				DBG_DISPLAY_ERROR_LOCATION();
 			}
 	pret = pthread_join(Connection::thread1, NULL);
             if (pret)
 			{
 				std::cout << "error";
-				DBG_DISPLAY_ERROR_LOCATION;
+				DBG_DISPLAY_ERROR_LOCATION();
 			}
 #endif//__linux__
 #ifdef _WIN32
@@ -385,7 +385,7 @@ int main(int argc, char *argv[])
 	if (r == WAIT_FAILED)
 	{
 		std::cout << "Error " << GetLastError() << ". WaitForMultipleObjects() failed.\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 	}
 #endif//_WIN32	
 

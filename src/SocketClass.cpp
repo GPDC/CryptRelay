@@ -470,7 +470,7 @@ void SocketClass::coutPeerIPAndPort(SOCKET s)
 	{
 		getError();
 		std::cout << "getpeername() failed.\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		// continuing, b/c this isn't a big problem.
 	}
 
@@ -487,7 +487,7 @@ void SocketClass::coutPeerIPAndPort(SOCKET s)
 	{
 		getError();
 		std::cout << "getnameinfo() failed.\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		// still going to continue the program, this isn't a big deal
 	}
 	else

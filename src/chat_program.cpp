@@ -165,7 +165,7 @@ void Connection::createStartServerThread(void * instance)
 	if (ret0)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret0);
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -186,7 +186,7 @@ void Connection::createStartServerThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		return;
 	}
 
@@ -220,7 +220,7 @@ void Connection::serverThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "startServerThread() thread instance NULL\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		self->exitThread(nullptr);
 	}
 
@@ -284,7 +284,7 @@ void Connection::serverThread(void * instance)
 		{
 			self->SockStuff.getError();
 			std::cout << "startServerThread() select Error.\n";
-			DBG_DISPLAY_ERROR_LOCATION;
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->SockStuff.closesocket(listen_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
@@ -368,7 +368,7 @@ void Connection::createStartClientThread(void * instance)
 	if (ret1)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret1);
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -388,7 +388,7 @@ void Connection::createStartClientThread(void * instance)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		return;
 	}
 
@@ -421,7 +421,7 @@ void Connection::clientThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "clientThread() thread instance NULL\n";
-		DBG_DISPLAY_ERROR_LOCATION;
+		DBG_DISPLAY_ERROR_LOCATION();
 		self->exitThread(nullptr);
 	}
 
@@ -465,7 +465,7 @@ void Connection::clientThread(void * instance)
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
-			DBG_DISPLAY_ERROR_LOCATION;
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
 
@@ -474,7 +474,7 @@ void Connection::clientThread(void * instance)
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
-			DBG_DISPLAY_ERROR_LOCATION;
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
 		else if (r == self->SockStuff.TIMEOUT_ERROR)	// No real errors, just can't connect yet
@@ -504,7 +504,7 @@ void Connection::clientThread(void * instance)
 		else
 		{
 			std::cout << "Unkown ERROR. connect()\n";
-			DBG_DISPLAY_ERROR_LOCATION;
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
 	}
@@ -594,7 +594,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			if (SockStuff.getError() != CONNECTION_RESET)
 			{
 				std::cout << "recv() failed.\n";
-				DBG_DISPLAY_ERROR_LOCATION;
+				DBG_DISPLAY_ERROR_LOCATION();
 			}
 			break;
 		}
@@ -680,7 +680,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			{
 				SockStuff.getError();
 				perror("ERROR: send() failed.");
-				DBG_DISPLAY_ERROR_LOCATION;
+				DBG_DISPLAY_ERROR_LOCATION();
 				SockStuff.closesocket(global_socket);
 				SendMutex.unlock();
 				return SOCKET_ERROR;
@@ -744,7 +744,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					DBG_DISPLAY_ERROR_LOCATION;	// Currently no return false?
+					DBG_DISPLAY_ERROR_LOCATION();	// Currently no return false?
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();
@@ -1315,7 +1315,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				}
 				// this shouldn't be reached?
 				std::cout << "Unreachable area:";
-				DBG_DISPLAY_ERROR_LOCATION;
+				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Catastrophic failure.\n";
 				process_recv_buf_state = ERROR_STATE;
 				break;
