@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClInclude Include="..\src\chat_program.h" />
     <ClInclude Include="..\src\CommandLineInput.h" />
-    <ClInclude Include="..\src\CrossPlatformSleep.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
     <ClInclude Include="..\src\string_manipulation.h" />
@@ -32,7 +31,6 @@
   <ItemGroup>
     <ClCompile Include="..\src\chat_program.cpp" />
     <ClCompile Include="..\src\CommandLineInput.cpp" />
-    <ClCompile Include="..\src\CrossPlatformSleep.cpp" />
     <ClCompile Include="..\src\FormatCheck.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\port_knock.cpp" />

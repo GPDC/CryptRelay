@@ -64,7 +64,7 @@ typedef int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
 #endif//__linux__
 
 #ifdef _WIN32
-#define BYTE_SIZE int	// because recvfrom needs to return ssize_t on linux, and int on win
+typedef int BYTE_SIZE;	// because recvfrom needs to return ssize_t on linux, and int on win
 #endif//_WIN32
 
 class SocketClass

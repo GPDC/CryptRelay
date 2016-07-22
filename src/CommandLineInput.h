@@ -34,7 +34,6 @@ public:
 	bool use_upnp_to_connect_to_peer = true;	// Connection will always want to use upnp unless the user makes this false
 
 
-
 	std::string target_ip_address;
 	std::string target_port;
 	std::string my_ip_address;
