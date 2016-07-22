@@ -122,10 +122,10 @@ Connection::~Connection()
 
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
-	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
-	// Check comments in the freeaddrinfo() to see how its done.
+	// Making sure we never freeAddrInfo twice. Ugly bugs otherwise.
+	// Check comments in the freeAddrInfo() to see how its done.
 	if (ConnectionInfo != nullptr)
-		SockStuff.freeaddrinfo(ConnectionInfo);
+		SockStuff.freeAddrInfo(ConnectionInfo);
 }
 
 

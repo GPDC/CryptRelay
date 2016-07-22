@@ -133,7 +133,7 @@ bool SocketClass::bind(SOCKET fd, const sockaddr *name, int name_len)
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
-	//freeaddrinfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
+	//freeAddrInfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
 
 	return true;
 }
@@ -266,7 +266,7 @@ int SocketClass::connect(SOCKET fd, const sockaddr* name, int name_len)
 			std::cout << "Connection established using socket ID: " << fd << "\n";
 		return 0;// Success
 	}
-	//freeaddrinfo(result);
+	//freeAddrInfo(result);
 }
 
 // TCP use, not UDP
@@ -396,11 +396,11 @@ void SocketClass::WSACleanup()
 #endif//_WIN32
 }
 
-void SocketClass::freeaddrinfo(addrinfo*& pAddrInfo)
+void SocketClass::freeAddrInfo(addrinfo** ppAddrInfo)
 {
-	::freeaddrinfo(pAddrInfo);
+	::freeAddrInfo(*ppAddrInfo);
 
-	pAddrInfo = nullptr;	// Set the structure address to nullptr
+	*ppAddrInfo = nullptr;	// Set the structure address to nullptr
 							// That will just tell us it is no longer in use
 							// and it is not available to be freed (because it already has been).
 	if (global_verbose == true)

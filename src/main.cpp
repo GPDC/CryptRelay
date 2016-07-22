@@ -8,11 +8,6 @@
 
 // Formatting guide: Located at the bottom of main.cpp
 
-//solve chat output while typing msg problem by forcing a getline for whatever is currently typed out when
-// the user receives()? and then once its done recving and displaying that message, cout the getlined message back to console to make it look like everything
-// is normal. I mean an issue would still occur with not being able to delete your msg that got getlined, but this could be a quick band-aid.
-
-
 // Overview:
 // This is where the program starts.
 
@@ -401,7 +396,7 @@ Classes:		ThisIsAnExample();		# Capitalize the first letter of every word.
 Structures:		ThisIsAnExample();		# Capitalize the first letter of every word.
 Functions:		thisIsAnExample();		# Capitalize the first letter of every word except the first.
 Variables:		this_is_an_example;		# No capitalization. Underscores to separate words.
-#define:		THIS_IS_AN_EXAMPLE;		# All capitalization. Underscores to separate words.
+Macros:         THIS_IS_AN_EXAMPLE;		# All capitalization. Underscores to separate words.
 Globals:								# Put the word global in front of it like so:
 	ex variable:	global_this_is_an_example;
 	ex function:	globalThisIsAnExample;
@@ -415,6 +410,12 @@ ifdefs must always comment the endif with what it is endifing.
 Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks better;
 				{								// Single lines with curly braces, or
 					int i = 5;					// Single lines with no curly braces.
+					int truth = 1;
+					int lie = 0;
+					bool onepptheory = false;
+					bool bear = true;
+					bool big = false;
+
 					if (i == 70)
 					{
 						return true;
@@ -427,7 +428,7 @@ Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks b
 					if (i == 5)
 					{
 						if(1 + 1 == 2)
-							1pptheory = true;
+							onepptheory = true;
 						if(truth == lie)
 							return false;
 						if(bear == big)
