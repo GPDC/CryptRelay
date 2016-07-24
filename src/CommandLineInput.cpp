@@ -72,7 +72,7 @@ void CommandLineInput::Examples()
 
 }
 
-bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
+bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
@@ -185,7 +185,7 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-spf")
 			{
-				get_list_of_port_forwards = true;
+				retrieve_list_of_port_forwards = true;
 				return false;
 			}
 			else if (i < arg_size - 2 && arg[i] == "-dpf")
@@ -212,4 +212,56 @@ bool CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 	// Finished without errors, return success
 	return false;
+}
+
+
+// Public functions used to return a private member variable.
+const bool& CommandLineInput::getShowInfoUpnp()
+{
+	return show_info_upnp;
+}
+const bool& CommandLineInput::getRetrieveListOfPortForwards()
+{
+	return retrieve_list_of_port_forwards;
+}
+const bool& CommandLineInput::getUseLanOnly()
+{
+	return use_lan_only;
+}
+const bool& CommandLineInput::getUseUpnpToConnectToPeer()
+{
+	return use_upnp_to_connect_to_peer;
+}
+const std::string& CommandLineInput::getTargetIpAddress()
+{
+	return target_ip_address;
+}
+const std::string& CommandLineInput::getTargetPort()
+{
+	return target_port;
+}
+const std::string& CommandLineInput::getMyIpAddress()
+{
+	return my_ip_address;
+}
+const std::string& CommandLineInput::getMyHostPort()
+{
+	return my_host_port;
+}
+const std::string& CommandLineInput::getMyExtIpAddress()
+{
+	return my_ext_ip_address;
+}
+
+const bool& CommandLineInput::getDeleteThisSpecificPortForward()
+{
+	return delete_this_specific_port_forward;
+}
+const std::string& CommandLineInput::getDeleteThisSpecificPortForwardPort()
+{
+	return delete_this_specific_port_forward_port;
+}
+const std::string& CommandLineInput::getDeleteThisSpecificPortForwardProtocol()
+{
+	return delete_this_specific_port_forward_protocol;
 }

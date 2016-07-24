@@ -88,10 +88,10 @@ void upnpGivesIPAndPortToChatProgram(
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 {
 	// Give Port that was supplied by the user to the UPnP class
-	if (CLI->my_host_port.empty() == false)
+	if (CLI->getMyHostPort().empty() == false)
 	{
-		UpnpInstance->my_internal_port = CLI->my_host_port;
-		UpnpInstance->my_external_port = CLI->my_host_port;
+		UpnpInstance->my_internal_port = CLI->getMyHostPort();
+		UpnpInstance->my_external_port = CLI->getMyHostPort();
 	}
 }
 
@@ -102,37 +102,37 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ChatServe
 	// and give them to the chat program.
 
 	// Give IP and port info to the ChatServer instance
-	if (CLI->target_ip_address.empty() == false)
-		ChatServerInstance->target_external_ip = CLI->target_ip_address;
+	if (CLI->getTargetIpAddress().empty() == false)
+		ChatServerInstance->target_external_ip = CLI->getTargetIpAddress();
 
-	if (CLI->target_port.empty() == false)
-		ChatServerInstance->target_external_port = CLI->target_port;
+	if (CLI->getTargetPort().empty() == false)
+		ChatServerInstance->target_external_port = CLI->getTargetPort();
 
-	if (CLI->my_ext_ip_address.empty() == false)
-		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
+	if (CLI->getMyExtIpAddress().empty() == false)
+		ChatServerInstance->my_external_ip = CLI->getMyExtIpAddress();
 
-	if (CLI->my_ip_address.empty() == false)
-		ChatServerInstance->my_local_ip = CLI->my_ip_address;
+	if (CLI->getMyIpAddress().empty() == false)
+		ChatServerInstance->my_local_ip = CLI->getMyIpAddress();
 
-	if (CLI->my_host_port.empty() == false)
-		ChatServerInstance->my_local_port = CLI->my_host_port;
+	if (CLI->getMyHostPort().empty() == false)
+		ChatServerInstance->my_local_port = CLI->getMyHostPort();
 
 
 	// Give IP and port info to the ChatClient instance
-	if (CLI->target_ip_address.empty() == false)
-		ChatClientInstance->target_external_ip = CLI->target_ip_address;
+	if (CLI->getTargetIpAddress().empty() == false)
+		ChatClientInstance->target_external_ip = CLI->getTargetIpAddress();
 
-	if (CLI->target_port.empty() == false)
-		ChatClientInstance->target_external_port = CLI->target_port;
+	if (CLI->getTargetPort().empty() == false)
+		ChatClientInstance->target_external_port = CLI->getTargetPort();
 
-	if (CLI->my_ext_ip_address.empty() == false)
-		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
+	if (CLI->getMyExtIpAddress().empty() == false)
+		ChatClientInstance->my_external_ip = CLI->getMyExtIpAddress();
 
-	if (CLI->my_ip_address.empty() == false)
-		ChatClientInstance->my_local_ip = CLI->my_ip_address;
+	if (CLI->getMyIpAddress().empty() == false)
+		ChatClientInstance->my_local_ip = CLI->getMyIpAddress();
 
-	if (CLI->my_host_port.empty() == false)
-		ChatClientInstance->my_local_port = CLI->my_host_port;
+	if (CLI->getMyHostPort().empty() == false)
+		ChatClientInstance->my_local_port = CLI->getMyHostPort();
 }
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
@@ -146,47 +146,47 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	// the UPnP class has gathered / made.
 
 	// Give IP and port info to the ChatServer instance
-	if (CLI->target_ip_address.empty() == false)
-		ChatServerInstance->target_external_ip = CLI->target_ip_address;
+	if (CLI->getTargetIpAddress().empty() == false)
+		ChatServerInstance->target_external_ip = CLI->getTargetIpAddress();
 
-	if (CLI->target_port.empty() == false)
-		ChatServerInstance->target_external_port = CLI->target_port;
+	if (CLI->getTargetPort().empty() == false)
+		ChatServerInstance->target_external_port = CLI->getTargetPort();
 
-	if (CLI->my_ext_ip_address.empty() == false)
-		ChatServerInstance->my_external_ip = CLI->my_ext_ip_address;
+	if (CLI->getMyExtIpAddress().empty() == false)
+		ChatServerInstance->my_external_ip = CLI->getMyExtIpAddress();
 	else
 		ChatServerInstance->my_external_ip = UpnpInstance->my_external_ip;
 
-	if (CLI->my_ip_address.empty() == false)
-		ChatServerInstance->my_local_ip = CLI->my_ip_address;
+	if (CLI->getMyIpAddress().empty() == false)
+		ChatServerInstance->my_local_ip = CLI->getMyIpAddress();
 	else
 		ChatServerInstance->my_local_ip = UpnpInstance->my_local_ip;
 
-	if (CLI->my_host_port.empty() == false)
-		ChatServerInstance->my_local_port = CLI->my_host_port;
+	if (CLI->getMyHostPort().empty() == false)
+		ChatServerInstance->my_local_port = CLI->getMyHostPort();
 	else
 		ChatServerInstance->my_local_port = UpnpInstance->my_internal_port;
 
 
 	// Give IP and port info to the ChatClient instance
-	if (CLI->target_ip_address.empty() == false)
-		ChatClientInstance->target_external_ip = CLI->target_ip_address;
+	if (CLI->getTargetIpAddress().empty() == false)
+		ChatClientInstance->target_external_ip = CLI->getTargetIpAddress();
 
-	if (CLI->target_port.empty() == false)
-		ChatClientInstance->target_external_port = CLI->target_port;
+	if (CLI->getTargetPort().empty() == false)
+		ChatClientInstance->target_external_port = CLI->getTargetPort();
 
-	if (CLI->my_ext_ip_address.empty() == false)
-		ChatClientInstance->my_external_ip = CLI->my_ext_ip_address;
+	if (CLI->getMyExtIpAddress().empty() == false)
+		ChatClientInstance->my_external_ip = CLI->getMyExtIpAddress();
 	else
 		ChatClientInstance->my_external_ip = UpnpInstance->my_external_ip;
 
-	if (CLI->my_ip_address.empty() == false)
-		ChatClientInstance->my_local_ip = CLI->my_ip_address;
+	if (CLI->getMyIpAddress().empty() == false)
+		ChatClientInstance->my_local_ip = CLI->getMyIpAddress();
 	else
 		ChatClientInstance->my_local_ip = UpnpInstance->my_local_ip;
 
-	if (CLI->my_host_port.empty() == false)
-		ChatClientInstance->my_local_port = CLI->my_host_port;
+	if (CLI->getMyHostPort().empty() == false)
+		ChatClientInstance->my_local_port = CLI->getMyHostPort();
 	else
 		ChatClientInstance->my_local_port = UpnpInstance->my_internal_port;
 }
@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	CommandLineInput CLI;
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
-	if ( (errchk = CLI.getCommandLineInput(argc, argv) ) == true)	
+	if ( (errchk = CLI.setVariablesFromArgv(argc, argv) ) == true)	
 		return EXIT_FAILURE;
 
 
@@ -209,34 +209,34 @@ int main(int argc, char *argv[])
 	Connection ChatServer;
 	Connection ChatClient;
 
-	if (CLI.show_info_upnp == true)
+	if (CLI.getShowInfoUpnp() == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneShowInformation();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.get_list_of_port_forwards == true)
+	else if (CLI.getRetrieveListOfPortForwards() == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneGetListOfPortForwards();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.delete_this_specific_port_forward == true)
+	else if (CLI.getDeleteThisSpecificPortForward() == true)
 	{
 		Upnp = new UPnP;
 		Upnp->standaloneDeleteThisSpecificPortForward(
-				CLI.delete_this_specific_port_forward_port.c_str(),
-				CLI.delete_this_specific_port_forward_protocol.c_str()
+				CLI.getDeleteThisSpecificPortForwardPort().c_str(),
+				CLI.getDeleteThisSpecificPortForwardProtocol().c_str()
 			);
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.use_lan_only == true)
+	else if (CLI.getUseLanOnly() == true)
 	{
 		// The user MUST supply a local ip address when using the lan only option.
-		if (CLI.my_ip_address.empty() == true)
+		if (CLI.getMyIpAddress().empty() == true)
 		{
 			std::cout << "ERROR: User didn't specify his local IP address.\n";
 			return EXIT_FAILURE;
@@ -245,7 +245,7 @@ int main(int argc, char *argv[])
 		// Give IP and port info to the ChatServer and ChatClient instance
 		cliGivesIPAndPortToChatProgram(&CLI, &ChatServer, &ChatClient);
 	}
-	if (CLI.use_upnp_to_connect_to_peer == true)
+	if (CLI.getUseUpnpToConnectToPeer() == true)
 	{
 		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
 							// If I could make this a plug-in or something of the sort to automatically
@@ -275,7 +275,7 @@ int main(int argc, char *argv[])
 		// true, and then try checking again.
 		// If the port is not in use, it is assigned as the port
 		// that the Connection will use.
-		if (CLI.my_host_port.empty() == true)
+		if (CLI.getMyHostPort().empty() == true)
 		{
 			PortKnock PortTest;
 			const int IN_USE = 1;
