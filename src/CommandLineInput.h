@@ -12,7 +12,7 @@ class CommandLineInput
 {
 public:
 	CommandLineInput();
-	~CommandLineInput();
+	virtual ~CommandLineInput();
 
 	
 	bool getCommandLineInput(int argc, char* argv[]);

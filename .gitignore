@@ -16,14 +16,15 @@
 **/CryptRelay.vcxproj.user
 **/CryptRelay.VC.db
 
-my_current_commit_notes.txt
-testfile.txt
-build_dependency_msvs.txt
+**/my_notes.txt
+**/my_current_commit_notes.txt
+**/testfile.txt
+**/build_dependency_msvs.txt
 
-gsoap-2.8/
-pjproject-2.4.5/
-libupnp-1.6.19/
-/miniupnpc-1.9*/
+**/gsoap-2.8/
+**/pjproject-2.4.5/
+**/libupnp-1.6.19/
+**/miniupnpc-1.9*/
 
 /msvs/UpgradeLog*.htm
 

@@ -16,7 +16,7 @@ class IPAddress
 {
 public:
 	IPAddress();
-	~IPAddress();
+	virtual ~IPAddress();
 
 	bool isIPV4FormatCorrect(char* target_ipaddress);
 	bool isPortFormatCorrect(char* port);

@@ -14,7 +14,7 @@ class PortKnock
 {
 public:
 	PortKnock();
-	~PortKnock();
+	virtual ~PortKnock();
 
 	int isLocalPortInUse(std::string port, std::string my_local_ip);
 

@@ -6,8 +6,8 @@
 
 // Outputs text (x) to console. For use when an error occurs. Includes the
 // file name and location, as well as the line number in the source file.
-#	define DBG_DISPLAY_ERROR_LOCATION() {std::cout << "It failed at" << " " << "Line: " << __LINE__ \
-								<< ", File: " << __FILE__ << "\n"}
+#	define DBG_DISPLAY_ERROR_LOCATION() do {std::cout << "It failed at" << " " << "Line: " << __LINE__ \
+								<< ", File: " << __FILE__ << "\n";} while(0)
 // Turns on certain areas of code that will output to console.
 #   define DBG_OUTPUT
 

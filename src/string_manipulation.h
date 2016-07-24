@@ -14,6 +14,9 @@
 class StringManip
 {
 public:
+	StringManip();
+	virtual ~StringManip();
+
 	bool split(std::string string, char delimiter, std::vector<std::string> &vector);
 	std::string duplicateCharacter(std::string string, char delimiter);
 protected:

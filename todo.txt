@@ -9,9 +9,10 @@
 -prevent incompatible symbols from being used with files.
 
 # Research:
--I have serious concerns about the fact that messages contain predictable content. Could this be used to reduce brute force decryption time? I don't know much about this area, need research. Could add random amounts of junk data at the beginning and end.
+-(Encryption)I have serious concerns about the fact that messages contain predictable content. Could this be used to reduce brute force decryption time? I don't know much about this area, need research. Could add random amounts of junk data at the beginning and end.
 
 # Think about possibly doing these:
+-Make it easier for scripts to operate the program.
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user decides to turn off upnp they won't have to type in their local ip addr.
 -might want to get the username by (windows)getusername()  and linux  getlogin_r()
 -In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be made in FormatCheck to return the port instead of bool.

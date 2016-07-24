@@ -48,6 +48,10 @@
 #define WSAETIMEDOUT 10060	// possibly temporary... recvfrom() isn't being used?
 #endif//__linux__
 
+// Used by threads after a race winner has been established
+SOCKET SocketClass::global_socket;
+
+
 SocketClass::SocketClass()
 {
 	// Unsure If I should have this here quite frankly, but
@@ -81,11 +85,11 @@ bool SocketClass::WSAStartup()
 
 // Use this to set socket options such as broadcast, keepalive, max msg size, etc
 // If this function returns false, it is up to you to close the socket if desired.
-bool SocketClass::setsockopt(SOCKET sock, int level, int option_name, const char* option_value, int option_length)
+bool SocketClass::setsockopt(int level, int option_name, const char* option_value, int option_length)
 {
 	if (global_verbose == true)
 		std::cout << "Setting socket options... ";
-	int errchk = ::setsockopt(sock, level, option_name, option_value, option_length);
+	int errchk = ::setsockopt(fd_socket, level, option_name, option_value, option_length);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -104,31 +108,31 @@ SOCKET SocketClass::socket(int address_family, int socket_type, int protocol)
 		std::cout << "Creating Socket to listen on... ";
 
 	// Create a SOCKET handle for connecting to server(no ip address here when using TCP. IP addr is assigned with bind)
-	SOCKET s = ::socket(address_family, socket_type, protocol);
-	if (s == INVALID_SOCKET)
+	fd_socket = ::socket(address_family, socket_type, protocol);
+	if (fd_socket == INVALID_SOCKET)
 	{
 		getError();
 		std::cout << "Socket failed.\n";
-		closesocket(s);
+		closesocket(fd_socket);
 		return INVALID_SOCKET;//false
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
 
-	return s;
+	return fd_socket;
 }
 
-bool SocketClass::bind(SOCKET fd, const sockaddr *name, int name_len)
+bool SocketClass::bind(const sockaddr *name, int name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Binding ... associating local address with the socket... ";
 	// Setup the TCP listening socket (putting ip address on the allocated socket)
-	int errchk = ::bind(fd, name, name_len);
+	int errchk = ::bind(fd_socket, name, name_len);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "Bind failed.\n";
-		closesocket(fd);
+		closesocket(fd_socket);
 		return false;
 	}
 	if (global_verbose == true)
@@ -139,10 +143,10 @@ bool SocketClass::bind(SOCKET fd, const sockaddr *name, int name_len)
 }
 
 // There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
-int SocketClass::send(SOCKET s, const char* buffer, int buffer_length, int flags)
+int SocketClass::send(const char* buffer, int buffer_length, int flags)
 {
 	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
-	int errchk = ::send(s, buffer, buffer_length, flags);
+	int errchk = ::send(fd_socket, buffer, buffer_length, flags);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -154,14 +158,14 @@ int SocketClass::send(SOCKET s, const char* buffer, int buffer_length, int flags
 }
 
 // returns total number of bytes sent if there is no error.
-int SocketClass::sendto(SOCKET s, const char* buf, int buf_len, int flags, const sockaddr *target, int target_len)
+int SocketClass::sendto(const char* buf, int buf_len, int flags, const sockaddr *target, int target_len)
 {
-	int errchk = ::sendto(s, buf, buf_len, flags, target, target_len);
+	int errchk = ::sendto(fd_socket, buf, buf_len, flags, target, target_len);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "Sendto failed.\n";
-		closesocket(s);
+		closesocket(fd_socket);
 		return SOCKET_ERROR;
 	}
 	if (global_verbose == true)
@@ -169,9 +173,9 @@ int SocketClass::sendto(SOCKET s, const char* buf, int buf_len, int flags, const
 	return errchk;// Number of bytes sent
 }
 
-int SocketClass::recv(SOCKET s, char* buf, int buf_len, int flags)
+int SocketClass::recv(char* buf, int buf_len, int flags)
 {
-	int errchk = ::recv(s, buf, buf_len, flags);
+	int errchk = ::recv(fd_socket, buf, buf_len, flags);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -187,11 +191,11 @@ int SocketClass::recv(SOCKET s, char* buf, int buf_len, int flags)
 	return errchk; // Number of bytes received
 }
 
-BYTE_SIZE SocketClass::recvfrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len)
+BYTE_SIZE SocketClass::recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len)
 {
 	if (global_verbose == true)
 		std::cout << "Waiting to receive a msg...\n";
-	BYTE_SIZE errchk = ::recvfrom(s, buf, buf_len, flags, from, from_len);// changed from int to ssize_t
+	BYTE_SIZE errchk = ::recvfrom(fd_socket, buf, buf_len, flags, from, from_len);// changed from int to ssize_t
 	if (errchk == SOCKET_ERROR)
 	{
 		int saved_errno = getError();
@@ -205,7 +209,7 @@ BYTE_SIZE SocketClass::recvfrom(SOCKET s, char *buf, int buf_len, int flags, soc
 		else
 		{
 			std::cout << "recvfrom failed.\n";
-			closesocket(s);
+			closesocket(fd_socket);
 			return SOCKET_ERROR;
 		}
 #endif//__linux__
@@ -218,7 +222,7 @@ BYTE_SIZE SocketClass::recvfrom(SOCKET s, char *buf, int buf_len, int flags, soc
 		else
 		{
 			std::cout << "recvfrom failed.\n";
-			closesocket(s);
+			closesocket(fd_socket);
 			return SOCKET_ERROR;
 		}
 #endif//_WIN32
@@ -227,14 +231,14 @@ BYTE_SIZE SocketClass::recvfrom(SOCKET s, char *buf, int buf_len, int flags, soc
 	if (errchk == 0)	// Connection gracefully closed.
 	{
 		std::cout << "Connection gracefully closed.\n";
-		closesocket(s);
+		closesocket(fd_socket);
 		return 0;
 	}
 	return errchk;
 }
 
 // For TCP use, not UDP
-int SocketClass::connect(SOCKET fd, const sockaddr* name, int name_len)
+int SocketClass::connect(const sockaddr* name, int name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
@@ -249,44 +253,44 @@ int SocketClass::connect(SOCKET fd, const sockaddr* name, int name_len)
 	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
 
 	// Connect to server
-	int errchk = ::connect(fd, name, name_len);	// Returns 0 on success
+	int errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
 		int r = getError();
 		if (r == 10060)
 			return -10060; // -10060 is a timeout error.
 		std::cout << "Connect failed. Socket Error.\n";
-		closesocket(fd);
+		closesocket(fd_socket);
 		return SOCKET_ERROR;
 	}
 	else
 	{
 		// Connection established
 		if (global_verbose == true)
-			std::cout << "Connection established using socket ID: " << fd << "\n";
+			std::cout << "Connection established using socket ID: " << fd_socket << "\n";
 		return 0;// Success
 	}
 	//freeaddrinfo(result);
 }
 
 // TCP use, not UDP
-bool SocketClass::listen(SOCKET fd)
+bool SocketClass::listen()
 {
 	if (global_verbose == true)
 		std::cout << "listen() called.\n";
-	int errchk = ::listen(fd, SOMAXCONN);
+	int errchk = ::listen(fd_socket, SOMAXCONN);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "listen failed.\n";
-		closesocket(fd);
+		closesocket(fd_socket);
 		return false;
 	}
 	return true;
 }
 
 // TCP use, not UDP
-SOCKET SocketClass::accept(SOCKET fd)
+SOCKET SocketClass::accept()
 {
 #ifdef __linux__
 	socklen_t addr_size;
@@ -301,18 +305,21 @@ SOCKET SocketClass::accept(SOCKET fd)
 	std::cout << "Waiting for someone to connect...\n";
 
 	// Accept a client socket by listening on a socket
-	SOCKET accepted_socket = ::accept(fd, (sockaddr*)&incomingAddr, &addr_size);
+	SOCKET accepted_socket = ::accept(fd_socket, (sockaddr*)&incomingAddr, &addr_size);
 	if (accepted_socket == INVALID_SOCKET)
 	{
 		getError();
 		std::cout << "accept failed.\n";
-		closesocket(fd);
+		closesocket(fd_socket);
 		return INVALID_SOCKET;
 	}
-	if (global_verbose == true)
-		std::cout << "Connected to " << ":" << "ip here, on socket ID: "<< accepted_socket << "\n";
 
-	return accepted_socket;
+	// Now close the old listening SOCKET
+	closesocket(fd_socket);
+	// Assign fd_socket the newly accepted SOCKET
+	fd_socket = accepted_socket;
+
+	return fd_socket;
 }
 
 // Using the given Hints, ip addr, and port, it then gives you a pointer
@@ -335,7 +342,6 @@ bool SocketClass::getaddrinfo(std::string target_ip, std::string target_port, co
 		std::cout << "Success\n";
 
 	return true;
-	//std::cout << "IP: " << Hints.ai_addr << ". Port: " << Hints.sockaddr->ai_addr\n";
 }
 
 // paddr_buf would be something like this:
@@ -358,31 +364,31 @@ int SocketClass::inet_pton(int family, char* ip_addr, void* paddr_buf)
 // Shuts down the current connection that is active on the given socket.
 // The shutdown operation is one of three macros.
 // SD_RECEIVE, SD_SEND, SD_BOTH.
-bool SocketClass::shutdown(SOCKET fd, int operation)
+bool SocketClass::shutdown(int operation)
 {
 	std::cout << "Shutting down the connection... ";
 	// shutdown the connection since we're done
-	int errchk = ::shutdown(fd, operation);
+	int errchk = ::shutdown(fd_socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "Shutdown failed.\n";
 		std::cout << "Closing socket.\n";
-		closesocket(fd);
+		closesocket(fd_socket);
 		return false;
 	}
 	std::cout << "Success\n";
 	return true;
 }
 
-void SocketClass::closesocket(SOCKET fd)
+void SocketClass::closesocket(SOCKET s)
 {
 #ifdef __linux__
-	::close(fd);
+	::close(s);
 #endif//__linux__
 
 #ifdef _WIN32
-	::closesocket(fd);
+	::closesocket(s);
 #endif
 
 	if (global_verbose == true)
@@ -453,7 +459,7 @@ int SocketClass::getError()
 }
 
 // Output to console the the peer's IP and port that you have connected to the peer with.
-void SocketClass::coutPeerIPAndPort(SOCKET s)
+void SocketClass::coutPeerIPAndPort()
 {
 	sockaddr PeerIPAndPortStorage;
 #ifdef _WIN32
@@ -465,7 +471,7 @@ void SocketClass::coutPeerIPAndPort(SOCKET s)
 	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
 
 	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
-	int errchk = getpeername(s, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	int errchk = getpeername(fd_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
 	if (errchk == -1)
 	{
 		getError();

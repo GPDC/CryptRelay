@@ -7,6 +7,15 @@
 #include "GlobalTypeHeader.h"
 #include "string_manipulation.h"
 
+StringManip::StringManip()
+{
+
+}
+StringManip::~StringManip()
+{
+
+}
+
 // The delimiter is the character that will signal when the string should be split.
 // a delimiter of a ' ' will create a new string every time it encounters a ' '.
 // For example: the quick brown fox
@@ -21,6 +30,14 @@ bool StringManip::split(std::string string, char delimiter, std::vector<std::str
 		elements.push_back(item);
 	}
 
+	if (ss.eof())
+	{
+		std::cout << "Warning: std::ios::eof == true.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+	else if (ss.fail())
+		return false;
+	
 	return true;
 }
 

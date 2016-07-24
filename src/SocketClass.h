@@ -63,42 +63,59 @@ class SocketClass
 {
 public:
 	SocketClass();
-	~SocketClass();
+	virtual ~SocketClass();
+
+	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
+	// during specific situations, and if additional information is needed about the current socket it can be accessed.
+	SOCKET fd_socket;
+
+	// A global socket used as a way to communicate between threads.
+	static SOCKET global_socket;
+
+	// in accept(), make it return a whole SocketClass, not a socket.
+	// 1. ::accept() the connection. it is now stored on a temporary socket
+	//    inside the accept() function.
+	// 2. Close the previous (non temporary) socket.
+	// 3. return a new SocketClass with the socket set.
 
 
-	static SOCKET socket(int address_family, int type, int protocol);
-	static SOCKET accept(SOCKET fd);
+	SOCKET socket(int address_family, int type, int protocol);
+	SOCKET accept();
 
 	// All the bool functions return false when there is an error. True if everything went fine.
 	bool WSAStartup();
-	static bool setsockopt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
-	static bool bind(SOCKET fd, const sockaddr *name, int name_len);
-	static bool shutdown(SOCKET fd, int operation);
-	static bool listen(SOCKET fd);
-	static bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
+	bool setsockopt(int level, int option_name, const char* option_value, int option_length);
+	bool bind(const sockaddr *name, int name_len);
+	bool shutdown(int operation);
+	bool listen();
+	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	static int inet_pton(int family, char * ip_addr, void * paddr_buf);
-	static int connect(SOCKET fd, const sockaddr* name, int name_len);
-	static int send(SOCKET s, const char* buffer, int buffer_length, int flags);
-	static int sendto(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
-	static int recv(SOCKET s, char* buf, int buf_len, int flags);
-	static BYTE_SIZE recvfrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
+	int inet_pton(int family, char * ip_addr, void * paddr_buf);
+	int connect(const sockaddr* name, int name_len);
+	int send(const char* buffer, int buffer_length, int flags);
+	int sendto(const char* buf, int len, int flags, const sockaddr *to, int to_len);
+	int recv(char* buf, int buf_len, int flags);
+	BYTE_SIZE recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
-	static void closesocket(SOCKET fd);
-	static void WSACleanup();
-	static void freeaddrinfo(addrinfo** ppAddrInfo);
-	static void coutPeerIPAndPort(SOCKET s);
+	void closesocket(SOCKET s);
+	void WSACleanup();
+	void freeaddrinfo(addrinfo** ppAddrInfo);
+	void coutPeerIPAndPort();
 
-	static const int TIMEOUT_ERROR = -10060;
+	const int TIMEOUT_ERROR = -10060;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	static int getError();	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
+	int getError();	// This is unlike everything else here - it just retrieves and prints errors.
 
 protected:
 private:
+
+	// Prevent anyone from copying this class.
+	SocketClass(SocketClass& SocketClassInstance) = delete;			   // disable copy operator
+	SocketClass& operator=(SocketClass& SocketClassInstance) = delete; // disable assignment operator
 
 #ifdef _WIN32
 	WSADATA wsaData;			// for WSAStartup();
@@ -106,4 +123,4 @@ private:
 };
 
 
-#endif
+#endif//SocketClass_h__

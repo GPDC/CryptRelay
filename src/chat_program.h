@@ -28,7 +28,7 @@ class Connection
 {
 public:
 	Connection();
-	~Connection();
+	virtual ~Connection();
 
 	// Variables for handling threads
 #ifdef __linux__
@@ -53,9 +53,6 @@ public:
 	// 0 == no error, 0 == no function was given.
 	static int server_thread_error_code;
 	static int function_that_errored;
-
-	// A global socket used by threads
-	static SOCKET global_socket;
 
 	// Thread entrances.
 	static void createStartServerThread(void * instance);
@@ -89,6 +86,8 @@ private:
 #ifdef __linux__
 	typedef struct stat myStat;
 #endif//__linux__
+
+	SocketClass ClientServerSocketClass;
 
 	std::mutex SendMutex;
 	std::mutex RaceMutex;

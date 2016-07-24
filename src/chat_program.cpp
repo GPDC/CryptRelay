@@ -88,8 +88,7 @@ const int Connection::CLIENT_WON = -30;
 const int Connection::NOBODY_WON = -25;
 int Connection::global_winner = NOBODY_WON;
 
-// Used by threads after a race winner has been established
-SOCKET Connection::global_socket;
+
 
 
 // Flags for send() that indicated what the message is being used for.
@@ -118,14 +117,14 @@ Connection::~Connection()
 {
 	// Giving this a try, shutdown the connection even if ctrl-c is hit?
 	// UPDATE: ctrl-c does not call deconstructors.
-	SocketClass::shutdown(global_socket, SD_BOTH);
+	ClientServerSocketClass.shutdown(SD_BOTH);
 
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	// Check comments in the freeaddrinfo() to see how its done.
 	if (ConnectionInfo != nullptr)
-		SocketClass::freeaddrinfo(&ConnectionInfo);
+		ClientServerSocketClass.freeaddrinfo(&ConnectionInfo);
 }
 
 
@@ -234,23 +233,23 @@ void Connection::serverThread(void * instance)
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (SocketClass::getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (self->ClientServerSocketClass.getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 
 	// Create socket
-	SOCKET listen_socket = SocketClass::socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
-	if (listen_socket == INVALID_SOCKET)
+	SOCKET errchk_socket = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+	if (errchk_socket == INVALID_SOCKET)
 		self->exitThread(nullptr);
-	else if (listen_socket == SOCKET_ERROR)
+	else if (errchk_socket == SOCKET_ERROR)
 		self->exitThread(nullptr);
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (SocketClass::bind(listen_socket, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
+	if (self->ClientServerSocketClass.bind(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
 		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
-	if (SocketClass::listen(listen_socket) == false)
+	if (self->ClientServerSocketClass.listen() == false)
 		self->exitThread(nullptr);
 
 
@@ -270,28 +269,28 @@ void Connection::serverThread(void * instance)
 	int errchk;
 	while (1)
 	{
-		DBG_TXT("dbg Listen thread active...");
+		DBG_TXT("Listen thread active...");
 		// Putting the socket into the array so select() can check it for readability
 		// Format is:  FD_SET(int fd, fd_set *ReadSet);
 		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
 		FD_ZERO(&ReadSet);
-		FD_SET(listen_socket, &ReadSet);
+		FD_SET(self->ClientServerSocketClass.fd_socket, &ReadSet);
 		TimeValue.tv_sec = 2;	// This has to be in this loop! Linux resets this value every time select() times out.
 		// select() returns the number of handles that are ready and contained in the fd_set structure
-		errchk = select(listen_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
+		errchk = select(self->ClientServerSocketClass.fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 
 		if (errchk == SOCKET_ERROR)
 		{
-			SocketClass::getError();
+			self->ClientServerSocketClass.getError();
 			std::cout << "startServerThread() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
-			SocketClass::closesocket(listen_socket);
+			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
 		{
-			SocketClass::closesocket(listen_socket);
+			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 			if (global_verbose == true)
 			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
@@ -303,10 +302,10 @@ void Connection::serverThread(void * instance)
 			if (global_verbose == true)
 				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
 
-			SOCKET accepted_socket;
+			SOCKET errchk_socket;
 			// Accept the connection and create a new socket to communicate on.
-			accepted_socket = SocketClass::accept(listen_socket);
-			if (accepted_socket == INVALID_SOCKET)
+			errchk_socket = self->ClientServerSocketClass.accept();
+			if (errchk_socket == INVALID_SOCKET)
 				self->exitThread(nullptr);
 			if (global_verbose == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
@@ -314,29 +313,25 @@ void Connection::serverThread(void * instance)
 			// Assigning global values to let the client thread know it should stop trying.
 			if (self->setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
-				if (global_verbose == true)
-				{
-					std::cout << "Server: Extremely rare race condition was almost reached.";
-					std::cout << "It was prevented using a mutex. The client is the real winner.\n";
-				}
-				SocketClass::closesocket(listen_socket);
-				SocketClass::closesocket(accepted_socket);
+				//self->ClientServerSocketClass.closesocket(listen_socket);
+				//self->ClientServerSocketClass.closesocket(errchk_socket);
+				self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 				self->exitThread(nullptr);
 			}
 			else
-				global_socket = accepted_socket;
+				SocketClass::global_socket = self->ClientServerSocketClass.fd_socket;
 
 
-			DBG_TXT("closing socket after retrieving new one from accept()");
+			//DBG_TXT("closing socket after retrieving new one from accept()");
 			// Not using this socket anymore since we created a new socket after accept() ing the connection.
-			SocketClass::closesocket(listen_socket);
+			//self->ClientServerSocketClass.closesocket(listen_socket);
 
 			break;
 		}
 	}
 
 	// Display who the user has connected to.
-	SocketClass::coutPeerIPAndPort(global_socket);
+	self->ClientServerSocketClass.coutPeerIPAndPort();
 
 	// Receive messages until there is an error or connection is closed.
 	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
@@ -352,8 +347,8 @@ void Connection::serverThread(void * instance)
 		RcvThread.join();
 
 	// Done communicating with peer. Proceeding to exit.
-	SocketClass::shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	SocketClass::closesocket(global_socket);
+	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -434,7 +429,7 @@ void Connection::clientThread(void * instance)
 
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
-	if (SocketClass::getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (self->ClientServerSocketClass.getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 	
 	std::cout << "Attempting to connect...\n";
@@ -449,7 +444,7 @@ void Connection::clientThread(void * instance)
 	// the next address in the list.
 	while (1)
 	{
-		DBG_TXT("dbg client thread active...");
+		DBG_TXT("client thread active...");
 		// Check to see if server has connected to someone
 		if (global_winner == SERVER_WON)
 		{
@@ -461,7 +456,7 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Create socket
-		SOCKET s = SocketClass::socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+		SOCKET s = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
@@ -470,17 +465,17 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Attempt to connect to target
-		int r = SocketClass::connect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
+		int r = self->ClientServerSocketClass.connect(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
-		else if (r == SocketClass::TIMEOUT_ERROR)	// No real errors, just can't connect yet
+		else if (r == self->ClientServerSocketClass.TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
 			DBG_TXT("Not real error, timeout client connect");
-			SocketClass::closesocket(s);
+			self->ClientServerSocketClass.closesocket(s);
 			continue;
 		}
 		else if (r == 0)				// Must have succeeded in connecting
@@ -493,11 +488,11 @@ void Connection::clientThread(void * instance)
 					std::cout << "Client: Extremely rare race condition was almost reached. ";
 					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
 				}
-				SocketClass::closesocket(s);
+				self->ClientServerSocketClass.closesocket(s);
 				self->exitThread(nullptr);
 			}
 			else
-				global_socket = s;
+				SocketClass::global_socket = s;
 
 			break;
 		}
@@ -510,7 +505,7 @@ void Connection::clientThread(void * instance)
 	}
 
 	// Display who the user is connected with.
-	SocketClass::coutPeerIPAndPort(global_socket);
+	self->ClientServerSocketClass.coutPeerIPAndPort();
 
 
 
@@ -529,8 +524,8 @@ void Connection::clientThread(void * instance)
 		rcv_thread.join();
 
 	// Done communicating with peer. Proceeding to exit.
-	SocketClass::shutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	SocketClass::closesocket(global_socket);
+	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -574,7 +569,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	while (1)
 	{
 		
-		bytes = ::recv(global_socket, (char *)recv_buf, recv_buf_len, 0);
+		bytes = ::recv(SocketClass::global_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
@@ -591,7 +586,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			const int CONNECTION_RESET = 10054;
 			#endif// _WIN32
 
-			if (SocketClass::getError() != CONNECTION_RESET)
+			if (ClientServerSocketClass.getError() != CONNECTION_RESET)
 			{
 				std::cout << "recv() failed.\n";
 				DBG_DISPLAY_ERROR_LOCATION();
@@ -683,13 +678,13 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		do
 		{
-			bytes_sent = ::send(global_socket, sendbuf, amount_to_send, 0);
+			bytes_sent = ::send(SocketClass::global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
-				SocketClass::getError();
+				ClientServerSocketClass.getError();
 				perror("ERROR: send() failed.");
 				DBG_DISPLAY_ERROR_LOCATION();
-				SocketClass::closesocket(global_socket);
+				ClientServerSocketClass.closesocket(SocketClass::global_socket);
 				SendMutex.unlock();
 				return SOCKET_ERROR;
 			}
@@ -752,7 +747,11 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					DBG_DISPLAY_ERROR_LOCATION();	// Currently no return false?
+				{
+					std::cout << "Unexpected error: ";
+					DBG_DISPLAY_ERROR_LOCATION();
+				}
+
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();

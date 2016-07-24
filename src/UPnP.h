@@ -54,7 +54,7 @@ class UPnP
 {
 public:
 	UPnP();
-	~UPnP();
+	virtual ~UPnP();
 
 	void findUPnPDevices();					// core function for doing anything in upnp
 	bool findValidIGD();					// core function for doing anything in upnp
