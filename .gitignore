@@ -26,6 +26,8 @@
 **/libupnp-1.6.19/
 **/miniupnpc-1.9*/
 
+**/*.TMP
+
 /msvs/UpgradeLog*.htm
 
 .gitattributes

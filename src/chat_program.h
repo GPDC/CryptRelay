@@ -69,11 +69,14 @@ private:
 	typedef struct stat myStat;
 #endif//__linux__
 
-	static const std::string DEFAULT_PORT;
-
 	SocketClass ClientServerSocketClass;
 
+	static const std::string DEFAULT_PORT;
+
+
+	//mutex for use in this class' send()
 	std::mutex SendMutex;
+	// mutex for use with server and client threads to prevent a race condition.
 	std::mutex RaceMutex;
 
 	// These are called by createStartServerThread() and createStartClientThread()
@@ -102,7 +105,7 @@ private:
 	// Server and Client thread must use this function to prevent
 	// a race condition.
 	int setWinnerMutex(int the_winner);
-	
+
 
 	// Continually getline()'s the command prompt to see what the user wants to do.
 	void loopedGetUserInput();
@@ -115,7 +118,7 @@ private:
 	// into the command prompt that would indicate they wanted to send a file.
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 
-	
+
 	// Hints is used by getaddrinfo()
 	// once Hints is given to getaddrinfo() it will return *ConnectionInfo
 	addrinfo		 Hints;	
@@ -136,7 +139,7 @@ private:
 	// This is for the send() located in this class.
 	int total_amount_sent = 0;
 	int bytes_sent = 0;
-	
+
 
 	// Sends a file
 	bool sendFileThread(std::string file_name);
@@ -159,7 +162,7 @@ private:
 	// will return: my_file.txt
 	std::string retrieveFileNameFromPath(std::string name_and_location_of_file);
 
-	
+
 	// Flags that indicate what the message is being used for.
 	// enum is not used for these b/c it could break compatability when
 	// communicating with older version of this program.

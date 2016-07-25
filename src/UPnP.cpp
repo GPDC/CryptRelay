@@ -128,7 +128,9 @@ void UPnP::findUPnPDevices()
 {
 	int miniupnp_error = 0;		// upnpDiscover() sends error info here.
 	const int TTL_DURATION = 2;
-	UpnpDevicesList = upnpDiscover(2000, nullptr, nullptr, 0, 0, TTL_DURATION, &miniupnp_error);
+	const int DISABLE_IPV6 = 0;
+	const int ENABLE_IPV6 = 1;
+	UpnpDevicesList = upnpDiscover(2000, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, DISABLE_IPV6, TTL_DURATION, &miniupnp_error);
 
 	if (UpnpDevicesList)
 	{

@@ -70,8 +70,9 @@ public:
 	// want to know what the user's IP and ports are.
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
 	char my_external_ip[40] = { 0 };	// showInformation() fills this out
-	std::string my_internal_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	std::string my_external_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	const std::string DEFAULT_PORT = "30248";
+	std::string my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	
 protected:
 private:
@@ -91,7 +92,8 @@ private:
 	// findValidIGD() stores data here for the IGD.
 	IGDdatas IGDData;					
 
-	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
+	// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
+	const char * protocol = "TCP";
 
 	// If this is true, then the deconstructor will delete the port forward
 	// entry that was automatically added using autoAddPortForwardRule()
