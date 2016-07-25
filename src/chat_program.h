@@ -40,26 +40,16 @@ public:
 	static int ret2;	// Send()
 #endif //__linux__
 #ifdef _WIN32
-	static HANDLE ghEvents[2];	// i should be using vector of ghevents[] instead...
-								// [0] == server
+	static HANDLE ghEvents[2];	// [0] == server
 								// [1] == client
-
-	// for the loopedSendChatMessagesThread()
-	static HANDLE ghEventsSend[1];// [0] == send()
 #endif //_WIN32
-
-	// If something errors in the server thread, sometimes we
-	// might want to do something with that information.
-	// 0 == no error, 0 == no function was given.
-	static int server_thread_error_code;
-	static int function_that_errored;
 
 	// Thread entrances.
 	static void createStartServerThread(void * instance);
 	static void createStartClientThread(void * instance);
 
 	// If you want to give this class IP and port information, call this function.
-	void giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = DEFAULT_PORT, std::string my_internal_port = DEFAULT_PORT);
+	void setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = DEFAULT_PORT, std::string my_internal_port = DEFAULT_PORT);
 
 	// IP and port information can be given to the Connection class through these variables.
 	std::string target_external_ip;						// If the option to use LAN only == true, this is target's local ip
@@ -68,14 +58,6 @@ public:
 	std::string my_local_ip;
 	std::string my_local_port = DEFAULT_PORT;
 
-	// Send a file the normal way
-	bool does_user_want_to_send_a_file = false;
-	std::string file_name_and_loc;
-
-	// Before sending a file, make a copy of it, encrypt that copy, then send it.
-	bool does_user_want_to_send_an_encrypted_file = false;
-	std::string file_name_and_loc_to_be_encrypted;
-	std::string file_encryption_option;
 
 protected:
 private:
@@ -86,6 +68,8 @@ private:
 #ifdef __linux__
 	typedef struct stat myStat;
 #endif//__linux__
+
+	static const std::string DEFAULT_PORT;
 
 	SocketClass ClientServerSocketClass;
 
@@ -102,6 +86,13 @@ private:
 	static void serverThread(void * instance);
 	static void clientThread(void * instance);
 
+	// Thread used to handle receiving messages.
+	void loopedReceiveMessagesThread(void * instance);
+
+	// Cross platform windows and linux thread exiting
+	// Not for use with std::thread
+	void exitThread(void* ptr);
+
 	// Variables necessary for determining who won the connection race
 	static const int SERVER_WON;
 	static const int CLIENT_WON;
@@ -111,13 +102,20 @@ private:
 	// Server and Client thread must use this function to prevent
 	// a race condition.
 	int setWinnerMutex(int the_winner);
+	
 
-	void loopedReceiveMessagesThread(void * instance);
+	// Continually getline()'s the command prompt to see what the user wants to do.
+	void loopedGetUserInput();
+
+	// Used in loopedGetUserInput() to determine if the user wants to exit the program.
+	// Eventually might not need to be here in the header file.
 	bool EXIT_NOW = false;
 
-	// Cross platform windows and linux thread exiting
-	void exitThread(void* ptr);
+	// Used within loopedGetUserInput() to check if the user inputted something
+	// into the command prompt that would indicate they wanted to send a file.
+	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 
+	
 	// Hints is used by getaddrinfo()
 	// once Hints is given to getaddrinfo() it will return *ConnectionInfo
 	addrinfo		 Hints;	
@@ -128,29 +126,41 @@ private:
 	addrinfo		 *ConnectionInfo;
 	//addrinfo		 *ptr;		// this would only be used if traversing the list of address structures.
 
-
-	static const std::string DEFAULT_PORT;
-
+	// Used for copying a host byte order LongLong into a buffer as a network byte order.
+	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
 
 	// This method is thread safe.
+	// Everything in this class should use this instead of the regular ::send(), and
+	// the SocketClass.send().
 	int send(const char * sendbuf, int amount_to_send);
-	// This is for send()
+	// This is for the send() located in this class.
 	int total_amount_sent = 0;
 	int bytes_sent = 0;
+	
 
-	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
-	void loopedGetUserInput();
-
-	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
-	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
-	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
+	// Sends a file
 	bool sendFileThread(std::string file_name);
-
 	// This is only for use with sendFileThread()
 	bool is_send_file_thread_in_use = false;
 
+	// For sending the file size and file name to peer.
+	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
+	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
 
-	// Flags for send() that indicated what the message is being used for.
+	// Copies a file.
+	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
+
+	// For use with anything file related
+	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
+	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
+
+	// If given a direct path to a file, it will return the file name.
+	// Ex: c:\users\me\storage\my_file.txt
+	// will return: my_file.txt
+	std::string retrieveFileNameFromPath(std::string name_and_location_of_file);
+
+	
+	// Flags that indicate what the message is being used for.
 	// enum is not used for these b/c it could break compatability when
 	// communicating with older version of this program.
 	static const int8_t CR_NO_FLAG;
@@ -180,26 +190,13 @@ private:
 
 	// More variables necessary for processRecvBuf().
 	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
+	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
 	std::string incoming_file_name_from_peer;
-	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
-
-	// More variables necessary for processRecvBuf().
-	bool received_file_name = false;
-	bool received_file_size = false;
 	bool is_file_done_being_written = true;
 
-	// More variables necessary for processRecvBuf().
-	long long file_size_part_one = 0;
-	long long file_size_part_two = 0;
-	long long file_size_part_three = 0;
-	long long file_size_part_four = 0;
-	long long file_size_part_five = 0;
-	long long file_size_part_six = 0;
-	long long file_size_part_seven = 0;
-	long long file_size_part_eight = 0;
-
-
+	// Here is where all messages received are processed to determine what to do with the message.
+	// Some messages might be printed to screen, others are a portion of a file transfer.
 	bool processRecvBuf(char * recv_buf, long long buf_len, long long byte_count);
 
 	enum RecvStateMachine
@@ -218,26 +215,23 @@ private:
 		ERROR_STATE,
 	};
 
-	// Variables for writePartOfTheFileFromPeer()
+	// Variables for processRecvBuf()
+	// Specifically for the cases that deal with writing an incoming file from the peer.
 	long long bytes_read = 0;
 	long long bytes_written = 0;
 	long long total_bytes_written_to_file = 0;
 
+	// For writing files in processRecvBuf()
 	FILE * WriteFile = nullptr;
 
-	// using the given buffer, convert the first 8 bytes from Network to Host Long Long
+	// For use with processRecvBuf()
+	// Using the given buffer, convert the first 8 bytes from Network to Host Long Long
 	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
 	// Variables necessary for assignFileSizeFromPeer();
 	long long file_size_fragment = 0;
 	long long incoming_file_size_from_peer = 0;
 	const int RECV_AGAIN = 0;
 	const int FINISHED = 1;
-
-	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
-
-	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
-	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
-	std::string getFileNameFromPath(std::string name_and_location_of_file);
 };
 
 #endif //chat_program_h__

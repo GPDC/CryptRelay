@@ -64,16 +64,7 @@
 HANDLE Connection::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
 									// [0] == server
 									// [1] == client
-
-// for the loopedSendChatMessagesThread()
-HANDLE Connection::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
-
-// If something errors in the server thread, sometimes we
-// might want to do something with that information.
-// 0 == no error, 0 == no function was given.
-int server_thread_error_code = 0;
-int function_that_errored = 0;
 
 // this default_port being static might not be a good idea.
 // This is the default port for the Connection as long as
@@ -87,8 +78,6 @@ const int Connection::SERVER_WON = -29;
 const int Connection::CLIENT_WON = -30;
 const int Connection::NOBODY_WON = -25;
 int Connection::global_winner = NOBODY_WON;
-
-
 
 
 // Flags for send() that indicated what the message is being used for.
@@ -131,7 +120,7 @@ Connection::~Connection()
 // This is where the Connection class receives information about IPs and ports.
 // /*optional*/ target_port         default value will be assumed
 // /*optional*/ my_internal_port    default value will be assumed
-void Connection::giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
+void Connection::setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
 {
 	if (global_verbose == true)
 		std::cout << "Giving IP and Port information to the chat program.\n";
@@ -592,6 +581,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				DBG_DISPLAY_ERROR_LOCATION();
 				if (is_file_done_being_written == false)
 				{
+					// Close the file that was being written inside the processRecvBuf() state machine.
 					if (fclose(WriteFile) != 0)
 					{
 						perror("Error closing file for writing in binary mode.\n");
@@ -1050,7 +1040,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		// Retrieve the name of the file from the string that contains
 		// the path and the name of the file.
-		std::string file_name = getFileNameFromPath(name_and_location_of_file);
+		std::string file_name = retrieveFileNameFromPath(name_and_location_of_file);
 		if (file_name.empty() == true)
 		{
 			delete[]buf;
@@ -1529,7 +1519,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 	bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert)
 	{
-		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > (long long)sizeof(variable_to_convert))
+		if (BUF_LEN > (long long)sizeof(variable_to_convert))
 		{
 			buf[3] = (char)(variable_to_convert >> 56);
 			buf[4] = (char)(variable_to_convert >> 48);
@@ -1561,7 +1551,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 		// Converting to network byte order, and copying it into
 		// the buffer.
-		if (intoBufferHostToNetworkLongLong(buf, BUF_LEN, size_of_file) == false)
+		if (intoBufferHostToNetworkLongLong(buf, BUF_LEN - CR_RESERVED_BUFFER_SPACE, size_of_file) == false)
 		{
 			std::cout << "Programmer error. Buffer length is too small for operation. sendFileThread(), intoBufferHostToNetworkLongLong().\n";
 			return false;//exit please?
@@ -1621,7 +1611,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		return true;
 	}
 
-	std::string Connection::getFileNameFromPath(std::string name_and_location_of_file)
+	std::string Connection::retrieveFileNameFromPath(std::string name_and_location_of_file)
 	{
 		std::string error_empty_string;
 		// Remove the last \ or / in the name if there is one, so that the name
@@ -1677,7 +1667,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		}
 
 		// Shouldn't get here, but if it does, it is an error.
-		std::cout << "Impossible location, getFileNameFromPath()\n";
+		std::cout << "Impossible location, retrieveFileNameFromPath()\n";
 		return error_empty_string;
 	}
 

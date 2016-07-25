@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
 	CommandLineInput CLI;
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
-	if ( (errchk = CLI.setVariablesFromArgv(argc, argv) ) == true)	
+	if ( (errchk = CLI.setVariablesFromArgv(argc, argv)) == true)	
 		return EXIT_FAILURE;
 
 
