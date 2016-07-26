@@ -71,8 +71,8 @@ public:
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
 	char my_external_ip[40] = { 0 };	// showInformation() fills this out
 	const std::string DEFAULT_PORT = "30248";
-	std::string my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	std::string my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string upnp_my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string upnp_my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	
 protected:
 private:

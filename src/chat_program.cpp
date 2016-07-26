@@ -104,10 +104,6 @@ Connection::Connection()
 }
 Connection::~Connection()
 {
-	// Giving this a try, shutdown the connection even if ctrl-c is hit?
-	// UPDATE: ctrl-c does not call deconstructors.
-	ClientServerSocketClass.shutdown(SD_BOTH);
-
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
@@ -331,12 +327,15 @@ void Connection::serverThread(void * instance)
 	// else just send the message that the user typed out.
 	self->loopedGetUserInput();
 
+	// This will shutdown the connection on the socket.
+	// This will also interrupt recv() if it is currently blocking.
+	// Done communicating with peer. Proceeding to exit.
+	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+
 	// wait here until x thread finishes.
 	if (RcvThread.joinable())
 		RcvThread.join();
 
-	// Done communicating with peer. Proceeding to exit.
-	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
 	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
 
 	// Exiting chat program
@@ -508,12 +507,16 @@ void Connection::clientThread(void * instance)
 	// else just send the message that the user typed out.
 	self->loopedGetUserInput();
 
+	// This will shutdown the connection on the socket.
+	// This will also interrupt recv() if it is currently blocking.
+	// Done communicating with peer. Proceeding to exit.
+	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+
+
 	// wait here until x thread finishes.
 	if (rcv_thread.joinable())
 		rcv_thread.join();
 
-	// Done communicating with peer. Proceeding to exit.
-	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
 	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
 
 	// Exiting chat program
@@ -554,6 +557,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	static const long long recv_buf_len = 512;
 	char recv_buf[recv_buf_len];
 
+	const int CONNECTION_GRACEFULLY_CLOSED = 0; // when recv() returns 0, it means gracefully closed.
 	int bytes = 0;	
 	while (1)
 	{
@@ -566,7 +570,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			if (processRecvBuf(recv_buf, recv_buf_len, bytes) == false)
 				break;
 		}
-		else
+		else if (bytes == SOCKET_ERROR)
 		{
             #ifdef __linux__
 			const int CONNECTION_RESET = 104;
@@ -589,6 +593,11 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
 				}
 			}
+			break;
+		}
+		else if (bytes == CONNECTION_GRACEFULLY_CLOSED)
+		{
+			std::cout << "Connection with peer has been gracefully closed.\n";
 			break;
 		}
 	}
@@ -714,6 +723,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			if (user_input == "exit()")
 			{
 				// Exit program.
+				EXIT_NOW = true;
 				break;
 			}
 			if (doesUserWantToSendAFile(user_input) == true)

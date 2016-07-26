@@ -90,8 +90,8 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	// Give Port that was supplied by the user to the UPnP class
 	if (CLI->getMyHostPort().empty() == false)
 	{
-		UpnpInstance->my_internal_port = CLI->getMyHostPort();
-		UpnpInstance->my_external_port = CLI->getMyHostPort();
+		UpnpInstance->upnp_my_internal_port = CLI->getMyHostPort();
+		UpnpInstance->upnp_my_external_port = CLI->getMyHostPort();
 	}
 }
 
@@ -165,7 +165,7 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	if (CLI->getMyHostPort().empty() == false)
 		ChatServerInstance->my_local_port = CLI->getMyHostPort();
 	else
-		ChatServerInstance->my_local_port = UpnpInstance->my_internal_port;
+		ChatServerInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
 
 
 	// Give IP and port info to the ChatClient instance
@@ -188,7 +188,7 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	if (CLI->getMyHostPort().empty() == false)
 		ChatClientInstance->my_local_port = CLI->getMyHostPort();
 	else
-		ChatClientInstance->my_local_port = UpnpInstance->my_internal_port;
+		ChatClientInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
 }
 
 int main(int argc, char *argv[])
@@ -292,23 +292,24 @@ int main(int argc, char *argv[])
 					std::cout << "Please specify the port on which you wish to listen for incomming connections by using -mP.\n";
 					return EXIT_FAILURE;
 				}
-				if (PortTest.isLocalPortInUse(Upnp->my_internal_port, Upnp->my_local_ip) == IN_USE)
+				if (PortTest.isLocalPortInUse(Upnp->upnp_my_internal_port, Upnp->my_local_ip) == IN_USE)
 				{
 					// Port is in use, lets try again with port++
-					std::cout << "Port: " << Upnp->my_internal_port << " is already in use.\n";
-					my_port_int = stoi(Upnp->my_internal_port);
+					std::cout << "Port: " << Upnp->upnp_my_internal_port << " is already in use.\n";
+					my_port_int = stoi(Upnp->upnp_my_internal_port);
 					if (my_port_int < USHRT_MAX)
 						++my_port_int;
 					else
 						my_port_int = 30152; // Arbitrary number given b/c the port num was too big.
-					Upnp->my_internal_port = std::to_string(my_port_int);
-					std::cout << "Trying port: " << Upnp->my_internal_port << " instead.\n\n";
+					Upnp->upnp_my_internal_port = std::to_string(my_port_int);
+					Upnp->upnp_my_external_port = Upnp->upnp_my_internal_port;
+					std::cout << "Trying port: " << Upnp->upnp_my_internal_port << " instead.\n\n";
 				}
 				else
 				{
-					if (i != 0)// if i != 0, then there must must have assigned a new port number.
+					if (i != 0)// if i != 0, then it must have assigned a new port number.
 					{
-						std::cout << "Now using Port: " << Upnp->my_internal_port << " as my local port.\n";
+						std::cout << "Now using Port: " << Upnp->upnp_my_internal_port << " as my local port.\n";
 						std::cout << "This is because the default port was already in use\n\n";
 					}
 					break;// Port is not in use.

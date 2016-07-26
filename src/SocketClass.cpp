@@ -442,16 +442,22 @@ int SocketClass::getError()
 #ifdef _WIN32
 	int errsv = ::WSAGetLastError();
 
+
 	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
-	if (errsv == 10060)// Connection timed out
+	if (errsv == WSAETIMEDOUT)// Connection timed out
 		return errsv;
-	else if (errsv == 10054)// Connection reset by peer
+	else if (errsv == WSAECONNRESET)// Connection reset by peer
 	{
 		std::cout << "Connection closed by peer.\n";
 		return errsv;
 	}
+	else if (errsv == WSAEINTR)// Blocking operation interrupted.
+	{
+		return errsv;
+	}
+
 	std::cout << "WSAERROR: " << errsv << ".\n";
-	if (errsv == 10013)// Permission denied.
+	if (errsv == WSAEACCES)// Permission denied.
 		std::cout << "Permission Denied.\n";
 
 	return errsv;
