@@ -54,9 +54,9 @@ PortKnock::~PortKnock()
 // returns 1 if port is in use
 int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
 {
+	SocketClass PKSocketClass;
 	const int IN_USE = 1;
 	const int AVAILABLE = 0;
-	SocketClass SockStuff;
 	addrinfo Hints;
 	addrinfo* ServerInfo;
 	memset(&Hints, 0, sizeof(Hints));
@@ -69,20 +69,20 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ServerInfo
 	// Now we use ServerInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (SockStuff.myGetAddrInfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
+	if (PKSocketClass.getaddrinfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
 		return false;
 
 	// Create socket
-	SOCKET listen_socket = SockStuff.mySocket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
-	if (listen_socket == INVALID_SOCKET)
+	SOCKET errchk_socket = PKSocketClass.socket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
+	if (errchk_socket == INVALID_SOCKET)
 		return -1;
-	else if (listen_socket == SOCKET_ERROR)
+	else if (errchk_socket == SOCKET_ERROR)
 		return -1;
 
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int errchk = bind(listen_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
+	int errchk = ::bind(PKSocketClass.fd_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 
@@ -90,7 +90,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 		int errsv = errno;			//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
 		{
-			SockStuff.myCloseSocket(listen_socket);
+			Sock.closesocket(PKSocketClass.fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -100,7 +100,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 		int errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			SockStuff.myCloseSocket(listen_socket);
+			PKSocketClass.closesocket(PKSocketClass.fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -110,7 +110,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	}
 
 	// No errors, must be available
-	SockStuff.myCloseSocket(listen_socket);
+	PKSocketClass.closesocket(PKSocketClass.fd_socket);
 	return AVAILABLE;
 }
 
@@ -120,7 +120,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	if (global_verbose == true)
 		std::cout << "Checking to see if port is open...\n";
 
-	SocketClass SocketStuff;
+	SocketClass PKSocketClass;
 	addrinfo hints;
 	addrinfo* result = nullptr;
 	memset(&hints, 0, sizeof(hints));
@@ -129,32 +129,32 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	if ((SocketStuff.myGetAddrInfo(ip.c_str(), port.c_str(), &hints, &result)) == false)
+	if ((PKSocketClass.getaddrinfo(ip.c_str(), port.c_str(), &hints, &result)) == false)
 	{
 		std::cout << "isPortOpen() failed b/c of getaddrinfo().\n";
 		return false;
 	}
 
-	SOCKET s = SocketStuff.mySocket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
-	if (s == INVALID_SOCKET)
+	SOCKET errchk_socket = PKSocketClass.socket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
+	if (errchk_socket == INVALID_SOCKET)
 	{
-		SocketStuff.getError();
+		PKSocketClass.getError();
 		std::cout << "isPortOpen()'s sock() failed.\n";
-		SocketStuff.myCloseSocket(s);
+		PKSocketClass.closesocket(PKSocketClass.fd_socket);
 		return false;
 	}
 
 	// If connection is successful, it must be an open port
-	int errchk = SocketStuff.myConnect(s, result->ai_addr, result->ai_addrlen);
+	int errchk = PKSocketClass.connect(result->ai_addr, result->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
-		SocketStuff.myCloseSocket(s);
+		PKSocketClass.closesocket(PKSocketClass.fd_socket);
 		return false;
 	}
 	else
 	{
-		SocketStuff.myShutdown(s, SD_BOTH);
-		SocketStuff.myCloseSocket(s);
+		PKSocketClass.shutdown(SD_BOTH);
+		PKSocketClass.closesocket(PKSocketClass.fd_socket);
 		return true;
 	}
 }

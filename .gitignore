@@ -16,15 +16,21 @@
 **/CryptRelay.vcxproj.user
 **/CryptRelay.VC.db
 
-my_current_commit_notes.txt
-testfile.txt
+**/my_notes.txt
+**/my_current_commit_notes.txt
+**/testfile.txt
+**/build_dependency_msvs.txt
 
-gsoap-2.8/
-pjproject-2.4.5/
-libupnp-1.6.19/
-miniupnpc-1.9/
-miniupnpc-1.9 Backup no static linking/
-miniupnpc-1.9 Backup with static linking/
+**/gsoap-2.8/
+**/pjproject-2.4.5/
+**/libupnp-1.6.19/
+**/miniupnpc-1.9*/
+
+**/*.TMP
+
+/msvs/UpgradeLog*.htm
+
+**/unused_useful_code.txt
 
 .gitattributes
 

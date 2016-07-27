@@ -1,21 +1,9 @@
 //FormatCheck.cpp
 
-//wrote this all 3 majorly different ways 3 different times as practice. (didn't use library functions that would make this extremely quick & easy)
-//what is written below is a bit ugly, and could be improved __a_lot__, but it currently works.
-//note to self: next time you know what to do just do it even if it means messing up your schedule (to a certain extent). Otherwise you will forget how it was to be written.
-//note to self: don't write notes for how to write the code next time. write the code instead, or perhaps try quick and dirty sudo code?.
-//
-//for the next project, lay it all out first. design it with loose terms, sudo code, w/e. typing away and hoping it all falls into place was pretty dumb, but admittedly I learned a lot during the 4 re-writes.
-//this is all working, but it is missing safety checks for overflows. these saftey checks being missing for the moment are not 100% scary, I believe, since it is all done client side, and nobody through the internet
-//can interact with the variables that don't have safety checks. The attacker would have to have some access to this computer, and at that point, everything is compromised anyways.
-//Regardless, I would still like to create safety checks for this class. However I will do this after the connect class has been created and is working.
-
-
 #ifdef __linux__
 #include <iostream>
 #include <vector>
 
-// are these really needed here? pls check on linux
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -24,11 +12,10 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
-//#include <errno.h>
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
-#endif
+#endif//__linux__
 
 #ifdef _WIN32
 #include <string>
@@ -36,15 +23,7 @@
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
-#endif
-
-#define BAD_FORMAT -100
-#define MAX_PORT_LENGTH 5
-#define MAX_PORT_NUMBER 65535		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
-
-#ifndef INET_ADDRSTRLEN
-#define INET_ADDRSTRLEN 15			// max size of ipv4 address / ipv6 is 45
-#endif//INET_ADDRSTRLEN
+#endif//_WIN32
 
 IPAddress::IPAddress()
 {
@@ -62,7 +41,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	if (ipaddress_size > INET_ADDRSTRLEN)
 	{
 		std::cout << "IPV4 address is too big to be valid.\n";
-		return false;
+		return true;
 	}
 
 	if (global_verbose == true)
@@ -82,7 +61,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
 		{
 			std::cout << "Only numbers and periods allowed.\n";
-			return false;
+			return true;
 		}
 	}
 
@@ -91,7 +70,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		end = findNextPeriod(ipaddress, start);
 		if (end == BAD_FORMAT)
 		{
-			return false;
+			return true;
 		}
 		if (end != BAD_FORMAT && end != -1)
 		{
@@ -101,9 +80,9 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		{
 			end = ipaddress_size;
 		}
-		if (checkSubnetRange(ipaddress, start, end) == false)
+		if (checkSubnetRange(ipaddress, start, end) == true)
 		{
-			return false;
+			return true;
 		}
 		//back to the future
 		start = end + 1;
@@ -115,11 +94,11 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 
 	if (period_count != 3)
 	{
-		return false;
+		return true;
 	}
 	else
 	{
-		return true;
+		return false;
 	}
 }
 
@@ -178,7 +157,7 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	if (subnet_array_count > 3 || subnet_array_count < 1)
 	{
 		std::cout << "Subnet out of range\n";
-		return false;
+		return true;
 	}
 
 	const int subnet_array_size = 3;
@@ -207,9 +186,9 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 	if (total > 255 || total < 0)
 	{
 		std::cout << "Subnet out of range.\n";
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 
@@ -224,7 +203,7 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	if (length_of_port > MAX_PORT_LENGTH)
 	{
 		std::cout << "ERROR: Port number is too high\n";
-		return false;
+		return true;
 	}
 	for (int i = 0; i < length_of_port; ++i)	
 	{
@@ -232,7 +211,7 @@ bool IPAddress::isPortFormatCorrect(char* port)
 		if (port[i] < 48 || port[i] > 57)
 		{
 			std::cout << "Please enter a valid port number.\n";
-			return false;
+			return true;
 		}
 	}
 
@@ -247,8 +226,8 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	if (total > MAX_PORT_NUMBER)
 	{
 		std::cout << "Port number is too large. Exiting.\n";
-		return false;
+		return true;
 	}
 
-	return true;
+	return false;
 }

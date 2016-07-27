@@ -21,7 +21,6 @@
   <ItemGroup>
     <ClInclude Include="..\src\chat_program.h" />
     <ClInclude Include="..\src\CommandLineInput.h" />
-    <ClInclude Include="..\src\CrossPlatformSleep.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
     <ClInclude Include="..\src\string_manipulation.h" />
@@ -32,7 +31,6 @@
   <ItemGroup>
     <ClCompile Include="..\src\chat_program.cpp" />
     <ClCompile Include="..\src\CommandLineInput.cpp" />
-    <ClCompile Include="..\src\CrossPlatformSleep.cpp" />
     <ClCompile Include="..\src\FormatCheck.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\port_knock.cpp" />
@@ -93,8 +91,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <LinkIncremental>true</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\miniupnpc-1.9;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)..\miniupnpc-1.9\msvc\Debug;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)..\miniupnp\miniupnpc\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\Debug;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
@@ -102,8 +100,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <LinkIncremental>false</LinkIncremental>
-    <IncludePath>$(ProjectDir)..\miniupnpc-1.9;$(IncludePath)</IncludePath>
-    <LibraryPath>$(ProjectDir)..\miniupnpc-1.9\msvc\Release;$(LibraryPath)</LibraryPath>
+    <IncludePath>$(ProjectDir)..\miniupnp\miniupnpc\;$(IncludePath)</IncludePath>
+    <LibraryPath>$(ProjectDir)\Release;$(LibraryPath)</LibraryPath>
     <IgnoreImportLibrary>
     </IgnoreImportLibrary>
   </PropertyGroup>
@@ -116,14 +114,14 @@
       </PrecompiledHeader>
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
-      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;MINIUPNP_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)..\miniupnpc-1.9\msvc\Debug\miniupnpc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)\Debug\miniupnpc.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -149,7 +147,7 @@
       <Optimization>MaxSpeed</Optimization>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
-      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PJ_WIN32=1;STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;PJ_WIN32=1;MINIUPNP_STATICLIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -158,7 +156,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(ProjectDir)..\miniupnpc-1.9\msvc\Release\miniupnpc.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(ProjectDir)\Release\miniupnpc.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <IgnoreAllDefaultLibraries>
       </IgnoreAllDefaultLibraries>
       <AdditionalOptions>

@@ -2,9 +2,7 @@
 
 // I'm really doubting the usefuless of a class like this.
 // I mean it does make the code smaller in chat_program
-// and therefore easier to skim over and see what is going on,
-// but it kinda seems silly. I don't know. I would like some
-// input from people on this.
+// and therefore easier to skim over and see what is going on.
 
 // Overview:
 // Purpose of this class is to place all sockets related things here, and take
@@ -21,12 +19,7 @@
 // call freeaddrinfo(struct addrinfo) when they need to.
 
 // Warnings:
-// This source file expects any input that is given to it has already been checked
-//  for safety and validity. For example if a user supplies a port, then
-//  this source file will expect the port will be >= 0, and <= 65535.
-//  As with an IP address it will expect it to be valid input, however it doesn't
-//  expect you to have checked to see if there is a host at that IP address
-//  before giving it to this source file.
+// This source file does not do any input validation.
 
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
@@ -38,7 +31,6 @@
 //  to tell the programmer that something went wrong.
 //  On linux it returns -1 for an invalid socket instead of (~0) because SOCKET is
 //  defined as an int on linux, and valid SOCKETs will only be positive.
-// buf is buffer. It is a place where information is stored for a time.
 
 #ifndef SocketClass_h__
 #define SocketClass_h__
@@ -60,59 +52,75 @@
 
 #ifdef __linux__
 typedef int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
-#define BYTE_SIZE ssize_t// because myRecvFrom needs to return ssize_t on linux, and int on win
+#define BYTE_SIZE ssize_t// because recvfrom needs to return ssize_t on linux, and int on win
 #endif//__linux__
 
 #ifdef _WIN32
-#define BYTE_SIZE int	// because myRecvFrom needs to return ssize_t on linux, and int on win
+typedef int BYTE_SIZE;	// because recvfrom needs to return ssize_t on linux, and int on win
 #endif//_WIN32
 
 class SocketClass
 {
 public:
 	SocketClass();
-	~SocketClass();
+	virtual ~SocketClass();
+
+	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
+	// during specific situations, and if additional information is needed about the current socket it can be accessed.
+	SOCKET fd_socket;
+
+	// A global socket used as a way to communicate between threads.
+	static SOCKET global_socket;
+
+	// in accept(), make it return a whole SocketClass, not a socket.
+	// 1. ::accept() the connection. it is now stored on a temporary socket
+	//    inside the accept() function.
+	// 2. Close the previous (non temporary) socket.
+	// 3. return a new SocketClass with the socket set.
 
 
-	SOCKET mySocket(int address_family, int type, int protocol);
-	SOCKET myAccept(SOCKET fd);
+	SOCKET socket(int address_family, int type, int protocol);
+	SOCKET accept();
 
 	// All the bool functions return false when there is an error. True if everything went fine.
-	bool myWSAStartup();
-	bool mySetSockOpt(SOCKET sock, int level, int option_name, const char* option_value, int option_length);
-	bool myBind(SOCKET fd, const sockaddr *name, int name_len);
-	bool myShutdown(SOCKET fd, int operation);
-	bool myListen(SOCKET fd);
-	bool myGetAddrInfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
+	bool WSAStartup();
+	bool setsockopt(int level, int option_name, const char* option_value, int option_length);
+	bool bind(const sockaddr *name, int name_len);
+	bool shutdown(int operation);
+	bool listen();
+	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	int myinet_pton(int family, char * ip_addr, void * paddr_buf);
-	int myConnect(SOCKET fd, const sockaddr* name, int name_len);
-	int mySend(SOCKET s, const char* buffer, int buffer_length, int flags);
-	int mySendTo(SOCKET s, const char* buf, int len, int flags, const sockaddr *to, int to_len);
-	int myRecv(SOCKET s, char* buf, int buf_len, int flags);
-	BYTE_SIZE myRecvFrom(SOCKET s, char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
+	int inet_pton(int family, char * ip_addr, void * paddr_buf);
+	int connect(const sockaddr* name, int name_len);
+	int send(const char* buffer, int buffer_length, int flags);
+	int sendto(const char* buf, int len, int flags, const sockaddr *to, int to_len);
+	int recv(char* buf, int buf_len, int flags);
+	BYTE_SIZE recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
-	void myCloseSocket(SOCKET fd);
-	void myWSACleanup();
-	void myFreeAddrInfo(addrinfo*& pAddrInfo);
+	void closesocket(SOCKET s);
+	void WSACleanup();
+	void freeaddrinfo(addrinfo** ppAddrInfo);
+	void coutPeerIPAndPort();
 
-	
+	const int TIMEOUT_ERROR = -10060;
+
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError();	// Noteable oddity here! This shouldn't really be in the SocketClass - it just retrieves errors.
+	int getError();	// This is unlike everything else here - it just retrieves and prints errors.
 
 protected:
 private:
 
+	// Prevent anyone from copying this class.
+	SocketClass(SocketClass& SocketClassInstance) = delete;			   // disable copy operator
+	SocketClass& operator=(SocketClass& SocketClassInstance) = delete; // disable assignment operator
+
 #ifdef _WIN32
 	WSADATA wsaData;			// for WSAStartup();
 #endif//_WIN32
-
-
-
 };
 
 
-#endif
+#endif//SocketClass_h__

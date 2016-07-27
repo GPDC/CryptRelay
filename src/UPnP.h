@@ -5,13 +5,7 @@
 // Handles all things related to UPnP.
 
 // Warnings:
-// This source file expects any input that is given to it has already been checked
-//  for safety and validity. For example if a user supplies a port, then
-//  this source file will expect the port will be >= 0, and <= 65535.
-//  As with an IP address it will expect it to be valid input, however it doesn't
-//  expect you to have checked to see if there is a host at that IP address
-//  before giving it to this source file.
-
+// This source file does not do any input validation.
 
 // Terminology:
 // UPnP: Universal Plug and Play
@@ -25,7 +19,7 @@
 // Important steps list:
 // Three important steps in order to doing anything with UPnP:
 // 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
-//	  SockStuff.myWSAStartup();
+//	  SocketClass.WSAStartup();
 //
 // 2. Find UPnP devices on the local network
 //	  findUPnPDevices();
@@ -60,10 +54,11 @@ class UPnP
 {
 public:
 	UPnP();
-	~UPnP();
+	virtual ~UPnP();
 
 	void findUPnPDevices();					// core function for doing anything in upnp
 	bool findValidIGD();					// core function for doing anything in upnp
+
 	void standaloneShowInformation();
 	void standaloneGetListOfPortForwards();
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
@@ -75,8 +70,9 @@ public:
 	// want to know what the user's IP and ports are.
 	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
 	char my_external_ip[40] = { 0 };	// showInformation() fills this out
-	std::string my_internal_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	std::string my_external_port = "30248";		// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	const std::string DEFAULT_PORT = "30248";
+	std::string upnp_my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string upnp_my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	
 protected:
 private:
@@ -84,9 +80,6 @@ private:
 	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
-
-
-	SocketClass SockStuff;
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory
@@ -99,7 +92,8 @@ private:
 	// findValidIGD() stores data here for the IGD.
 	IGDdatas IGDData;					
 
-	const char * protocol = "TCP";		// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
+	// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
+	const char * protocol = "TCP";
 
 	// If this is true, then the deconstructor will delete the port forward
 	// entry that was automatically added using autoAddPortForwardRule()
@@ -107,9 +101,3 @@ private:
 };
 
 #endif//UPnP_h__
-
-
-
-// FYI in the c language, calling something static means that it can't
-// be seen outside the file. Think of it like a private section of a class.
-

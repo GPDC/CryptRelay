@@ -72,7 +72,7 @@ void CommandLineInput::Examples()
 
 }
 
-int CommandLineInput::getCommandLineInput(int argc, char* argv[])
+bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
@@ -91,7 +91,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 	if (argc <= 1)
 	{
 		helpAndReadMe();
-		return 0;
+		return true;
 	}
 	// Check all argv inputs to see what the user wants to do
 	bool err_chk_bool = 0;
@@ -109,15 +109,15 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 				|| arg[i] == "--Help")
 			{
 				helpAndReadMe();
-				return 0;
+				return true;
 			}
 			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
+				if (err_chk_bool == true)
 				{
 					std::cout << "Bad IP address format.\n\n";
-					return 0;
+					return true;
 				}
 				else
 				{
@@ -128,8 +128,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-tP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
-					return 0;
+				if (err_chk_bool == true)
+					return true;
 				else
 				{
 					target_port = argv[i + 1];
@@ -139,8 +139,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mL")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
-					return 0;
+				if (err_chk_bool == true)
+					return true;
 				else
 				{
 					my_ip_address = argv[i + 1];
@@ -150,8 +150,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
-					return 0;
+				if (err_chk_bool == true)
+					return true;
 				else
 				{
 					my_host_port = argv[i + 1];
@@ -161,32 +161,18 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mE")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
-					return 0;
+				if (err_chk_bool == true)
+					return true;
 				else
 				{
 					my_ext_ip_address = argv[i + 1];
 					++i;
 				}
 			}
-			else if (i < arg_size - 1 && arg[i] == "-f")
-			{
-				transfer_a_file = true;
-				file_name_and_location = argv[i + 1];
-				++i;
-			}
-			else if (i < arg_size - 2 && arg[i] == "-fE")
-			{
-				transfer_an_encrypted_file = true;
-				file_name_and_location_to_be_encrypted = argv[i + 1];
-				file_encryption_option = argv[i + 2];
-
-				i += 2;
-			}
 			else if (arg[i] == "--examples")
 			{
 				Examples();
-				return 0;
+				return true;
 			}
 			else if (arg[i] == "-v")
 			{
@@ -199,8 +185,8 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			}
 			else if (arg[i] == "-spf")
 			{
-				get_list_of_port_forwards = true;
-				return 1;
+				retrieve_list_of_port_forwards = true;
+				return false;
 			}
 			else if (i < arg_size - 2 && arg[i] == "-dpf")
 			{
@@ -210,7 +196,7 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 
 				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
-				return 1;
+				return false;
 			}
 			else if (arg[i] == "-si")
 			{
@@ -219,11 +205,63 @@ int CommandLineInput::getCommandLineInput(int argc, char* argv[])
 			else
 			{
 				helpAndReadMe();
-				return 0;
+				return true;
 			}
 		}
 	}
 
 	// Finished without errors, return success
-	return 1;
+	return false;
+}
+
+
+// Public functions used to return a private member variable.
+const bool& CommandLineInput::getShowInfoUpnp()
+{
+	return show_info_upnp;
+}
+const bool& CommandLineInput::getRetrieveListOfPortForwards()
+{
+	return retrieve_list_of_port_forwards;
+}
+const bool& CommandLineInput::getUseLanOnly()
+{
+	return use_lan_only;
+}
+const bool& CommandLineInput::getUseUpnpToConnectToPeer()
+{
+	return use_upnp_to_connect_to_peer;
+}
+const std::string& CommandLineInput::getTargetIpAddress()
+{
+	return target_ip_address;
+}
+const std::string& CommandLineInput::getTargetPort()
+{
+	return target_port;
+}
+const std::string& CommandLineInput::getMyIpAddress()
+{
+	return my_ip_address;
+}
+const std::string& CommandLineInput::getMyHostPort()
+{
+	return my_host_port;
+}
+const std::string& CommandLineInput::getMyExtIpAddress()
+{
+	return my_ext_ip_address;
+}
+
+const bool& CommandLineInput::getDeleteThisSpecificPortForward()
+{
+	return delete_this_specific_port_forward;
+}
+const std::string& CommandLineInput::getDeleteThisSpecificPortForwardPort()
+{
+	return delete_this_specific_port_forward_port;
+}
+const std::string& CommandLineInput::getDeleteThisSpecificPortForwardProtocol()
+{
+	return delete_this_specific_port_forward_protocol;
 }

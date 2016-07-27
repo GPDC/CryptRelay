@@ -8,7 +8,6 @@
 #include <pthread.h>	// <process.h>  multithreading
 #include <thread>
 #include <vector>
-#include <mutex>
 #include <climits>
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -26,7 +25,6 @@
 #include <Winsock2.h>
 #include <WS2tcpip.h>
 #include <vector>
-#include <mutex>		// btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
 #include <climits>
 
 #include "chat_program.h"
@@ -35,7 +33,6 @@
 #include "UPnP.h"
 #endif //_WIN32
 
-std::mutex m;
 
 #ifdef __linux__
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Linux returns (~0) from socket functions, and windows returns -1.
@@ -51,7 +48,7 @@ std::mutex m;
 	int Connection::ret1 = 0;	// Client
     int Connection::ret2 = 0;	// Send()
 
-    // for the myShutdown() function
+    // for the shutdown() function
     const int SD_BOTH = 2;
 #endif //__linux__
 
@@ -67,23 +64,14 @@ std::mutex m;
 HANDLE Connection::ghEvents[2]{};	// i should be using vector of ghevents[] instead...
 									// [0] == server
 									// [1] == client
-
-// for the loopedSendChatMessagesThread()
-HANDLE Connection::ghEventsSend[1];// [0] == send()
 #endif//_WIN32
-
-// If something errors in the server thread, sometimes we
-// might want to do something with that information.
-// 0 == no error, 0 == no function was given.
-int server_thread_error_code = 0;
-int function_that_errored = 0;
 
 // this default_port being static might not be a good idea.
 // This is the default port for the Connection as long as
 // Connection isn't given any port from the UPnP class,
 // which has its own default port, or given any port from the
 // command line.
-const std::string Connection::default_port = "30248";
+const std::string Connection::DEFAULT_PORT = "30248";
 
 // Variables necessary for determining who won the connection race
 const int Connection::SERVER_WON = -29;
@@ -91,11 +79,8 @@ const int Connection::CLIENT_WON = -30;
 const int Connection::NOBODY_WON = -25;
 int Connection::global_winner = NOBODY_WON;
 
-// Used by threads after a race winner has been established
-SOCKET Connection::global_socket;
 
-
-// Flags for sendMutex() that indicated what the message is being used for.
+// Flags for send() that indicated what the message is being used for.
 // CR == CryptRelay
 const int8_t Connection::CR_NO_FLAG = 0;
 const int8_t Connection::CR_BEGIN = 0;
@@ -108,7 +93,7 @@ const int8_t Connection::CR_FILE = 32;
 const int8_t Connection::CR_ENCRYPTED_FILE = 33;
 
 // How many characters at the beginning of the buffer that should be
-// reserved for usage of a flag, and size of the "packet"
+// reserved for usage of a flag, (1) and size of the message (2). (1 + 2 == 3)
 const int8_t Connection::CR_RESERVED_BUFFER_SPACE = 3;
 
 
@@ -119,25 +104,19 @@ Connection::Connection()
 }
 Connection::~Connection()
 {
-	// Giving this a try, shutdown the connection even if ctrl-c is hit?
-	// UPDATE: ctrl-c does not call deconstructors.
-	SockStuff.myShutdown(global_socket, SD_BOTH);
-
-
-
 	// ****IMPORTANT****
 	// All addrinfo structures must be freed once they are done being used.
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
-	// Check comments in the myFreeAddrInfo() to see how its done.
+	// Check comments in the freeaddrinfo() to see how its done.
 	if (ConnectionInfo != nullptr)
-		SockStuff.myFreeAddrInfo(ConnectionInfo);
+		ClientServerSocketClass.freeaddrinfo(&ConnectionInfo);
 }
 
 
 // This is where the Connection class receives information about IPs and ports.
 // /*optional*/ target_port         default value will be assumed
 // /*optional*/ my_internal_port    default value will be assumed
-void Connection::giveIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
+void Connection::setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
 {
 	if (global_verbose == true)
 		std::cout << "Giving IP and Port information to the chat program.\n";
@@ -170,7 +149,7 @@ void Connection::createStartServerThread(void * instance)
 	if (ret0)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret0);
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION();
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -184,13 +163,14 @@ void Connection::createStartServerThread(void * instance)
 	// ghEvents[0] = (HANDLE)thread_handle;
 	//   if (thread_handle == -1L)
 	//		error stuff here;
+	errno = 0;
 	uintptr_t thread_handle = _beginthread(serverThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
 	ghEvents[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION();
 		return;
 	}
 
@@ -224,7 +204,7 @@ void Connection::serverThread(void * instance)
 	if (instance == nullptr)
 	{
 		std::cout << "startServerThread() thread instance NULL\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION();
 		self->exitThread(nullptr);
 	}
 
@@ -238,23 +218,23 @@ void Connection::serverThread(void * instance)
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (self->SockStuff.myGetAddrInfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (self->ClientServerSocketClass.getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 
 	// Create socket
-	SOCKET listen_socket = self->SockStuff.mySocket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
-	if (listen_socket == INVALID_SOCKET)
+	SOCKET errchk_socket = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+	if (errchk_socket == INVALID_SOCKET)
 		self->exitThread(nullptr);
-	else if (listen_socket == SOCKET_ERROR)
+	else if (errchk_socket == SOCKET_ERROR)
 		self->exitThread(nullptr);
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (self->SockStuff.myBind(listen_socket, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
+	if (self->ClientServerSocketClass.bind(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
 		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
-	if (self->SockStuff.myListen(listen_socket) == false)
+	if (self->ClientServerSocketClass.listen() == false)
 		self->exitThread(nullptr);
 
 
@@ -274,28 +254,28 @@ void Connection::serverThread(void * instance)
 	int errchk;
 	while (1)
 	{
-		DBG_TXT("dbg Listen thread active...");
+		DBG_TXT("Listen thread active...");
 		// Putting the socket into the array so select() can check it for readability
 		// Format is:  FD_SET(int fd, fd_set *ReadSet);
 		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
 		FD_ZERO(&ReadSet);
-		FD_SET(listen_socket, &ReadSet);
+		FD_SET(self->ClientServerSocketClass.fd_socket, &ReadSet);
 		TimeValue.tv_sec = 2;	// This has to be in this loop! Linux resets this value every time select() times out.
 		// select() returns the number of handles that are ready and contained in the fd_set structure
-		errchk = select(listen_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
+		errchk = select(self->ClientServerSocketClass.fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 
 		if (errchk == SOCKET_ERROR)
 		{
-			self->SockStuff.getError();
+			self->ClientServerSocketClass.getError();
 			std::cout << "startServerThread() select Error.\n";
-			DBG_ERR("It failed at ");
-			self->SockStuff.myCloseSocket(listen_socket);
+			DBG_DISPLAY_ERROR_LOCATION();
+			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
 		{
-			self->SockStuff.myCloseSocket(listen_socket);
+			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 			if (global_verbose == true)
 			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
@@ -307,10 +287,10 @@ void Connection::serverThread(void * instance)
 			if (global_verbose == true)
 				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
 
-			SOCKET accepted_socket;
+			SOCKET errchk_socket;
 			// Accept the connection and create a new socket to communicate on.
-			accepted_socket = self->SockStuff.myAccept(listen_socket);
-			if (accepted_socket == INVALID_SOCKET)
+			errchk_socket = self->ClientServerSocketClass.accept();
+			if (errchk_socket == INVALID_SOCKET)
 				self->exitThread(nullptr);
 			if (global_verbose == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
@@ -318,46 +298,43 @@ void Connection::serverThread(void * instance)
 			// Assigning global values to let the client thread know it should stop trying.
 			if (self->setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
-				if (global_verbose == true)
-				{
-					std::cout << "Server: Extremely rare race condition was almost reached.";
-					std::cout << "It was prevented using a mutex. The client is the real winner.\n";
-				}
-				self->SockStuff.myCloseSocket(listen_socket);
-				self->SockStuff.myCloseSocket(accepted_socket);
+				//self->ClientServerSocketClass.closesocket(listen_socket);
+				//self->ClientServerSocketClass.closesocket(errchk_socket);
+				self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
 				self->exitThread(nullptr);
 			}
 			else
-				global_socket = accepted_socket;
+				SocketClass::global_socket = self->ClientServerSocketClass.fd_socket;
 
 
-			DBG_TXT("dbg closing socket after retrieving new one from accept()");
+			//DBG_TXT("closing socket after retrieving new one from accept()");
 			// Not using this socket anymore since we created a new socket after accept() ing the connection.
-			self->SockStuff.myCloseSocket(listen_socket);
+			//self->ClientServerSocketClass.closesocket(listen_socket);
 
 			break;
 		}
 	}
 
 	// Display who the user has connected to.
-	self->coutPeerIPAndPort(global_socket);
+	self->ClientServerSocketClass.coutPeerIPAndPort();
+
 
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
-	std::thread RcvThread(&Connection::loopedReceiveMessagesThread, self, instance);
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
+	std::thread get_user_input_thread(&Connection::loopedGetUserInputThread, self);
 
-	// wait here until x thread finishes.
-	if (RcvThread.joinable())
-		RcvThread.join();
+	// Wait here until get_user_input_thread finishes
+	if (get_user_input_thread.joinable() == true)
+		get_user_input_thread.join();
 
-	// Done communicating with peer. Proceeding to exit.
-	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	self->SockStuff.myCloseSocket(global_socket);
+	// Wait here until recv_thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -372,7 +349,7 @@ void Connection::createStartClientThread(void * instance)
 	if (ret1)
 	{
 		fprintf(stderr, "Error - pthread_create() return code: %d\n", ret1);
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION();
 		exit(EXIT_FAILURE);
 	}
 #endif
@@ -387,12 +364,12 @@ void Connection::createStartClientThread(void * instance)
 	//   if (thread_handle == -1L)
 	//		error stuff here;
 	uintptr_t thread_handle = _beginthread(clientThread, 0, instance);	//c style typecast    from: uintptr_t    to: HANDLE.
-	ghEvents[1] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
+	ghEvents[1] = (HANDLE)thread_handle;
 	if (thread_handle == -1L)
 	{
 		int errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
-		DBG_ERR("It failed at ");
+		DBG_DISPLAY_ERROR_LOCATION();
 		return;
 	}
 
@@ -424,8 +401,8 @@ void Connection::clientThread(void * instance)
 	Connection* self = static_cast <Connection*> (instance);
 	if (instance == nullptr)
 	{
-		std::cout << "startClientThread() thread instance NULL\n";
-		DBG_ERR("It failed at ");
+		std::cout << "clientThread() thread instance NULL\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		self->exitThread(nullptr);
 	}
 
@@ -438,7 +415,7 @@ void Connection::clientThread(void * instance)
 
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
-	if (self->SockStuff.myGetAddrInfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (self->ClientServerSocketClass.getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 	
 	std::cout << "Attempting to connect...\n";
@@ -451,10 +428,9 @@ void Connection::clientThread(void * instance)
 	// A more normal method would be: try each address until we successfully bind(2).
     // If socket(2) (or bind(2)) fails, we close the socket and try
 	// the next address in the list.
-	int TIMEOUT_ERROR = -10060;
 	while (1)
 	{
-		DBG_TXT("dbg client thread active...");
+		DBG_TXT("client thread active...");
 		// Check to see if server has connected to someone
 		if (global_winner == SERVER_WON)
 		{
@@ -466,26 +442,26 @@ void Connection::clientThread(void * instance)
 		}
 
 		// Create socket
-		SOCKET s = self->SockStuff.mySocket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+		SOCKET s = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 		if (s == INVALID_SOCKET)
 		{
 			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
 
 		// Attempt to connect to target
-		int r = self->SockStuff.myConnect(s, self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
+		int r = self->ClientServerSocketClass.connect(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
 		if (r == SOCKET_ERROR)
 		{
 			std::cout << "Closing client thread due to error.\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
-		else if (r == TIMEOUT_ERROR)	// No real errors, just can't connect yet
+		else if (r == self->ClientServerSocketClass.TIMEOUT_ERROR)	// No real errors, just can't connect yet
 		{
-			DBG_TXT("dbg not real error, timeout client connect");
-			self->SockStuff.myCloseSocket(s);
+			DBG_TXT("Not real error, timeout client connect");
+			self->ClientServerSocketClass.closesocket(s);
 			continue;
 		}
 		else if (r == 0)				// Must have succeeded in connecting
@@ -495,47 +471,45 @@ void Connection::clientThread(void * instance)
 			{
 				if (global_verbose == true)
 				{
-					std::cout << "Client: Extremely rare race condition was almost reached.";
+					std::cout << "Client: Extremely rare race condition was almost reached. ";
 					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
 				}
-				self->SockStuff.myCloseSocket(s);
+				self->ClientServerSocketClass.closesocket(s);
 				self->exitThread(nullptr);
 			}
 			else
-				global_socket = s;
+				SocketClass::global_socket = s;
 
 			break;
 		}
 		else
 		{
 			std::cout << "Unkown ERROR. connect()\n";
-			DBG_ERR("It failed at ");
+			DBG_DISPLAY_ERROR_LOCATION();
 			self->exitThread(nullptr);
 		}
 	}
 
 	// Display who the user is connected with.
-	self->coutPeerIPAndPort(global_socket);
-
-
+	self->ClientServerSocketClass.coutPeerIPAndPort();
 
 
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
 	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->LoopedGetUserInput();
+	std::thread get_user_input_thread(&Connection::loopedGetUserInputThread, self);
 
-	// wait here until x thread finishes.
+	// Wait here until get_user_input_thread finishes
+	if (get_user_input_thread.joinable() == true)
+		get_user_input_thread.join();
+
+	// Wait here until recv_thread finishes.
 	if (rcv_thread.joinable())
 		rcv_thread.join();
-
-	// Done communicating with peer. Proceeding to exit.
-	self->SockStuff.myShutdown(global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-	self->SockStuff.myCloseSocket(global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -546,41 +520,6 @@ void Connection::clientThread(void * instance)
 // To find out who we were connected to, use getnameinfo()
 void Connection::loopedReceiveMessagesThread(void * instance)
 {
-	// so is this needed with std::thread ???
-	if (instance == nullptr)
-	{
-		std::cout << "Instance was null. loopedReceiveMessagesThread()\n";
-		DBG_ERR("It failed at ");
-		return;
-	}
-
-	//Connection* self = (Connection*)instance;
-	// or what? update: i don't think so, i think i remember it saying that it essential calls self-> on everything for you.
-
-#if 0// TEMP SEND AUTO MSG
-	DEPRECATED DO NOT USE;
-	const char* sendbuf = nullptr;
-	std::string message_to_send = "This is an automated message from my receive loop.\n";
-
-	//send this message once
-	sendbuf = message_to_send.c_str();
-	int b = send(global_socket, sendbuf, (int)strlen(sendbuf), 0);
-	if (b == SOCKET_ERROR)
-	{
-		self->SockStuff.getError(b);
-		std::cout << "send failed.\n";
-		self->SockStuff.myCloseSocket(global_socket);
-		//return;
-	}
-	//else
-	//{
-	//	std::cout << "dbg Message sent: " << sendbuf << "\n";
-	//	std::cout << "dbg Bytes Sent: " << wombocombo << "\n";
-	//}
-
-#endif//1 TEMP SEND AUTO MSG
-	
-
 	// Helpful Information:
 	// Any time a 'message' is mentioned, it is referring to the idea of
 	// a whole message. That message may be broken up into packets and sent over the
@@ -598,8 +537,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		std::cout << "Recv loop started...\n";
 
 
-
-
 	position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
 
 	type_of_message_flag = CR_NO_FLAG;
@@ -612,11 +549,11 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	static const long long recv_buf_len = 512;
 	char recv_buf[recv_buf_len];
 
+	const int CONNECTION_GRACEFULLY_CLOSED = 0; // when recv() returns 0, it means gracefully closed.
 	int bytes = 0;	
 	while (1)
 	{
-		
-		bytes = recv(global_socket, (char *)recv_buf, recv_buf_len, 0);
+		bytes = ::recv(SocketClass::global_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
@@ -624,16 +561,49 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			if (processRecvBuf(recv_buf, recv_buf_len, bytes) == false)
 				break;
 		}
-		else
+		else if (bytes == SOCKET_ERROR)
 		{
-			SockStuff.getError();
-			std::cout << "recv() failed.\n";
-			DBG_ERR("It failed at ");
+            #ifdef __linux__
+			const int CONNECTION_RESET = 104;
+			const int BLOCKING_OPERATION_CANCELED = EINTR; // is this correct? check when on linux
+            #endif// __linux__
+			#ifdef _WIN32
+			const int CONNECTION_RESET = WSAECONNRESET;
+			const int BLOCKING_OPERATION_CANCELED = WSAEINTR;
+			#endif// _WIN32
+
+			int errchk = ClientServerSocketClass.getError();
+
+			if (errchk != BLOCKING_OPERATION_CANCELED && errchk != CONNECTION_RESET)
+			{
+				std::cout << "recv() failed.\n";
+				DBG_DISPLAY_ERROR_LOCATION();
+				if (is_file_done_being_written == false)
+				{
+					// Close the file that was being written inside the processRecvBuf() state machine.
+					if (fclose(WriteFile) != 0)
+					{
+						perror("Error closing file for writing in binary mode.\n");
+					}
+					std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
+				}
+			}
+			break;
+		}
+		else if (bytes == CONNECTION_GRACEFULLY_CLOSED)
+		{
+			std::cout << "Connection with peer has been gracefully closed.\n";
+			std::cout << "\n";
+			std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 			break;
 		}
 	}
 
+
+	EXIT_NOW = true;
+
 	return;
+
 
 	/*
 	~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
@@ -655,48 +625,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	SetConsoleCursorPosition(hStdout, CursorCoordinatesStruct);
 	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	*/
-}
-
-// Output to console the the peer's IP and port that you have connected to the peer with.
-void Connection::coutPeerIPAndPort(SOCKET s)
-{
-	sockaddr PeerIPAndPortStorage;
-#ifdef _WIN32
-	int peer_ip_and_port_storage_len = sizeof(sockaddr);
-#endif//_WIN32
-#ifdef __linux__
-        socklen_t peer_ip_and_port_storage_len = sizeof(sockaddr);
-#endif//__linux__
-	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
-
-	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
-	int errchk = getpeername(s, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
-	if (errchk == -1)
-	{
-		SockStuff.getError();
-		std::cout << "getpeername() failed.\n";
-		DBG_ERR("It failed at ");
-		// continuing, b/c this isn't a big problem.
-	}
-
-
-
-	// If we are here, we must be connected to someone.
-	char remote_host[NI_MAXHOST];
-	char remote_hosts_port[NI_MAXSERV];
-
-	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
-	// will make it return the port instead of the service name.
-	errchk = getnameinfo(&PeerIPAndPortStorage, sizeof(sockaddr), remote_host, NI_MAXHOST, remote_hosts_port, NI_MAXSERV, NI_NUMERICHOST);
-	if (errchk != 0)
-	{
-		SockStuff.getError();
-		std::cout << "getnameinfo() failed.\n";
-		DBG_ERR("It failed at ");
-		// still going to continue the program, this isn't a big deal
-	}
-	else
-		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
 }
 
 // Cross platform windows and linux thread exiting. Not for use with std::thread
@@ -727,9 +655,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return false;
 	}
 
-	
-	// NEW SECTION***********************
-
 	// WARNING:
 	// This function expects the caller to protect against accessing
 	// invalid memory.
@@ -740,26 +665,26 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// how to interpret the incoming message. For example as a file,
 	// or as a chat message.
 	// To see a list of flags, look in the header file.
-	int Connection::sendMutex(const char * sendbuf, int amount_to_send)
+	int Connection::send(const char * sendbuf, int amount_to_send)
 	{
 		// Whatever thread gets here first, will lock
 		// the door so that nobody else can come in.
 		// That means all other threads will form a queue here,
 		// and won't be able to go past this point until the
 		// thread that got here first unlocks it.
-		m.lock();
+		SendMutex.lock();
 		total_amount_sent = amount_to_send;
 
 		do
 		{
-			bytes_sent = send(global_socket, sendbuf, amount_to_send, 0);
+			bytes_sent = ::send(SocketClass::global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
-				SockStuff.getError();
+				ClientServerSocketClass.getError();
 				perror("ERROR: send() failed.");
-				DBG_ERR("It failed here at ");
-				SockStuff.myCloseSocket(global_socket);
-				m.unlock();
+				DBG_DISPLAY_ERROR_LOCATION();
+				ClientServerSocketClass.closesocket(SocketClass::global_socket);
+				SendMutex.unlock();
 				return SOCKET_ERROR;
 			}
 
@@ -768,7 +693,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		} while (amount_to_send > 0);
 
 		// Unlock the door now that the thread is done with this function.
-		m.unlock();
+		SendMutex.unlock();
 
 		return total_amount_sent;// returning the amount of bytes sent.
 	}
@@ -777,20 +702,29 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 	// The user's input is getlined here and checked for things
 	// that the user might want to do.
-	void Connection::LoopedGetUserInput()
+	void Connection::loopedGetUserInputThread()
 	{
+		std::thread file_transfer;
 		std::string user_input;
-		std::thread FileThread;
-
+		
 		const long long CHAT_BUF_LEN = 4096;	// try catch see if enough memory available?
 		char* chat_buf = new char[CHAT_BUF_LEN];
 
 		while (1)
 		{
 			std::getline(std::cin, user_input);
+
+			// If some other thread has errored, or has already closed the connection,
+			// then it will set EXIT_NOW = true;
+			if (EXIT_NOW == true)
+			{
+				//Exit program
+				break;
+			}
 			if (user_input == "exit()")
 			{
 				// Exit program.
+				EXIT_NOW = true;
 				break;
 			}
 			if (doesUserWantToSendAFile(user_input) == true)
@@ -798,9 +732,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				// Join the thread if the thread has finished execution.
 				if (is_send_file_thread_in_use == false)
 				{
-					if (FileThread.joinable() == true)
+					if (file_transfer.joinable() == true)
 					{
-						FileThread.join();
+						file_transfer.join();
 					}
 				}
 				else // The thread is still active, don't go trying to do anything.
@@ -814,7 +748,11 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				// Split the string into multiple strings for every space.
 				if (StrManip.split(user_input, ' ', split_strings) == false)
-					DBG_ERR("Split failed?");	// Currently no return false?
+				{
+					std::cout << "Unexpected error: ";
+					DBG_DISPLAY_ERROR_LOCATION();
+				}
+
 
 				// get the size of the array
 				long long split_strings_size = split_strings.size();
@@ -847,16 +785,14 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 							// Fix the user's input to add an escape character to every '\'
 							StrManip.duplicateCharacter(file_name_and_loca, '\\');
-
-							DBG_TXT("dbg file_name_and_loca == " << file_name_and_loca);
 						}
 
 						// Send the file
 						// Making sure the thread doesn't already exist before creating it.
-						if (FileThread.joinable() == false)
+						if (file_transfer.joinable() == false)
 						{
 							is_send_file_thread_in_use = true;
-							FileThread = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
+							file_transfer = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
 						}
 
 						break;
@@ -886,8 +822,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 							// Fix the user's input to add an escape character to every '\'
 							copied_file_name_and_location = StrManip.duplicateCharacter(file_name_and_loca, '\\');
 							copied_file_name_and_location += ".enc";
-
-							DBG_TXT("dbg copied_file_name_and_location == " << copied_file_name_and_location);
 						}
 
 						// Copy the file before encrypting it.
@@ -897,10 +831,10 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 						// beep boop encryption(file_encryption_option);
 
 						// Send the file
-						if (FileThread.joinable() == false)
+						if (file_transfer.joinable() == false)
 						{
 							is_send_file_thread_in_use = true;
-							FileThread = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
+							file_transfer = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
 						}
 						//if (sendFileThread(copied_file_name_and_location) == false)
 							//return;//exit please?
@@ -916,6 +850,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				if (user_input_length > USHRT_MAX)
 				{
 					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
+					DBG_DISPLAY_ERROR_LOCATION();
 					break;
 				}
 
@@ -926,19 +861,12 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					// Copy the type of message flag into the buf
 					chat_buf[0] = CR_CHAT;
 					// Copy the size of the message into the buf as big endian.
-					long long temp1 = user_input_length >> 8;
-					chat_buf[1] = (char)temp1;
-					long long temp2 = user_input_length;
-					chat_buf[2] = (char)temp2;
-
-
-					// This is the same as ^, but maybe easier to understand? idk.
-					//buf[0] = CR_CHAT;	// Message flag
-					//// Copy the size of the message into the buf as big endian.
-					//u_short msg_sz = htons((u_short)user_input_length);
-					//if (BUF_LEN - 1 >= sizeof(msg_sz))
-					//	memcpy(buf + 1, &msg_sz, sizeof(msg_sz));
-
+					//long long temp1 = user_input_length >> 8;
+					//chat_buf[1] = (char)temp1;
+					chat_buf[1] = (char)(user_input_length >> 8);
+					//long long temp2 = user_input_length;
+					//chat_buf[2] = (char)temp2;
+					chat_buf[2] = (char)user_input_length;
 
 					// Copy the user's message into the buf
 					if ((CHAT_BUF_LEN >= (user_input_length - CR_RESERVED_BUFFER_SPACE))
@@ -949,80 +877,42 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					else
 					{
 						std::cout << "Message was too big for the send buf.\n";
+						DBG_DISPLAY_ERROR_LOCATION();
 						break;
 					}
-					//std::cout << "dbg OUTPUT:\n";
-					//for (long long z = 0; z < amount_to_send; ++z)
-					//{
-					//	std::cout << z << "_" << (int)buf[z] << "\n";
-					//}
 				}
 				else
 				{
-					std::cout << "Programmer error. BUF_LEN < 3. loopedGetUserInput()";
+					std::cout << "Programmer error. BUF_LEN < 3.\n";
+					DBG_DISPLAY_ERROR_LOCATION();
 					break;
 				}
-				int b = sendMutex((char *)chat_buf, (int)amount_to_send);
+				int b = send((char *)chat_buf, (int)amount_to_send);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
-						std::cout << "Exiting loopedGetUserInput()\n";
+						std::cout << "Exiting loopedGetUserInputThread()\n";
 					break;
 				}
+
+				// Reset user_input.
+				user_input = "";
 			}
 		}
 
 		delete[]chat_buf;
-		if (FileThread.joinable() == true)
-			FileThread.join();
+
+		// This will shutdown the connection on the socket.
+		// closesocket() will interrupt recv() if it is currently blocking.
+		// Done communicating with peer. Proceeding to exit.
+		ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+		ClientServerSocketClass.closesocket(SocketClass::global_socket);
+
+		if (file_transfer.joinable() == true)
+			file_transfer.join();
 
 		return;
 	}
-
-
-
-	// have 1 thread to send stuff over the network //this encompasses chat and file messages
-	// have 1 thread to getline() user input and send that to the network thread
-	// have 1 thread for sending file data to the network thread
-	// there will be a vector in the networkThread that will store all messages.
-	// if you want to send a message or file, put that message or file into vector.pushback();
-	// networkThread will send(vector[i]) and increment after sending each message... but
-	// problem with packet size. and gotta delete the message you just sent, from the vector.
-	// lockless queue with thread safety
-
-	// getline() thread```````````
-	// while(1)
-	// {
-	// getline(cin, getline_msg);
-	// if (doesUserWantToSendFile() == true)
-	//	    createthread(sendfilethread);
-	// else
-	// {
-	//		networkThread_msg_to_send = getline_msg;
-	//		++networkThread_message_counter;
-	// }
-
-
-	// networkThread```````````````````
-	// bool should_i_send_the_message;
-	// std::string message_to_send;
-	// char * sendbuf;
-	// while(1)
-	// {
-	//		if(should_i_send_the_message == true)
-	//		{
-	//			sendbuf = message_to_send.c_str();
-	//			send(sendbuf);
-	//			should_i_send_the_message = false;
-	//		}	
-
-
-
-	// Requires an a stat structure that was already filled out by stat();
-	// might need to include these on linux?:
-	//<sys/types.h>
-	//<sys/stat.h>
-	//<unistd.h>
 
 	// Pass NULL to the struct that doesn't correspond to your OS.
 	bool Connection::displayFileSize(const char* file_name_and_location, myStat * FileStatBuf)
@@ -1137,20 +1027,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			perror("Error while copying the file");
 
 
-
 		if (fclose(WriteF))
 			perror("Error closing file designated for writing");
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 
 		delete[]buffer;
-
-		std::cout << "dbg beep boop end of copyFile()\n";
 		return true;
-
-		//// Give a compiler error if streamsize > sizeof(long long)
-		//// This is so we can safely do this: (long long) streamsize
-		//static_assert(sizeof(std::streamsize) <= sizeof(long long), "myERROR: streamsize > sizeof(long long)");
 	}
 
 	bool Connection::sendFileThread(std::string name_and_location_of_file)
@@ -1181,17 +1064,15 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		// Retrieve the name of the file from the string that contains
 		// the path and the name of the file.
-		std::string file_name = returnFileNameFromFileNameAndPath(name_and_location_of_file);
+		std::string file_name = retrieveFileNameFromPath(name_and_location_of_file);
 		if (file_name.empty() == true)
 		{
-			std::cout << "dbg file_name.empty() returned true.";
 			delete[]buf;
 			if (fclose(ReadFile))
 				perror("Error closing file designated for writing");
 			is_send_file_thread_in_use = false;
 			return false; //exit please, file name couldn't be found.
 		}
-		std::cout << "dbg name of the file: " << file_name << "\n";
 
 		// *** The order in which file name and file size is sent DOES matter! ***
 		// Send the file name to peer
@@ -1234,16 +1115,23 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		long long total_bytes_sent = 0;
 
 		// We are treating bytes_read as a u_short, instead of size_t
-		// because we don't want to take up needless buffer space?
-		// not sure if this is an advantage or disadvantage.
-		// ehhhh maybe i shouldn't have this. Int would be
-		// more appropriate?
+		// because we don't want to clog the send() with only file
+		// packets. We want the user to still be able to send a message
+		// within a reasonable amount of time while transfering a file.
+		// File transfer jumps into mutex send() queue.
+		// File transfer begins sending.
+		// Chat message jumps into mutex send() queue. It is waiting
+		//    for file transfer to leave the mutex first.
+		// File transfer finishes sending USHRT_MAX bytes, and exits mutex.
+		// Chat message now begins sending.
+		//
+		// This is just to illustrate that if we try sending too much into
+		// the mutex send() queue at a time, then a chat message will take
+		// forever to be sent out to the peer, causing an uncomfortable delay.
 		static_assert(BUF_LEN <= USHRT_MAX,
 			"Buffer size must NOT be bigger than USHRT_MAX.");
 
 		std::cout << "Sending file: " << file_name << "\n";
-		long long temp1;
-		long long temp2;
 		do
 		{
 			// The first 3 chars of the buffer are reserved for:
@@ -1252,7 +1140,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// [2] the u_short is to tell the peer what the size of the buffer is.
 			//
 			// Example: you want to send your peer a 50,000 byte file.
-			// So you sendMutex() 10,000 bytes at a time. The u_short [1] and [2]
+			// So you send() 10,000 bytes at a time. The u_short [1] and [2]
 			// will tell the peer to treat the next 10,000 bytes as whatever the flag is set to.
 			// In this case the flag would be set to 'file'.
 			bytes_read = fread(buf + CR_RESERVED_BUFFER_SPACE, 1, BUF_LEN - CR_RESERVED_BUFFER_SPACE, ReadFile);
@@ -1262,23 +1150,14 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				buf[0] = CR_FILE;
 
 				// Copy the size of the message into the buf as big endian.
-				temp1 = bytes_read >> 8;
-				buf[1] = (char)temp1;
-
-				temp2 = bytes_read;
-				buf[2] = (char)temp2;
-
-				//std::cout << "dbg send Message (not packet)\n";
-				//for (int z = 0; (z < 12) && (BUF_LEN >= 12); ++z)
-				//{
-				//	std::cout << z << " " << std::hex << (u_int)(u_char)buf[z] << std::dec << "\n";
-				//}
+				buf[1] = (char)(bytes_read >> 8);
+				buf[2] = (char)(bytes_read);
 
 				// Send the message
-				bytes_sent = sendMutex(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
+				bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
 				if (bytes_sent == SOCKET_ERROR)
 				{
-					std::cout << "sendMutex() in sendFileThread() failed. File transfer stopped.\n";
+					std::cout << "send() in sendFileThread() failed. File transfer of: " << file_name << " stopped.\n";
 					break;
 				}
 			}
@@ -1293,14 +1172,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 		// Please implement sha hash checking here to make sure the file is legit.
 
-		//if (bytes_sent <= 0)
-		//	perror("Error while transfering the file");
-		//else
-		//{
-			std::cout << "File transfer complete\n";
-			DBG_TXT("Total bytes sent: " << total_bytes_sent);
-		//}
-
+		std::cout << "File transfer complete\n";
+		
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 
@@ -1313,7 +1186,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// a race condition.
 	int Connection::setWinnerMutex(int the_winner)
 	{
-		m.lock();
+		RaceMutex.lock();
 
 		// If nobody has won the race yet, then set the winner.
 		if (global_winner == NOBODY_WON)
@@ -1321,7 +1194,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			global_winner = the_winner;
 		}
 
-		m.unlock();
+		RaceMutex.unlock();
 		return global_winner;
 	}
 
@@ -1329,7 +1202,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	{
 		position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
 
-		// RecvStateMachin
+		// RecvStateMachine
 		while (1)
 		{
 			switch (process_recv_buf_state)
@@ -1346,17 +1219,18 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					if (!bytes_written)// uhh this might be a negative number sometimes which makes !bytes_written not work?
 					{
 						perror("Error while writing the file from peer");
-						std::cout << "dbg Error: bytes_written returned: " << bytes_written << "\n";
-						std::cout << "dbg File stream: " << WriteFile << "\n";
-						std::cout << "dbg received_bytes: " << received_bytes << "\n";
-						std::cout << "dbg message_size: " << message_size << "\n";
 
 						// close file
 						if (fclose(WriteFile))
 						{
 							perror("Error closing file for writing");
 						}
-						// delete file?
+
+						// delete file here? This could be dangerous, and should
+						// require user confirmation. Or check to make sure
+						// file didn't exist before trying to open it, then
+						// it would be safe to delete.
+
 						process_recv_buf_state = ERROR_STATE;
 						break;
 					}
@@ -1373,6 +1247,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 							std::cout << "Wrote " << total_bytes_written_to_file << "\n";
 							std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
 							process_recv_buf_state = CLOSE_FILE_FOR_WRITE;
+							is_file_done_being_written = true;
 							break;
 						}
 					}
@@ -1388,7 +1263,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					break;
 				}
 
-				// this shouldn't be reached?
+				// this shouldn't be reached
 				std::cout << "Unrecognized message?\n";
 				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
@@ -1410,6 +1285,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				if (position_in_recv_buf >= received_bytes)
 				{
+					if (position_in_message == message_size)// must have a new message from the peer.
+						process_recv_buf_state = CHECK_FOR_FLAG;
+
 					return true; // go recv() again to get more bytes
 				}
 				else if (position_in_message == message_size)// must have a new message from the peer.
@@ -1417,7 +1295,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					process_recv_buf_state = CHECK_FOR_FLAG;
 					break;
 				}
-				// this shouldn't be reached?
+				// this shouldn't be reached
 				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
 				std::cout << "Catastrophic failure.\n";
 				process_recv_buf_state = ERROR_STATE;
@@ -1425,10 +1303,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			}
 			case TAKE_FILE_NAME_FROM_PEER:
 			{
-				// SHOULD PROBABLY CLEAN THE FILE NAME OF INCORRECT SYMBOLS 
-				// AND PREVENT PERIODS FROM BEING USED, ETC.
-
-				DBG_TXT("Take file name from peer:\n");
 				// Set the file name variable.
 				for (;
 					(position_in_recv_buf < received_bytes)
@@ -1437,7 +1311,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					++position_in_recv_buf, ++position_in_message)
 				{
 					incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
-					DBG_TXT(position_in_recv_buf << " " << (int)recv_buf[position_in_recv_buf]);
 				}
 				// If the file name was too big, then say so, but don't error.
 				if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
@@ -1463,7 +1336,8 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					break;
 				}
 				// this shouldn't be reached?
-				std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
+				std::cout << "Unreachable area:";
+				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Catastrophic failure.\n";
 				process_recv_buf_state = ERROR_STATE;
 				break;
@@ -1514,9 +1388,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					//std::cout << "dbg Check for flag: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
-
 					type_of_message_flag = (u_char)recv_buf[position_in_recv_buf];
 					++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
 					process_recv_buf_state = CHECK_MESSAGE_SIZE_PART_ONE;
@@ -1533,8 +1404,6 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					//std::cout << "dbg Check msg size pt1: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_one = (u_char)recv_buf[position_in_recv_buf];
 					message_size_part_one = message_size_part_one << 8;
 					++position_in_recv_buf;
@@ -1552,13 +1421,9 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 				}
 				else
 				{
-					//std::cout << "dbg Check msg size pt2: ";
-					//std::cout << std::hex << (u_int)(u_char)recv_buf[position_in_recv_buf] << std::dec << "\n";
 					message_size_part_two = (u_char)recv_buf[position_in_recv_buf];
 					message_size = message_size_part_one | message_size_part_two;
 					++position_in_recv_buf;
-
-					//std::cout << "dbg position_in_recv_buf: " << position_in_recv_buf << "\n";
 
 					if (type_of_message_flag == CR_FILE)
 						process_recv_buf_state = WRITE_FILE_FROM_PEER;
@@ -1593,6 +1458,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 					perror("Error opening file for writing in binary mode.\n");
 				}
 				
+				is_file_done_being_written = false;
 				process_recv_buf_state = CHECK_FOR_FLAG;
 				
 				break;
@@ -1612,15 +1478,16 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 
 				if (position_in_message < message_size)
 				{
-					std::cout << "dbg: position_in_message < message_size, closefileforwrite\n";
+					DBG_TXT("position_in_message < message_size, closefileforwrite");
 				}
 				if (position_in_message == message_size)
 				{
-					std::cout << "dbg: position_in_message == message_size, everything A OK closefileforwrite\n";
+					DBG_TXT("position_in_message == message_size, everything A OK closefileforwrite");
+					std::cout << "File transfer from peer is complete.\n";
 				}
 				if (position_in_message > message_size)
 				{
-					std::cout << "dbg: ERROR, position_in_message > message_size , closefileforwrite\n";
+					std::cout << "ERROR: position_in_message > message_size , closefileforwrite\n";
 				}
 				process_recv_buf_state = CHECK_FOR_FLAG;
 				break;
@@ -1628,6 +1495,12 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			case ERROR_STATE:
 			{
 				std::cout << "Exiting with error, state machine for recv().\n";
+				if (fclose(WriteFile) != 0)		// 0 == successful close
+				{
+					perror("Error closing file for writing in binary mode.\n");
+					std::cout << "Error occured in RecvStateMachine, case ERROR_STATE:\n";
+				}
+
 				return false;
 			}
 			default:// currently nothing will cause this to execute.
@@ -1644,154 +1517,42 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 	// For use with RecvBufStateMachine only.
 	int Connection::assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes)
 	{
-		while (1)
+		// The peer is sending the size of his file as a long long.
+		// This means we will receive 8 file size fragments.
+		if (file_size_fragment == 0)
 		{
-			switch (state_ntohll)
-			{
-			case CHECK_INCOMING_FILE_SIZE_PART_ONE:
-			{
-				incoming_file_size_from_peer = 0;   // reset it to 0.
-
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_one = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_one <<= 56;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_TWO;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_TWO:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_two = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_two <<= 48;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_THREE;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_THREE:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_three = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_three <<= 40;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_FOUR;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_FOUR:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_four = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_four <<= 32;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_FIVE;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_FIVE:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_five = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_five <<= 24;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_SIX;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_SIX:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_six = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_six <<= 16;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_SEVEN;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_SEVEN:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				file_size_part_seven = (u_char)recv_buf[position_in_recv_buf];
-				file_size_part_seven <<= 8;
-				++position_in_recv_buf;
-				++position_in_message;
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_EIGHT;
-				break;
-			}
-			case CHECK_INCOMING_FILE_SIZE_PART_EIGHT:
-			{
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return RECV_AGAIN;//process_recv_buf_state = RECEIVE;
-				}
-				u_char test123 = recv_buf[position_in_recv_buf];
-				file_size_part_eight = test123;
-				file_size_part_eight = (u_char)recv_buf[position_in_recv_buf];
-				++position_in_recv_buf;
-				++position_in_message;
-
-				// Now combine all the parts together
-				incoming_file_size_from_peer |= file_size_part_one;
-				incoming_file_size_from_peer |= file_size_part_two;
-				incoming_file_size_from_peer |= file_size_part_three;
-				incoming_file_size_from_peer |= file_size_part_four;
-				incoming_file_size_from_peer |= file_size_part_five;
-				incoming_file_size_from_peer |= file_size_part_six;
-				incoming_file_size_from_peer |= file_size_part_seven;
-				incoming_file_size_from_peer |= file_size_part_eight;
-
-				// Set it to the default value so when we come by here again it
-				// will still work properly.
-				state_ntohll = CHECK_INCOMING_FILE_SIZE_PART_ONE;
-				return FINISHED;
-			}
-			}//end switch
+			incoming_file_size_from_peer = 0;
 		}
+
+		while (file_size_fragment < sizeof(long long))
+		{
+			if (position_in_recv_buf >= received_bytes)
+			{
+				return RECV_AGAIN;
+			}
+			incoming_file_size_from_peer |= ((long long)(u_char)recv_buf[position_in_recv_buf]) << (64 - 8 * (file_size_fragment + 1));
+			++position_in_recv_buf;
+			++position_in_message;
+			++file_size_fragment;
+		}
+
+		file_size_fragment = 0;
+
+		return FINISHED;
 	}
 
 	bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert)
 	{
-		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > (long long)sizeof(variable_to_convert))
+		if (BUF_LEN > (long long)sizeof(variable_to_convert))
 		{
-			long long temp1 = variable_to_convert >> 56;
-			buf[3] = (char)temp1;
-			long long temp2 = variable_to_convert >> 48;
-			buf[4] = (char)temp2;
-			long long temp3 = variable_to_convert >> 40;
-			buf[5] = (char)temp3;
-			long long temp4 = variable_to_convert >> 32;
-			buf[6] = (char)temp4;
-			long long temp5 = variable_to_convert >> 24;
-			buf[7] = (char)temp5;
-			long long temp6 = variable_to_convert >> 16;
-			buf[8] = (char)temp6;
-			long long temp7 = variable_to_convert >> 8;
-			buf[9] = (char)temp7;
-			long long temp8 = variable_to_convert;
-			buf[10] = (char)temp8;
+			buf[3] = (char)(variable_to_convert >> 56);
+			buf[4] = (char)(variable_to_convert >> 48);
+			buf[5] = (char)(variable_to_convert >> 40);
+			buf[6] = (char)(variable_to_convert >> 32);
+			buf[7] = (char)(variable_to_convert >> 24);
+			buf[8] = (char)(variable_to_convert >> 16);
+			buf[9] = (char)(variable_to_convert >> 8);
+			buf[10] = (char)variable_to_convert;
 			return true;
 		}
 
@@ -1808,28 +1569,20 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Copy the type of message flag into the buf
 			buf[0] = CR_FILE_SIZE;
 			// Copy the size of the message into the buf as big endian.
-			char temp1 = length_of_msg >> 8;
-			buf[1] = temp1;
-			char temp2 = length_of_msg;
-			buf[2] = temp2;
+			buf[1] = (char)(length_of_msg >> 8);
+			buf[2] = (char)length_of_msg;
 		}
 
 		// Converting to network byte order, and copying it into
 		// the buffer.
-		if (intoBufferHostToNetworkLongLong(buf, BUF_LEN, size_of_file) == false)
+		if (intoBufferHostToNetworkLongLong(buf, BUF_LEN - CR_RESERVED_BUFFER_SPACE, size_of_file) == false)
 		{
 			std::cout << "Programmer error. Buffer length is too small for operation. sendFileThread(), intoBufferHostToNetworkLongLong().\n";
 			return false;//exit please?
 		}
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
 
-		std::cout << "dbg OUTPUT:\n";
-		for (long long z = 0; z < amount_to_send; ++z)
-		{
-			std::cout << z << "_" << (int)buf[z] << "\n";
-		}
-
-		int b = sendMutex((char *)buf, amount_to_send);
+		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
 			if (global_verbose == true)
@@ -1839,7 +1592,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return true;
 	}
 
-	bool Connection::sendFileName(char * buf, const long long BUF_LEN, std::string name_of_file)
+	bool Connection::sendFileName(char * buf, const long long BUF_LEN, const std::string& name_of_file)
 	{
 		// Make sure file name isn't too big
 		long long length_of_msg = name_of_file.length();
@@ -1854,15 +1607,13 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			// Copy the type of message flag into the buf
 			buf[0] = CR_FILE_NAME;
 			// Copy the size of the message into the buf as big endian.
-			char temp1 = (char)length_of_msg >> 8;
-			buf[1] = temp1;
-			char temp2 = (char)length_of_msg;
-			buf[2] = temp2;
+			buf[1] = (char)(length_of_msg >> 8);
+			buf[2] = (char)length_of_msg;
 		}
 
 		if (BUF_LEN - CR_RESERVED_BUFFER_SPACE > length_of_msg)
 		{
-			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), length_of_msg);
+			memcpy(buf + CR_RESERVED_BUFFER_SPACE, name_of_file.c_str(), (size_t)length_of_msg);
 		}
 		else
 		{
@@ -1874,15 +1625,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		// the buffer.
 		int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
 
-#ifdef OUTPUT_DEBUG
-		std::cout << "dbg OUTPUT:\n";
-		for (long long z = 0; z < amount_to_send; ++z)
-		{
-			std::cout << z << "_" << (int)buf[z] << "\n";
-		}
-#endif//OUTPUT_DEBUG
-
-		int b = sendMutex((char *)buf, amount_to_send);
+		int b = send((char *)buf, amount_to_send);
 		if (b == SOCKET_ERROR)
 		{
 			if (global_verbose == true)
@@ -1892,7 +1635,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		return true;
 	}
 
-	std::string Connection::returnFileNameFromFileNameAndPath(std::string name_and_location_of_file)
+	std::string Connection::retrieveFileNameFromPath(std::string name_and_location_of_file)
 	{
 		std::string error_empty_string;
 		// Remove the last \ or / in the name if there is one, so that the name
@@ -1900,7 +1643,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		if (name_and_location_of_file.back() == '\\' || name_and_location_of_file.back() == '/')
 		{
 			perror("ERROR: Found a '\\' or a '/' at the end of the file name.\n");
-			DBG_TXT("dbg name and location of file: " << name_and_location_of_file << "\n");
+			std::cout <<"Name and location of file that caused the error: " << name_and_location_of_file << "\n";
 			return error_empty_string; //exit please
 		}
 
@@ -1927,7 +1670,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 			}
 			else if (last_seen_slash_location < name_and_location_of_file_length)
 			{
-				//// Copy the file name from name_and_location_of_file to file_name.
+				// Copy the file name from name_and_location_of_file to file_name.
 				std::string file_name(
 					name_and_location_of_file,
 					(size_t)last_seen_slash_location + 1,
@@ -1948,7 +1691,7 @@ void Connection::coutPeerIPAndPort(SOCKET s)
 		}
 
 		// Shouldn't get here, but if it does, it is an error.
-		std::cout << "Impossible location, returnFileNameFromFileNameAndPath()\n";
+		std::cout << "Impossible location, retrieveFileNameFromPath()\n";
 		return error_empty_string;
 	}
 
