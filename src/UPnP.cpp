@@ -683,7 +683,7 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 // autoAddPortForwardingRule()
 void UPnP::autoDeletePortForwardRule()
 {
-	std::cout << "Automatically deleting port forward rule...\n";
+	std::cout << "Automatically deleting port forward rule...";
 
 	// Delete the port forward rule
 	int r = UPNP_DeletePortMapping(
@@ -704,5 +704,9 @@ void UPnP::autoDeletePortForwardRule()
 		}
 		else
 			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed.\n";
+	}
+	else
+	{
+		std::cout << "Success.\n";
 	}
 }

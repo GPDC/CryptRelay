@@ -108,13 +108,13 @@ private:
 
 
 	// Continually getline()'s the command prompt to see what the user wants to do.
-	void loopedGetUserInput();
+	void loopedGetUserInputThread();
 
-	// Used in loopedGetUserInput() to determine if the user wants to exit the program.
+	// Used in loopedGetUserInputThread() to determine if the user wants to exit the program.
 	// Eventually might not need to be here in the header file.
 	bool EXIT_NOW = false;
 
-	// Used within loopedGetUserInput() to check if the user inputted something
+	// Used within loopedGetUserInputThread() to check if the user inputted something
 	// into the command prompt that would indicate they wanted to send a file.
 	bool doesUserWantToSendAFile(std::string& user_msg_from_terminal);
 

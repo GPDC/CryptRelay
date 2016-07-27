@@ -318,25 +318,23 @@ void Connection::serverThread(void * instance)
 	// Display who the user has connected to.
 	self->ClientServerSocketClass.coutPeerIPAndPort();
 
+
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
-	std::thread RcvThread(&Connection::loopedReceiveMessagesThread, self, instance);
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->loopedGetUserInput();
+	std::thread get_user_input_thread(&Connection::loopedGetUserInputThread, self);
 
-	// This will shutdown the connection on the socket.
-	// This will also interrupt recv() if it is currently blocking.
-	// Done communicating with peer. Proceeding to exit.
-	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	// Wait here until get_user_input_thread finishes
+	if (get_user_input_thread.joinable() == true)
+		get_user_input_thread.join();
 
-	// wait here until x thread finishes.
-	if (RcvThread.joinable())
-		RcvThread.join();
-
-	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
+	// Wait here until recv_thread finishes.
+	if (rcv_thread.joinable())
+		rcv_thread.join();
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -496,28 +494,22 @@ void Connection::clientThread(void * instance)
 	self->ClientServerSocketClass.coutPeerIPAndPort();
 
 
-
-
 	// Receive messages until there is an error or connection is closed.
-	// Pattern is:  RcvThread(function, point to class that function is in (aka, this), function argument)
+	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
 	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
 	// else just send the message that the user typed out.
-	self->loopedGetUserInput();
+	std::thread get_user_input_thread(&Connection::loopedGetUserInputThread, self);
 
-	// This will shutdown the connection on the socket.
-	// This will also interrupt recv() if it is currently blocking.
-	// Done communicating with peer. Proceeding to exit.
-	self->ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+	// Wait here until get_user_input_thread finishes
+	if (get_user_input_thread.joinable() == true)
+		get_user_input_thread.join();
 
-
-	// wait here until x thread finishes.
+	// Wait here until recv_thread finishes.
 	if (rcv_thread.joinable())
 		rcv_thread.join();
-
-	self->ClientServerSocketClass.closesocket(SocketClass::global_socket);
 
 	// Exiting chat program
 	self->exitThread(nullptr);
@@ -561,7 +553,6 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 	int bytes = 0;	
 	while (1)
 	{
-		
 		bytes = ::recv(SocketClass::global_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
@@ -574,12 +565,16 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		{
             #ifdef __linux__
 			const int CONNECTION_RESET = 104;
+			const int BLOCKING_OPERATION_CANCELED = EINTR; // is this correct? check when on linux
             #endif// __linux__
 			#ifdef _WIN32
-			const int CONNECTION_RESET = 10054;
+			const int CONNECTION_RESET = WSAECONNRESET;
+			const int BLOCKING_OPERATION_CANCELED = WSAEINTR;
 			#endif// _WIN32
 
-			if (ClientServerSocketClass.getError() != CONNECTION_RESET)
+			int errchk = ClientServerSocketClass.getError();
+
+			if (errchk != BLOCKING_OPERATION_CANCELED && errchk != CONNECTION_RESET)
 			{
 				std::cout << "recv() failed.\n";
 				DBG_DISPLAY_ERROR_LOCATION();
@@ -598,12 +593,17 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		else if (bytes == CONNECTION_GRACEFULLY_CLOSED)
 		{
 			std::cout << "Connection with peer has been gracefully closed.\n";
+			std::cout << "\n";
+			std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 			break;
 		}
 	}
 
+
 	EXIT_NOW = true;
+
 	return;
+
 
 	/*
 	~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
@@ -702,17 +702,18 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 	// The user's input is getlined here and checked for things
 	// that the user might want to do.
-	void Connection::loopedGetUserInput()
+	void Connection::loopedGetUserInputThread()
 	{
+		std::thread file_transfer;
 		std::string user_input;
-		std::thread FileThread;
-
+		
 		const long long CHAT_BUF_LEN = 4096;	// try catch see if enough memory available?
 		char* chat_buf = new char[CHAT_BUF_LEN];
 
 		while (1)
 		{
 			std::getline(std::cin, user_input);
+
 			// If some other thread has errored, or has already closed the connection,
 			// then it will set EXIT_NOW = true;
 			if (EXIT_NOW == true)
@@ -731,9 +732,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				// Join the thread if the thread has finished execution.
 				if (is_send_file_thread_in_use == false)
 				{
-					if (FileThread.joinable() == true)
+					if (file_transfer.joinable() == true)
 					{
-						FileThread.join();
+						file_transfer.join();
 					}
 				}
 				else // The thread is still active, don't go trying to do anything.
@@ -788,10 +789,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 
 						// Send the file
 						// Making sure the thread doesn't already exist before creating it.
-						if (FileThread.joinable() == false)
+						if (file_transfer.joinable() == false)
 						{
 							is_send_file_thread_in_use = true;
-							FileThread = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
+							file_transfer = std::thread(&Connection::sendFileThread, this, file_name_and_loca);
 						}
 
 						break;
@@ -830,10 +831,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 						// beep boop encryption(file_encryption_option);
 
 						// Send the file
-						if (FileThread.joinable() == false)
+						if (file_transfer.joinable() == false)
 						{
 							is_send_file_thread_in_use = true;
-							FileThread = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
+							file_transfer = std::thread(&Connection::sendFileThread, this, copied_file_name_and_location);
 						}
 						//if (sendFileThread(copied_file_name_and_location) == false)
 							//return;//exit please?
@@ -849,6 +850,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				if (user_input_length > USHRT_MAX)
 				{
 					std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
+					DBG_DISPLAY_ERROR_LOCATION();
 					break;
 				}
 
@@ -875,27 +877,39 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					else
 					{
 						std::cout << "Message was too big for the send buf.\n";
+						DBG_DISPLAY_ERROR_LOCATION();
 						break;
 					}
 				}
 				else
 				{
-					std::cout << "Programmer error. BUF_LEN < 3. loopedGetUserInput()";
+					std::cout << "Programmer error. BUF_LEN < 3.\n";
+					DBG_DISPLAY_ERROR_LOCATION();
 					break;
 				}
 				int b = send((char *)chat_buf, (int)amount_to_send);
 				if (b == SOCKET_ERROR)
 				{
 					if (global_verbose == true)
-						std::cout << "Exiting loopedGetUserInput()\n";
+						std::cout << "Exiting loopedGetUserInputThread()\n";
 					break;
 				}
+
+				// Reset user_input.
+				user_input = "";
 			}
 		}
 
 		delete[]chat_buf;
-		if (FileThread.joinable() == true)
-			FileThread.join();
+
+		// This will shutdown the connection on the socket.
+		// closesocket() will interrupt recv() if it is currently blocking.
+		// Done communicating with peer. Proceeding to exit.
+		ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+		ClientServerSocketClass.closesocket(SocketClass::global_socket);
+
+		if (file_transfer.joinable() == true)
+			file_transfer.join();
 
 		return;
 	}
@@ -1143,7 +1157,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 				bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
 				if (bytes_sent == SOCKET_ERROR)
 				{
-					std::cout << "send() in sendFileThread() failed. File transfer stopped.\n";
+					std::cout << "send() in sendFileThread() failed. File transfer of: " << file_name << " stopped.\n";
 					break;
 				}
 			}
