@@ -38,7 +38,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	int ipaddress_size = ipaddress.size();
 
 	// If the string is too big to be an IPV4 address
-	if (ipaddress_size > INET_ADDRSTRLEN)
+	if (ipaddress_size > INET_ADDR_STR_LEN)
 	{
 		std::cout << "IPV4 address is too big to be valid.\n";
 		return true;
