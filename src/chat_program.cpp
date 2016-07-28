@@ -598,33 +598,9 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			break;
 		}
 	}
-
-
 	EXIT_NOW = true;
 
 	return;
-
-
-	/*
-	~~~~~~~~~~~~~~~~This is a possible idea for fixing only having 1 mitten~~~~~~~~~~~~~~~~
-	HANDLE hStdout = GetStdHandle(STD_OUTPUT_HANDLE);
-	CONSOLE_SCREEN_BUFFER_INFO csbiInfo;	//console screen buffer info
-	COORD CursorCoordinatesStruct;
-	ZeroMemory(&CursorCoordinatesStruct, sizeof(CursorCoordinatesStruct));
-
-	if (GetConsoleScreenBufferInfo(hStdout, &csbiInfo) == 0)	//0,0 is top left of console
-	{
-	getError();
-	std::cout << "GetConsoleScreenBufferInfo failed.\n";
-	}
-
-	CursorCoordinatesStruct.X = csbiInfo.dwCursorPosition.X;
-	CursorCoordinatesStruct.Y = csbiInfo.dwCursorPosition.Y;
-
-	//only 299 or 300 lines in the Y position?
-	SetConsoleCursorPosition(hStdout, CursorCoordinatesStruct);
-	~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-	*/
 }
 
 // Cross platform windows and linux thread exiting. Not for use with std::thread

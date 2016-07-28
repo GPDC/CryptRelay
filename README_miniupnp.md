@@ -122,13 +122,16 @@ To include in Netbeans:
 
 I'm going to tell you places to store it and access it based on how I have it set up on my computer.
 
-Extract the miniupnpc-1.9.tar.gz into your lib section of your workspace. On my computer it is:   /home/myusername/workspace/lib/
-Use this if you don't know how (making sure to replace myusername with your username): sudo tar xvzf miniupnpc-1.9.tar.gz -C /home/myusername/workspace/lib/
+Do this command while in your project folder:
+git submodule update --init
+Example my project folder location:   /home/myusername/workspace/CryptRelay/
 
-Then when you are in that miniupnp-1.9 folder inside a terminal, type sudo make
+Then when you are in that miniupnpc folder inside a terminal, type sudo make
+Example folder location:
+/home/myusername/workspace/CryptRelay/miniupnp/miniupnpc/
 
 # Now inside the Eclipse IDE we include and link the library:
-1. project properties-> c/c++build-> settings-> gcc c++ compiler-> includes->include paths (-l)-> click the add new button and navigate to and select the miniupnpc-1.9 folder.
+1. project properties-> c/c++build-> settings-> gcc c++ compiler-> includes->include paths (-l)-> click the add new button and navigate to and select the miniupnpc folder.
 
 2. project properties->c/c++build->settings-> GCC C++ Linker->Libraries-> 
 	in the Libraries (-l) section put this:
@@ -140,4 +143,8 @@ Then when you are in that miniupnp-1.9 folder inside a terminal, type sudo make
 				// so libminiupnpc should be mentioned as miniupnpc
 				// And don't mention any extension such as .a or .so
 
-2.1 in the Libraries search path (-L) section navigate to your miniupnpc-1.9 folder and select it.
+2.1 in the Libraries search path (-L) section navigate to your miniupnpc folder and select it.
+
+3. Project Properties > C/C++ Build > Settings > Cross G++ Linker and add -static between ${COMMAND} and ${FLAGS}.
+Example:
+${COMMAND} -static ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}
