@@ -90,7 +90,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 		int errsv = errno;			//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
 		{
-			Sock.closesocket(PKSocketClass.fd_socket);
+			PKSocketClass.closesocket(PKSocketClass.fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
