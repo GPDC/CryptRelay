@@ -492,18 +492,18 @@ void Connection::clientThread(void * instance)
 
 		// Attempt to connect to target
 		errno = 0;
-		int r = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		int conn_return_val = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 		if (self->exit_now == true)
 		{
 			self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
 			self->exitThread(nullptr);
 		}
-		if (r == 0)
+		if (conn_return_val == 0)
 		{
 			// Connected immediately
 			break;
 		}
-		if (r != 0)
+		if (conn_return_val != 0)
 		{
 			int err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
 			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK)
@@ -1795,14 +1795,14 @@ void Connection::loopedReceiveMessagesThread()
 		// Get some statistics on the file, such as size, time created, etc.
 #ifdef _WIN32
 		struct __stat64 FileStatBuf;
-		int r = _stat64(file_name_and_location, &FileStatBuf);
+		int err_chk = _stat64(file_name_and_location, &FileStatBuf);
 #endif//_WIN32
 #ifdef __linux__
 		struct stat FileStatBuf;
-		int r = stat(file_name_and_location, &FileStatBuf);
+		int err_chk = stat(file_name_and_location, &FileStatBuf);
 #endif//__linux__
 
-		if (r == -1)
+		if (err_chk == -1)
 		{
 			perror("Error getting file statistics");
 			return -1;

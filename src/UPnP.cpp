@@ -100,21 +100,21 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	if (findValidIGD() == false)
 		return;
 
-	int r = UPNP_DeletePortMapping(
+	int errchk = UPNP_DeletePortMapping(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			extern_port,
 			internet_protocol,
 			0
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
+	if (errchk != UPNPCOMMAND_SUCCESS)
 	{
-		if (r == 402)
-			std::cout << "Error: " << r << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
-		else if (r == 714)
-			std::cout << "Error: " << r << ". The port forward rule specified for deletion does not exist.\n";
+		if (errchk == 402)
+			std::cout << "Error: " << errchk << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
+		else if (errchk == 714)
+			std::cout << "Error: " << errchk << ". The port forward rule specified for deletion does not exist.\n";
 		else
-			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed. Router might not have this feature?\n";
+			std::cout << "Error: " << errchk << ". UPNP_DeletePortMapping() failed. Router might not have this feature?\n";
 	}
 	std::cout << "Port forward rule: " << internet_protocol << " " << extern_port << " successfully deleted.\n";
 }
@@ -160,14 +160,14 @@ void UPnP::findUPnPDevices()
 bool UPnP::findValidIGD()
 {
 	// Looks at the list of UPnP devices returned by upnpDiscover() to determine if one is a valid IGD
-	int r = UPNP_GetValidIGD(
+	int errchk = UPNP_GetValidIGD(
 				UpnpDevicesList,
 				&Urls,
 				&IGDData,
 				my_local_ip,
 				sizeof(my_local_ip)
 		);
-	if (r == 0)
+	if (errchk == 0)
 	{
 		std::cout << "No valid IGD found.\n";
 		return false;
@@ -176,7 +176,7 @@ bool UPnP::findValidIGD()
 	{
 		if (global_verbose == true)
 		{
-			switch (r)
+			switch (errchk)
 			{
 			case 1:
 				std::cout << "# Valid IGD found: " << Urls.controlURL << "\n\n";
@@ -212,30 +212,30 @@ void UPnP::showInformation()
 	char last_connection_error[64];
 	unsigned int uptime;
 	unsigned int bitrate_up, bitrate_down;
-	int r;
+	int errchk;
 
 	std::cout << "# Displaying various information:\n";
 
 	// Display connection type
-	r = UPNP_GetConnectionTypeInfo(
+	errchk = UPNP_GetConnectionTypeInfo(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			connection_type
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
+	if (errchk != UPNPCOMMAND_SUCCESS)
 		std::cout << "GetConnectionTypeInfo failed.\n";
 	else
 		std::cout << "Connection Type : " << connection_type << "\n";
 
 	// Display status, uptime, last connection error
-	r = UPNP_GetStatusInfo(
+	errchk = UPNP_GetStatusInfo(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			status,
 			&uptime,
 			last_connection_error
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
+	if (errchk != UPNPCOMMAND_SUCCESS)
 		std::cout << "GetStatusInfo failed.\n";
 	else
 		std::cout << "Status          : " << status << ", uptime: " << uptime << ", LastConnectionError: " << last_connection_error << "\n";
@@ -246,13 +246,13 @@ void UPnP::showInformation()
 
 
 	// Display Max bit rates
-	r = UPNP_GetLinkLayerMaxBitRates(
+	errchk = UPNP_GetLinkLayerMaxBitRates(
 			Urls.controlURL_CIF,
 			IGDData.CIF.servicetype,
 			&bitrate_down,
 			&bitrate_up
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
+	if (errchk != UPNPCOMMAND_SUCCESS)
 		std::cout << "GetLinkLayerMaxBitRates failed.\n";
 	else
 	{
@@ -273,13 +273,13 @@ void UPnP::showInformation()
 
 	// Get external IP address
 	memset(my_external_ip, 0, sizeof(my_external_ip));
-	r = UPNP_GetExternalIPAddress(
+	errchk = UPNP_GetExternalIPAddress(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			my_external_ip
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
-		printf("GetExternalIPAddress failed. (errorcode:%d)\n", r);
+	if (errchk != UPNPCOMMAND_SUCCESS)
+		printf("GetExternalIPAddress failed. (errorcode:%d)\n", errchk);
 	else
 		std::cout << "External IP Addr: " << my_external_ip << "\n";
 
@@ -369,7 +369,7 @@ void UPnP::displayTimeStarted(u_int uptime)
 // where urls for controlling the IGD is.
 void UPnP::getListOfPortForwards()
 {
-	int r = 1;
+	int errchk = 1;
 	int i = 0;
 	char index[6];
 	char internal_client[40];
@@ -396,7 +396,7 @@ void UPnP::getListOfPortForwards()
 		// Retrieve the list of current Port Forwards
 		// index is the only thing that requires your INput. Everything else is for the function to OUTput to.
 		// What is the difference between this function and this one: UPNP_GetSpecificPortMappingEntry()
-		r = UPNP_GetGenericPortMappingEntry(
+		errchk = UPNP_GetGenericPortMappingEntry(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 	/*in*/	index,
@@ -411,7 +411,7 @@ void UPnP::getListOfPortForwards()
 			);
 
 		// If the list was successfully retrieved, print to console
-		if (r == 0)
+		if (errchk == 0)
 		{
 			printf("%2d %s %10s->%s:%-5s '%s'     %s         '%s'\n",
 				i, internet_protocol, ext_port, internal_client, internal_port,
@@ -419,9 +419,9 @@ void UPnP::getListOfPortForwards()
 		}
 		else
 			printf("GetGenericPortMappingEntry() returned %d (%s)\n",
-				r, strupnperror(r));
+				errchk, strupnperror(errchk));
 		++i;
-	} while (r == 0);
+	} while (errchk == 0);
 
 }
 
@@ -447,7 +447,7 @@ bool UPnP::autoAddPortForwardRule()
 		// Add port forwarding now
 		if (my_local_ip[0] != 0)
 		{
-			int r = UPNP_AddPortMapping(
+			int errchk = UPNP_AddPortMapping(
 					Urls.controlURL,
 					IGDData.first.servicetype,
 					upnp_my_external_port.c_str(),
@@ -458,9 +458,9 @@ bool UPnP::autoAddPortForwardRule()
 					0,					// Remote host, still not sure what this is really for / doing.
 					lease_duration
 				);
-			if (r != UPNPCOMMAND_SUCCESS)
+			if (errchk != UPNPCOMMAND_SUCCESS)
 			{
-				switch (r)
+				switch (errchk)
 				{
 				// 718 == Port forward entry conflicts with one that is in use by another client on the LAN.
 				// 501 == Action failed. The router is telling us this error, not the library. It could be that
@@ -504,7 +504,7 @@ bool UPnP::autoAddPortForwardRule()
 					if (try_again_count == try_again_count_limit)
 					{
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -550,7 +550,7 @@ bool UPnP::autoAddPortForwardRule()
 					if (try_again_count == try_again_count_limit)
 					{
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -587,7 +587,7 @@ bool UPnP::autoAddPortForwardRule()
 				if ((try_again == false) || (try_again_count == try_again_count_limit))
 				{
 					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-						upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, r, strupnperror(r));
+						upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 					return false;
 				}
 			}
@@ -621,7 +621,7 @@ bool UPnP::autoAddPortForwardRule()
 		// Displays the specific port forward entry to see if it has actually been implemented
 		// ... which it should have since it didn't error.
 		// Needs some of the same information that was given to UPNP_AddPortMapping()
-		int r = UPNP_GetSpecificPortMappingEntry(
+		int errchk = UPNP_GetSpecificPortMappingEntry(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			/*in*/	upnp_my_external_port.c_str(),
@@ -633,10 +633,10 @@ bool UPnP::autoAddPortForwardRule()
 			NULL/*enabled*/,
 			duration
 			);
-		if (r != UPNPCOMMAND_SUCCESS)
+		if (errchk != UPNPCOMMAND_SUCCESS)
 		{
 			printf("GetSpecificPortMappingEntry() failed with code %d (%s)\n",
-				r, strupnperror(r));
+				errchk, strupnperror(errchk));
 		}
 
 		if (intClient[0])
@@ -687,24 +687,24 @@ void UPnP::autoDeletePortForwardRule()
 	std::cout << "Automatically deleting port forward rule... ";
 
 	// Delete the port forward rule
-	int r = UPNP_DeletePortMapping(
+	int errchk = UPNP_DeletePortMapping(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			upnp_my_external_port.c_str(),
 			protocol,
 			0				// Remote Host
 		);
-	if (r != UPNPCOMMAND_SUCCESS)
+	if (errchk != UPNPCOMMAND_SUCCESS)
 	{
-		if (r == 402)
-			std::cout << "Error: " << r << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
-		else if (r == 714)
+		if (errchk == 402)
+			std::cout << "Error: " << errchk << ". Invalid Arguments supplied to UPNP_DeletePortMapping.\n";
+		else if (errchk == 714)
 		{
-			std::cout << "Error: " << r << ". The port forward rule specified for deletion does not exist.\n";
+			std::cout << "Error: " << errchk << ". The port forward rule specified for deletion does not exist.\n";
 			std::cout << "Specified external port: " << upnp_my_external_port << "and Protocol: " << protocol << "\n";
 		}
 		else
-			std::cout << "Error: " << r << ". UPNP_DeletePortMapping() failed.\n";
+			std::cout << "Error: " << errchk << ". UPNP_DeletePortMapping() failed.\n";
 	}
 	else
 	{

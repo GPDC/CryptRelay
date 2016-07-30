@@ -257,24 +257,6 @@ int SocketClass::connect(const sockaddr* name, int name_len)
 	int errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
-		/*
-		int r = getError();
-#ifdef _WIN32
-		if (r == 10060)
-			return TIMEOUT_ERROR; // -10060 is a timeout error.
-		if (r == 10061)
-			return CONNECTION_REFUSED;
-#endif//_WIN32
-#ifdef __linux__
-		if (r == ETIMEDOUT)
-			return TIMEOUT_ERROR;
-		if (r == ECONNREFUSED)
-			return CONNECTION_REFUSED;
-#endif//__linux__
-		std::cout << "Connect failed. Socket Error.\n";
-		closesocket(fd_socket);
-		return SOCKET_ERROR;
-		*/
 		return SOCKET_ERROR;
 	}
 	else
