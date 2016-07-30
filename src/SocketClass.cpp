@@ -256,11 +256,24 @@ int SocketClass::connect(const sockaddr* name, int name_len)
 	int errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
+		/*
 		int r = getError();
+#ifdef _WIN32
 		if (r == 10060)
-			return -10060; // -10060 is a timeout error.
+			return TIMEOUT_ERROR; // -10060 is a timeout error.
+		if (r == 10061)
+			return CONNECTION_REFUSED;
+#endif//_WIN32
+#ifdef __linux__
+		if (r == ETIMEDOUT)
+			return TIMEOUT_ERROR;
+		if (r == ECONNREFUSED)
+			return CONNECTION_REFUSED;
+#endif//__linux__
 		std::cout << "Connect failed. Socket Error.\n";
 		closesocket(fd_socket);
+		return SOCKET_ERROR;
+		*/
 		return SOCKET_ERROR;
 	}
 	else
@@ -270,7 +283,6 @@ int SocketClass::connect(const sockaddr* name, int name_len)
 			std::cout << "Connection established using socket ID: " << fd_socket << "\n";
 		return 0;// Success
 	}
-	//freeaddrinfo(result);
 }
 
 // TCP use, not UDP
@@ -364,31 +376,31 @@ int SocketClass::inet_pton(int family, char* ip_addr, void* paddr_buf)
 // Shuts down the current connection that is active on the given socket.
 // The shutdown operation is one of three macros.
 // SD_RECEIVE, SD_SEND, SD_BOTH.
-bool SocketClass::shutdown(int operation)
+bool SocketClass::shutdown(SOCKET socket, int operation)
 {
 	std::cout << "Shutting down the connection... ";
 	// shutdown the connection since we're done
-	int errchk = ::shutdown(fd_socket, operation);
+	int errchk = ::shutdown(socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "Shutdown failed.\n";
 		std::cout << "Closing socket.\n";
-		closesocket(fd_socket);
+		closesocket(socket);
 		return false;
 	}
 	std::cout << "Success\n";
 	return true;
 }
 
-void SocketClass::closesocket(SOCKET s)
+void SocketClass::closesocket(SOCKET socket)
 {
 #ifdef __linux__
-	::close(s);
+	::close(socket);
 #endif//__linux__
 
 #ifdef _WIN32
-	::closesocket(s);
+	::closesocket(socket);
 #endif
 
 	if (global_verbose == true)
@@ -414,54 +426,102 @@ void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
 }
 
 
-// errno needs to be set to 0 before every function call that returns errno  // ERR30-C  /  SEI CERT C Coding Standard https://www.securecoding.cert.org/confluence/pages/viewpage.action?pageId=6619179
-int SocketClass::getError()
+// For most consistent results, errno needs to be set to 0 before
+// every function call that can return an errno.
+// This method is only intended for use with things that deal with sockets.
+// On windows, this function returns WSAERROR codes.
+// On linux, this function returns errno codes.
+// getError() will output the error code + description unless
+// output_to_console arg is given false.
+int SocketClass::getError(bool output_to_console)
 {
 	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
 	// that WSAStartup() has been performed. WSAGetLastError() doesn't work unless you start WSAStartup();
 
+	// Buffer for strerror_r() and strerror_s() to put text into.
+	const int STR_BUF_SIZE = 100;
+	char str_buf[STR_BUF_SIZE] = { 0 };
+
 #ifdef __linux__
 	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
-	
-	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
-	if (errsv == 110)// EATIMEDOUT
-		return errsv;
-	else if (errsv == 104)// ECONNRESET
+
+	if (output_to_console == true)
 	{
-		std::cout << "Connection closed by peer.\n";
-		return errsv;
+		outputSocketErrorToConsole(errsv);
 	}
-	std::cout << "ERRNO: " << errsv << ".\n";
-	if (errsv == 13)// EACCES
-	{
-		std::cout << "Permission Denied.\n";
-	}
+
 	return errsv;
 #endif//__linux__
 
 #ifdef _WIN32
 	int errsv = ::WSAGetLastError();
 
-
-	// This is a rcvfrom() timeout error. Not really much of an error, so don't report it as one.
-	if (errsv == WSAETIMEDOUT)// Connection timed out
-		return errsv;
-	else if (errsv == WSAECONNRESET)// Connection reset by peer
+	if (output_to_console == true)
 	{
-		std::cout << "Connection closed by peer.\n";
-		return errsv;
+		outputSocketErrorToConsole(errsv);
 	}
-	else if (errsv == WSAEINTR)// Blocking operation interrupted.
-	{
-		return errsv;
-	}
-
-	std::cout << "WSAERROR: " << errsv << ".\n";
-	if (errsv == WSAEACCES)// Permission denied.
-		std::cout << "Permission Denied.\n";
-
+	
 	return errsv;
 #endif//_WIN32
+}
+
+// On windows it expects a WSAERROR code.
+// On linux it expects an errno code.
+void SocketClass::outputSocketErrorToConsole(int error_code)
+{
+	// Buffer for strerror_r() and strerror_s() to put text into.
+	const int STR_BUF_SIZE = 100;
+	char str_buf[STR_BUF_SIZE] = { 0 };
+#ifdef __linux__
+	// If strerror_s didn't error, print it out
+	if (strerror_r(error_code, str_buf, STR_BUF_SIZE) == 0)
+	{
+		std::cout << "Errno: " << error_code << ", " << str_buf << "\n";
+	}
+	else  // Just print the error code
+	{
+		std::cout << "Errno: " << error_code << ".\n";
+	}
+#endif//__linux__
+#ifdef _WIN32
+	int tchar_count = 0;
+
+	// FORMAT_MESSAGE_ALLOCATE_BUFFER will allocate a buffer on local heap for error text, therefore
+	// it needs to be freed with LocalFree();
+	// FORMAT_MESSAGE_FROM_SYSTEM tells it to search the system message-table resources for the requested error txt
+	// FORMAT_MESSAGE_IGNORE_INSERTS is 100% necessary. It makes it so insert sequences in the message definition
+	// are ignored and passed through to the output buffer unchanged.
+	// returns 0 on fail.
+	// returns the number of TCHARs stored in the output buffer, excluding the terminating null char.
+	LPTSTR message_for_console = NULL;
+	tchar_count = FormatMessage(
+		FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+		NULL,   // Location of message definitions. NULL b/c we told it to FORMAT_MESSAGE_FROM_SYSTEM
+		(DWORD)error_code, // Source to look for the error code.
+		MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), // Use the default language for the output message.
+		(LPTSTR)&message_for_console,   // Places the message here so you can cout it.
+		0, // number of TCHARs to allocate for an output buffer (b/c we set FORMAT_MESSAGE_ALLOCATE_BUFFER)
+		NULL // optional args
+	);
+	if (tchar_count != 0) // success
+	{
+		std::cout << "WSAError: " << error_code << ". ";
+		fprintf(stderr, "%S\n", message_for_console);
+		LocalFree(message_for_console);
+		message_for_console = NULL;
+	}
+	else
+	{
+		// Still print out the error code even though there is no description of it.
+		std::cout << "WSAError: " << error_code << "\n";
+
+		// Now display error information for FormatMessage() failing.
+		perror("FormatMessage() failed");
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+#endif//_WIN32
+
+	return;
 }
 
 // Output to console the the peer's IP and port that you have connected to the peer with.
@@ -504,4 +564,35 @@ void SocketClass::coutPeerIPAndPort()
 	}
 	else
 		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
+}
+
+// With this method you can enable or disable blocking for a given socket.
+// DISABLE_BLOCKING == 1;
+// ENABLE_BLOCKING == 0;
+bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
+{
+	u_long mode = *option;
+#ifdef _WIN32
+	int errchk = ioctlsocket(socket, FIONBIO, &mode);
+	if (errchk == NO_ERROR)
+	{
+		return false;
+	}
+	else
+	{
+		std::cout << "ioctlsocket() failed.\n";
+		getError();
+		DBG_DISPLAY_ERROR_LOCATION();
+		return true;
+	}
+#endif//_WIN32
+#ifdef __linux__
+	int errchk = ioctl();
+	if (errchk != zxjkxzjoij)
+	{
+		std::cout << "ioctl() failed.\n";
+		getError();
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+#endif//__linux__
 }

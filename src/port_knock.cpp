@@ -153,7 +153,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 	else
 	{
-		PKSocketClass.shutdown(SD_BOTH);
+		PKSocketClass.shutdown(PKSocketClass.fd_socket, SD_BOTH);
 		PKSocketClass.closesocket(PKSocketClass.fd_socket);
 		return true;
 	}

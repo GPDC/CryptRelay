@@ -66,6 +66,12 @@ HANDLE Connection::ghEvents[2]{};	// i should be using vector of ghevents[] inst
 									// [1] == client
 #endif//_WIN32
 
+									//mutex for use in this class' send()
+std::mutex Connection::SendMutex;
+// mutex for use with server and client threads to prevent a race condition.
+std::mutex Connection::RaceMutex;
+
+
 // this default_port being static might not be a good idea.
 // This is the default port for the Connection as long as
 // Connection isn't given any port from the UPnP class,
@@ -109,7 +115,11 @@ Connection::~Connection()
 	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	// Check comments in the freeaddrinfo() to see how its done.
 	if (ConnectionInfo != nullptr)
-		ClientServerSocketClass.freeaddrinfo(&ConnectionInfo);
+		ClientServerSocketClass->freeaddrinfo(&ConnectionInfo);
+	if (ConnectionInfo != nullptr)
+		ClientSocketClass.freeaddrinfo(&ConnectionInfo);
+	if (ConnectionInfo != nullptr)
+		ServerSocketClass.freeaddrinfo(&ConnectionInfo);
 }
 
 
@@ -212,17 +222,17 @@ void Connection::serverThread(void * instance)
 	// These are the settings for the connection
 	self->Hints.ai_family = AF_INET;		//ipv4
 	self->Hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	//self->Hints.ai_flags = AI_PASSIVE;
+	//self->Hints.ai_flags = AI_PASSIVE;	// Use local-host address
 	self->Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
 
 	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
 	// Now we use ConnectionInfo instead of Hints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (self->ClientServerSocketClass.getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
+	if (self->ServerSocketClass.getaddrinfo(self->my_local_ip, self->my_local_port, &self->Hints, &self->ConnectionInfo) == false)
 		self->exitThread(nullptr);
 
 	// Create socket
-	SOCKET errchk_socket = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
+	SOCKET errchk_socket = self->ServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
 	if (errchk_socket == INVALID_SOCKET)
 		self->exitThread(nullptr);
 	else if (errchk_socket == SOCKET_ERROR)
@@ -230,11 +240,11 @@ void Connection::serverThread(void * instance)
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (self->ClientServerSocketClass.bind(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
+	if (self->ServerSocketClass.bind(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen) == false)
 		self->exitThread(nullptr);
 
 	// Set the socket to listen for incoming connections
-	if (self->ClientServerSocketClass.listen() == false)
+	if (self->ServerSocketClass.listen() == false)
 		self->exitThread(nullptr);
 
 
@@ -254,28 +264,33 @@ void Connection::serverThread(void * instance)
 	int errchk;
 	while (1)
 	{
-		DBG_TXT("Listen thread active...");
-		// Putting the socket into the array so select() can check it for readability
-		// Format is:  FD_SET(int fd, fd_set *ReadSet);
-		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
-		FD_ZERO(&ReadSet);
-		FD_SET(self->ClientServerSocketClass.fd_socket, &ReadSet);
-		TimeValue.tv_sec = 2;	// This has to be in this loop! Linux resets this value every time select() times out.
-		// select() returns the number of handles that are ready and contained in the fd_set structure
-		errchk = select(self->ClientServerSocketClass.fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
+		DBG_TXT("Server thread active...");
 
+		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
+		// set the socket count in the ReadSet struct to 0.
+		FD_ZERO(&ReadSet);
+		// Put specified socket into the socket array located in ReadSet
+		// Format is:  FD_SET(int fd, fd_set *ReadSet);
+		FD_SET(self->ServerSocketClass.fd_socket, &ReadSet);
+
+		// This has to be in this loop! Linux resets this value every time select() times out.
+		TimeValue.tv_sec = 2;
+
+		// select() returns the number of handles that are ready and contained in the fd_set structure
+		errchk = select(self->ServerSocketClass.fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 		if (errchk == SOCKET_ERROR)
 		{
-			self->ClientServerSocketClass.getError();
-			std::cout << "startServerThread() select Error.\n";
+			self->ServerSocketClass.getError();
+			std::cout << "serverThread() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
-			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
+			self->ServerSocketClass.closesocket(self->ServerSocketClass.fd_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			self->exitThread(nullptr);
 		}
 		else if (global_winner == CLIENT_WON)
 		{
-			self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
+			// Close the socket because the client thread won the race.
+			self->ServerSocketClass.closesocket(self->ServerSocketClass.fd_socket);
 			if (global_verbose == true)
 			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
@@ -285,43 +300,47 @@ void Connection::serverThread(void * instance)
 		else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
 		{
 			if (global_verbose == true)
-				std::cout << "attempting to accept a client now that select() returned a readable socket\n";
+				std::cout << "Attempting to accept a client now that select() returned a readable socket\n";
 
 			SOCKET errchk_socket;
 			// Accept the connection and create a new socket to communicate on.
-			errchk_socket = self->ClientServerSocketClass.accept();
+			errchk_socket = self->ServerSocketClass.accept();
 			if (errchk_socket == INVALID_SOCKET)
+			{
+				self->ServerSocketClass.getError();
+				DBG_DISPLAY_ERROR_LOCATION();
 				self->exitThread(nullptr);
+			}
+
 			if (global_verbose == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
 
 			// Assigning global values to let the client thread know it should stop trying.
 			if (self->setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
-				//self->ClientServerSocketClass.closesocket(listen_socket);
-				//self->ClientServerSocketClass.closesocket(errchk_socket);
-				self->ClientServerSocketClass.closesocket(self->ClientServerSocketClass.fd_socket);
+				self->ServerSocketClass.closesocket(self->ServerSocketClass.fd_socket);
 				self->exitThread(nullptr);
 			}
 			else
-				SocketClass::global_socket = self->ClientServerSocketClass.fd_socket;
-
-
-			//DBG_TXT("closing socket after retrieving new one from accept()");
-			// Not using this socket anymore since we created a new socket after accept() ing the connection.
-			//self->ClientServerSocketClass.closesocket(listen_socket);
+			{
+				SocketClass::global_socket = self->ServerSocketClass.fd_socket;
+			}
 
 			break;
 		}
 	}
 
 	// Display who the user has connected to.
-	self->ClientServerSocketClass.coutPeerIPAndPort();
-
+	self->ServerSocketClass.coutPeerIPAndPort();
+	
+	// Assigning the ClientServerSocketClass to the winner of the race.
+	// This is because functions like loopedGetUserInputThread() need a way
+	// to reference the winning instance.
+	self->ClientServerSocketClass = &self->ServerSocketClass;
 
 	// Receive messages until there is an error or connection is closed.
 	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
@@ -406,97 +425,150 @@ void Connection::clientThread(void * instance)
 		self->exitThread(nullptr);
 	}
 
-
-	// These are the settings for the connection
-	memset(&self->Hints, 0, sizeof(self->Hints));
-	self->Hints.ai_family = AF_INET;		//ipv4
-	self->Hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	self->Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
-
-	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
-	// Now we use ConnectionInfo instead of Hints.
-	if (self->ClientServerSocketClass.getaddrinfo(self->target_external_ip, self->target_external_port, &self->Hints, &self->ConnectionInfo) == false)
-		self->exitThread(nullptr);
+	int errchk;
+	addrinfo ClientHints;
+	addrinfo* ClientConnectionInfo;
 	
-	std::cout << "Attempting to connect...\n";
 
-	// Connect to the target on the given socket
-	// while checking to see if the server hasn't already connected to someone.
-	// if connected_socket == INVALID_SOCKET   that just means a connection couldn't
-	// be established yet.
-	//
-	// A more normal method would be: try each address until we successfully bind(2).
-    // If socket(2) (or bind(2)) fails, we close the socket and try
-	// the next address in the list.
+	memset(&ClientHints, 0, sizeof(ClientHints));
+	// These are the settings for the connection
+	ClientHints.ai_family = AF_INET;		// ipv4
+	ClientHints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
+	//ClientHints.ai_flags = AI_PASSIVE;    // Use local-host address
+	ClientHints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+
+	// Place target ip and port, and ClientHints about the connection type into a linked list named addrinfo *ConnectionInfo
+	// Now we use ClientConnectionInfo instead of ClientHints in order to access the information.
+	if (self->ClientSocketClass.getaddrinfo(self->target_external_ip, self->target_external_port, &ClientHints, &ClientConnectionInfo) == false)
+		self->exitThread(nullptr);
+
+	// Create socket
+	SOCKET errchk_socket = self->ClientSocketClass.socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
+	if (errchk_socket == INVALID_SOCKET)
+		self->exitThread(nullptr);
+	else if (errchk_socket == SOCKET_ERROR)
+		self->exitThread(nullptr);
+
+	// Disable blocking on the socket
+	self->ClientSocketClass.setBlockingSocketOpt(self->ClientSocketClass.fd_socket, &self->ClientSocketClass.DISABLE_BLOCKING);
+
+	// Needed to provide a time to select()
+	timeval TimeValue;
+	memset(&TimeValue, 0, sizeof(TimeValue));
+
+	// This struct contains the array of sockets that select() will check for readability
+	fd_set WriteSet;
+	memset(&WriteSet, 0, sizeof(WriteSet));
+
+	// loop check for incoming connections
 	while (1)
 	{
-		DBG_TXT("client thread active...");
-		// Check to see if server has connected to someone
-		if (global_winner == SERVER_WON)
-		{
-			if (global_verbose == true)
-			{
-				std::cout << "Server won. Exiting thread.\n";
-			}
-			self->exitThread(nullptr);
-		}
+		DBG_TXT("Client thread active...");
 
-		// Create socket
-		SOCKET s = self->ClientServerSocketClass.socket(self->ConnectionInfo->ai_family, self->ConnectionInfo->ai_socktype, self->ConnectionInfo->ai_protocol);
-		if (s == INVALID_SOCKET)
-		{
-			std::cout << "Closing client thread due to INVALID_SOCKET.\n";
-			DBG_DISPLAY_ERROR_LOCATION();
-			self->exitThread(nullptr);
-		}
+#ifdef _WIN32
+		const int WOULD_BLOCK = WSAEWOULDBLOCK;
+#endif//_WIN32
+#ifdef __linux__
+		const int WOULD_BLOCK = EWOULDBLOCK;
+#endif//__linux__
 
 		// Attempt to connect to target
-		int r = self->ClientServerSocketClass.connect(self->ConnectionInfo->ai_addr, self->ConnectionInfo->ai_addrlen);
-		if (r == SOCKET_ERROR)
+		int r = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		if (r == 0)
 		{
-			std::cout << "Closing client thread due to error.\n";
-			DBG_DISPLAY_ERROR_LOCATION();
-			self->exitThread(nullptr);
-		}
-		else if (r == self->ClientServerSocketClass.TIMEOUT_ERROR)	// No real errors, just can't connect yet
-		{
-			DBG_TXT("Not real error, timeout client connect");
-			self->ClientServerSocketClass.closesocket(s);
-			continue;
-		}
-		else if (r == 0)				// Must have succeeded in connecting
-		{
-			// Assigning global values to let the server thread know it should stop trying.
-			if (self->setWinnerMutex(CLIENT_WON) != CLIENT_WON)
-			{
-				if (global_verbose == true)
-				{
-					std::cout << "Client: Extremely rare race condition was almost reached. ";
-					std::cout << "It was prevented using a mutex. The server is the real winner.\n";
-				}
-				self->ClientServerSocketClass.closesocket(s);
-				self->exitThread(nullptr);
-			}
-			else
-				SocketClass::global_socket = s;
-
+			// Connected immediately
 			break;
 		}
-		else
+		if (r != 0)
 		{
-			std::cout << "Unkown ERROR. connect()\n";
-			DBG_DISPLAY_ERROR_LOCATION();
-			self->exitThread(nullptr);
-		}
+			int err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
+			if (err_chk == SOCKET_ERROR)
+			{
+				std::cout << "Closing client thread due to connect() error.\n";
+				DBG_DISPLAY_ERROR_LOCATION();
+				self->exitThread(nullptr);
+			}
+			else if (err_chk == WSAEALREADY || err_chk == WSAEINPROGRESS || err_chk == WOULD_BLOCK)
+			{
+				// We must be in the middle of successfully connecting to the peer, if
+				// WSAEINPROGRESS triggered the if, or connect() is still trying to connect
+				// to the peer if WSAEALREADY triggered it.
+				// Therefore let us move on to select() to see when we have
+				// completed our connection.
+				// WSAEINPROGRESS == connect() is in the middle of something
+				// WOULD_BLOCK == connect() is in the process of trying to connect to the peer. It may or may not succeed.
+
+
+				// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
+				// set the socket count in the WriteSet struct to 0.
+				FD_ZERO(&WriteSet);
+				// Put specified socket into the socket array located in WriteSet
+				// Format is:  FD_SET(int fd, fd_set *WriteSet);
+				FD_SET(self->ClientSocketClass.fd_socket, &WriteSet);
+
+				// Used by select(). It makes it wait for x amount of time to wait for a readable socket to appear.
+				TimeValue.tv_sec = 2;
+
+
+				// select() returns the number of handles that are ready and contained in the fd_set structure
+				errchk = select(self->ClientSocketClass.fd_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
+				if (errchk == SOCKET_ERROR)
+				{
+					self->ClientSocketClass.getError();
+					std::cout << "ClientThread() select Error.\n";
+					DBG_DISPLAY_ERROR_LOCATION();
+					self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
+					std::cout << "Closing connect socket b/c of the error. Ending client thread.\n";
+					self->exitThread(nullptr);
+				}
+				else if (global_winner == SERVER_WON)
+				{
+					// Close the socket because the server thread won the race.
+					self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
+					if (global_verbose == true)
+					{
+						std::cout << "Closed connect socket, because the winner is: " << global_winner << ". Ending client thread.\n";
+					}
+					self->exitThread(nullptr);
+				}
+				else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
+				{
+					if (setWinnerMutex(CLIENT_WON) != CLIENT_WON)
+					{
+						self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
+						if (global_verbose == true)
+							std::cout << "Exiting client thread because the server thread won the race.\n";
+						self->exitThread(nullptr);
+					}
+					else
+					{
+						SocketClass::global_socket = self->ClientSocketClass.fd_socket;
+						break;
+					}
+				}
+			}
+			else
+			{
+				DBG_DISPLAY_ERROR_LOCATION();
+				self->exitThread(nullptr);
+			}
+		}	
 	}
 
 	// Display who the user is connected with.
-	self->ClientServerSocketClass.coutPeerIPAndPort();
+	self->ClientSocketClass.coutPeerIPAndPort();
 
+	// Assigning the ClientServerSocketClass to the winner of the race.
+	// This is because functions like loopedGetUserInputThread() need a way
+	// to reference the winning instance.
+	self->ClientServerSocketClass = &self->ClientSocketClass;
+
+	// Re-enable blocking for the socket.
+	self->ClientServerSocketClass->setBlockingSocketOpt(self->ClientServerSocketClass->fd_socket, &self->ClientServerSocketClass->ENABLE_BLOCKING);
 
 	// Receive messages until there is an error or connection is closed.
 	// Pattern is:  rcv_thread(function, point to class that function is in (aka, this), function argument)
-	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self, instance);
+	std::thread rcv_thread(&Connection::loopedReceiveMessagesThread, self);
 
 	// Get the user's input from the terminal, and check
 	// to see if the user wants to do something special,
@@ -518,7 +590,7 @@ void Connection::clientThread(void * instance)
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
 // To find out who we were connected to, use getnameinfo()
-void Connection::loopedReceiveMessagesThread(void * instance)
+void Connection::loopedReceiveMessagesThread()
 {
 	// Helpful Information:
 	// Any time a 'message' is mentioned, it is referring to the idea of
@@ -572,12 +644,19 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			const int BLOCKING_OPERATION_CANCELED = WSAEINTR;
 			#endif// _WIN32
 
-			int errchk = ClientServerSocketClass.getError();
+			int errchk = ClientServerSocketClass->getError(ClientServerSocketClass->DISABLE_CONSOLE_OUTPUT);
 
-			if (errchk != BLOCKING_OPERATION_CANCELED && errchk != CONNECTION_RESET)
+			// If errchk == BLOCKING_OPERATION_CANCELED, don't report the error.
+			// else, report whatever error happened.
+			if (errchk != BLOCKING_OPERATION_CANCELED)
 			{
 				std::cout << "recv() failed.\n";
+				ClientServerSocketClass->outputSocketErrorToConsole(errchk);
 				DBG_DISPLAY_ERROR_LOCATION();
+				if (errchk == CONNECTION_RESET)
+				{
+					std::cout << "Peer might have hit ctrl-c.\n";
+				}
 				if (is_file_done_being_written == false)
 				{
 					// Close the file that was being written inside the processRecvBuf() state machine.
@@ -588,17 +667,18 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
 				}
 			}
+
 			break;
 		}
 		else if (bytes == CONNECTION_GRACEFULLY_CLOSED)
 		{
 			std::cout << "Connection with peer has been gracefully closed.\n";
-			std::cout << "\n";
-			std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 			break;
 		}
 	}
 	EXIT_NOW = true;
+	std::cout << "\n";
+	std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 
 	return;
 }
@@ -656,10 +736,10 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 			bytes_sent = ::send(SocketClass::global_socket, sendbuf, amount_to_send, 0);
 			if (bytes_sent == SOCKET_ERROR)
 			{
-				ClientServerSocketClass.getError();
+				ClientServerSocketClass->getError();
 				perror("ERROR: send() failed.");
 				DBG_DISPLAY_ERROR_LOCATION();
-				ClientServerSocketClass.closesocket(SocketClass::global_socket);
+				ClientServerSocketClass->closesocket(SocketClass::global_socket);
 				SendMutex.unlock();
 				return SOCKET_ERROR;
 			}
@@ -683,7 +763,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		std::thread file_transfer;
 		std::string user_input;
 		
-		const long long CHAT_BUF_LEN = 4096;	// try catch see if enough memory available?
+		const long long CHAT_BUF_LEN = 4096;
 		char* chat_buf = new char[CHAT_BUF_LEN];
 
 		while (1)
@@ -837,11 +917,7 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 					// Copy the type of message flag into the buf
 					chat_buf[0] = CR_CHAT;
 					// Copy the size of the message into the buf as big endian.
-					//long long temp1 = user_input_length >> 8;
-					//chat_buf[1] = (char)temp1;
 					chat_buf[1] = (char)(user_input_length >> 8);
-					//long long temp2 = user_input_length;
-					//chat_buf[2] = (char)temp2;
 					chat_buf[2] = (char)user_input_length;
 
 					// Copy the user's message into the buf
@@ -881,8 +957,8 @@ void Connection::loopedReceiveMessagesThread(void * instance)
 		// This will shutdown the connection on the socket.
 		// closesocket() will interrupt recv() if it is currently blocking.
 		// Done communicating with peer. Proceeding to exit.
-		ClientServerSocketClass.shutdown(SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
-		ClientServerSocketClass.closesocket(SocketClass::global_socket);
+		ClientServerSocketClass->shutdown(SocketClass::global_socket, SD_BOTH);	// SD_BOTH == shutdown both send and receive on the socket.
+		ClientServerSocketClass->closesocket(SocketClass::global_socket);
 
 		if (file_transfer.joinable() == true)
 			file_transfer.join();

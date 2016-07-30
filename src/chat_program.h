@@ -69,15 +69,17 @@ private:
 	typedef struct stat myStat;
 #endif//__linux__
 
-	SocketClass ClientServerSocketClass;
+	SocketClass* ClientServerSocketClass = nullptr;
+	SocketClass ClientSocketClass;
+	SocketClass ServerSocketClass;
 
 	static const std::string DEFAULT_PORT;
 
 
 	//mutex for use in this class' send()
-	std::mutex SendMutex;
+	static std::mutex SendMutex;
 	// mutex for use with server and client threads to prevent a race condition.
-	std::mutex RaceMutex;
+	static std::mutex RaceMutex;
 
 	// These are called by createStartServerThread() and createStartClientThread()
 	// These exist because threads on linux have to return a void*.
@@ -90,7 +92,7 @@ private:
 	static void clientThread(void * instance);
 
 	// Thread used to handle receiving messages.
-	void loopedReceiveMessagesThread(void * instance);
+	void loopedReceiveMessagesThread();
 
 	// Cross platform windows and linux thread exiting
 	// Not for use with std::thread
@@ -104,7 +106,7 @@ private:
 
 	// Server and Client thread must use this function to prevent
 	// a race condition.
-	int setWinnerMutex(int the_winner);
+	static int setWinnerMutex(int the_winner);
 
 
 	// Continually getline()'s the command prompt to see what the user wants to do.

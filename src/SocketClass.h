@@ -86,7 +86,7 @@ public:
 	bool WSAStartup();
 	bool setsockopt(int level, int option_name, const char* option_value, int option_length);
 	bool bind(const sockaddr *name, int name_len);
-	bool shutdown(int operation);
+	bool shutdown(SOCKET socket, int operation);
 	bool listen();
 	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
@@ -97,18 +97,32 @@ public:
 	int recv(char* buf, int buf_len, int flags);
 	BYTE_SIZE recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
 
-	void closesocket(SOCKET s);
+	void closesocket(SOCKET socket);
 	void WSACleanup();
 	void freeaddrinfo(addrinfo** ppAddrInfo);
 	void coutPeerIPAndPort();
 
+
+	const int CONNECTION_REFUSED = -10061;
 	const int TIMEOUT_ERROR = -10060;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError();	// This is unlike everything else here - it just retrieves and prints errors.
+	int getError(bool output_to_console = true);	// This is unlike everything else here - it just retrieves and prints errors.
+	const bool DISABLE_CONSOLE_OUTPUT = false;
+
+	// Only intended for use with Socket errors.
+	// Windows expects a WSAERROR code, linux expects errno code.
+	void outputSocketErrorToConsole(int error_code);
+
+	// Enable or disable the blocking socket option.
+	// By default, blocking is enabled.
+	bool setBlockingSocketOpt(SOCKET socket, const u_long* option);
+	const u_long DISABLE_BLOCKING = 1;
+	const u_long ENABLE_BLOCKING = 0;
+	
 
 protected:
 private:

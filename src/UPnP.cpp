@@ -440,11 +440,10 @@ bool UPnP::autoAddPortForwardRule()
 	// Some NATs only allow a lease time of "0".
 	const char * lease_duration = "57600";	// 57600 == 16 hrs
 
+	std::cout << "Automatically adding port forward rule... ";
 	// Add the port forwarding rule
 	do
 	{
-		if (global_verbose == true)
-			std::cout << "\n# Adding port forward entry...\n";
 		// Add port forwarding now
 		if (my_local_ip[0] != 0)
 		{
@@ -597,6 +596,7 @@ bool UPnP::autoAddPortForwardRule()
 				// Set flag to say that the automatic port forward was a success.
 				port_forward_automatically_added = true;
 				try_again = false;
+				std::cout << "Success\n";
 			}
 
 
@@ -684,7 +684,7 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 // autoAddPortForwardingRule()
 void UPnP::autoDeletePortForwardRule()
 {
-	std::cout << "Automatically deleting port forward rule...";
+	std::cout << "Automatically deleting port forward rule... ";
 
 	// Delete the port forward rule
 	int r = UPNP_DeletePortMapping(
@@ -708,6 +708,6 @@ void UPnP::autoDeletePortForwardRule()
 	}
 	else
 	{
-		std::cout << "Success.\n";
+		std::cout << "Success\n";
 	}
 }
