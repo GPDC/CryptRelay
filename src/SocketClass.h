@@ -122,6 +122,9 @@ public:
 	bool setBlockingSocketOpt(SOCKET socket, const u_long* option);
 	const u_long DISABLE_BLOCKING = 1;
 	const u_long ENABLE_BLOCKING = 0;
+
+	// Get error information from the socket.
+	int getSockOptError(SOCKET fd_socket);
 	
 
 protected:

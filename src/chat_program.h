@@ -114,7 +114,7 @@ private:
 
 	// Used in loopedGetUserInputThread() to determine if the user wants to exit the program.
 	// Eventually might not need to be here in the header file.
-	bool EXIT_NOW = false;
+	bool exit_now = false;
 
 	// Used within loopedGetUserInputThread() to check if the user inputted something
 	// into the command prompt that would indicate they wanted to send a file.

@@ -470,6 +470,10 @@ void Connection::clientThread(void * instance)
 	{
 		DBG_TXT("Client thread active...");
 
+
+		// OPERATION_ALREADY_IN_PROGRESS == connect() is still trying to connect to the peer.
+		// OPERATION_NOW_IN_PROGRESS == connect() is in the middle of negotiating the connection to the peer.
+		// WOULD_BLOCK == connect() is in the process of trying to connect to the peer. The peer might not even exist.
 #ifdef _WIN32
 		const int WOULD_BLOCK = WSAEWOULDBLOCK;
 		const int OPERATION_ALREADY_IN_PROGRESS = WSAEALREADY;
@@ -481,14 +485,15 @@ void Connection::clientThread(void * instance)
 		const int OPERATION_NOW_IN_PROGRESS = EINPROGRESS;
 #endif//__linux__
 
-		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set.
+
+		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, FD_ZERO, FD_ISSET when dealing with struct fd_set.
 		// Set the socket count in the WriteSet struct to 0.
 		FD_ZERO(&WriteSet);
 
 		// Attempt to connect to target
 		errno = 0;
 		int r = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
-		if (self->EXIT_NOW == true)
+		if (self->exit_now == true)
 		{
 			self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
 			self->exitThread(nullptr);
@@ -503,13 +508,7 @@ void Connection::clientThread(void * instance)
 			int err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
 			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK)
 			{
-				// We must be in the middle of successfully connecting to the peer, if
-				// OPERATION_NOW_IN_PROGRESS triggered the if, or connect() is still trying to connect
-				// to the peer if OPERATION_ALREADY_IN_PROGRESS triggered it.
-				// Therefore let us move on to select() to see if we have
-				// completed our connection.
-				// OPERATION_NOW_IN_PROGRESS == connect() is in the middle of something
-				// WOULD_BLOCK == connect() is in the process of trying to connect to the peer. It may or may not succeed.
+				// Let us move on to select() to see if we have completed the connection.
 
 				// If fd_socket isn't set in the WriteSet struct, set it.
 				if (FD_ISSET(self->ClientSocketClass.fd_socket, &WriteSet) == false)
@@ -525,11 +524,10 @@ void Connection::clientThread(void * instance)
 				TimeValue.tv_sec = 2;
 				TimeValue.tv_usec = 0;
 
-
 				// select() returns the number of socket handles that are ready and contained in the fd_set structure
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errchk = select(self->ClientSocketClass.fd_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
-				if (self->EXIT_NOW == true)
+				if (self->exit_now == true)
 				{
 					self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
 					self->exitThread(nullptr);
@@ -542,15 +540,14 @@ void Connection::clientThread(void * instance)
 
 					// Get error information from the socket, not just from select()
 					// The effectiveness of this is untested so far as I haven't seen select error yet.
-					int errorz = 0;
-					u_int len = sizeof(errorz);
-					int sock_opt_errorchk = getsockopt(self->ClientSocketClass.fd_socket, SOL_SOCKET, SO_ERROR, &errorz, &len);
-					if(sock_opt_errorchk < 0)
+					int errorz = self->ClientSocketClass.getSockOptError(self->ClientSocketClass.fd_socket);
+					if (errorz == SOCKET_ERROR)
 					{
 						std::cout << "getsockopt() failed.\n";
+						self->ClientSocketClass.getError();
 						DBG_DISPLAY_ERROR_LOCATION();
 					}
-					else if (sock_opt_errorchk > 0)
+					else
 					{
 						std::cout << "getsockopt() returned: " << errorz << "\n";
 					}
@@ -721,7 +718,7 @@ void Connection::loopedReceiveMessagesThread()
 			break;
 		}
 	}
-	EXIT_NOW = true;
+	exit_now = true;
 	std::cout << "\n";
 	std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 
@@ -816,8 +813,8 @@ void Connection::loopedReceiveMessagesThread()
 			std::getline(std::cin, user_input);
 
 			// If some other thread has errored, or has already closed the connection,
-			// then it will set EXIT_NOW = true;
-			if (EXIT_NOW == true)
+			// then it will set exit_now = true;
+			if (exit_now == true)
 			{
 				//Exit program
 				break;
@@ -825,7 +822,7 @@ void Connection::loopedReceiveMessagesThread()
 			if (user_input == "exit()")
 			{
 				// Exit program.
-				EXIT_NOW = true;
+				exit_now = true;
 				break;
 			}
 			if (doesUserWantToSendAFile(user_input) == true)

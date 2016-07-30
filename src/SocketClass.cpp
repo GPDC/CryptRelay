@@ -650,3 +650,24 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 
 	return true;
 }
+
+// Get error information from the socket.
+int SocketClass::getSockOptError(SOCKET fd_socket)
+{
+#ifdef _WIN32
+	char errorz = 0;
+	int32_t len = sizeof(errorz);
+#endif//_WIN32
+#ifdef __linux__
+	int32_t errorz = 0;
+	uint32_t len = sizeof(errorz);
+#endif//__linux__
+
+	int sock_opt_errorchk = getsockopt(fd_socket, SOL_SOCKET, SO_ERROR, &errorz, &len);
+	if (sock_opt_errorchk == SOCKET_ERROR)
+	{
+		return SOCKET_ERROR;
+	}
+	
+	return errorz;
+}
