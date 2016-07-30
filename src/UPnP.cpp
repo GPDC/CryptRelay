@@ -129,7 +129,7 @@ void UPnP::findUPnPDevices()
 	int miniupnp_error = 0;		// upnpDiscover() sends error info here.
 	const int TTL_DURATION = 2;
 	const int DISABLE_IPV6 = 0;
-	const int ENABLE_IPV6 = 1;
+	//const int ENABLE_IPV6 = 1;
 	const int WAIT_TIME = 2000; // max time in milliseconds to wait for a response from device
 	UpnpDevicesList = upnpDiscover(WAIT_TIME, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, DISABLE_IPV6, TTL_DURATION, &miniupnp_error);
 

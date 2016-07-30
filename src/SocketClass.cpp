@@ -16,6 +16,7 @@
 #include <cerrno>
 #include <arpa/inet.h>
 #include <signal.h>
+#include <sys/fcntl.h>
 
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
@@ -438,10 +439,6 @@ int SocketClass::getError(bool output_to_console)
 	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
 	// that WSAStartup() has been performed. WSAGetLastError() doesn't work unless you start WSAStartup();
 
-	// Buffer for strerror_r() and strerror_s() to put text into.
-	const int STR_BUF_SIZE = 100;
-	char str_buf[STR_BUF_SIZE] = { 0 };
-
 #ifdef __linux__
 	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
 
@@ -469,14 +466,17 @@ int SocketClass::getError(bool output_to_console)
 // On linux it expects an errno code.
 void SocketClass::outputSocketErrorToConsole(int error_code)
 {
-	// Buffer for strerror_r() and strerror_s() to put text into.
+#ifdef __linux__
+	// Buffer for strerror_r() to put text into.
 	const int STR_BUF_SIZE = 100;
 	char str_buf[STR_BUF_SIZE] = { 0 };
-#ifdef __linux__
+
+	char * str_buf_for_output = nullptr;
 	// If strerror_s didn't error, print it out
-	if (strerror_r(error_code, str_buf, STR_BUF_SIZE) == 0)
+	str_buf_for_output = strerror_r(error_code, str_buf, STR_BUF_SIZE);
+	if (str_buf_for_output != nullptr)
 	{
-		std::cout << "Errno: " << error_code << ", " << str_buf << "\n";
+		std::cout << "Errno: " << error_code << ", " << str_buf_for_output << "\n";
 	}
 	else  // Just print the error code
 	{
@@ -571,14 +571,15 @@ void SocketClass::coutPeerIPAndPort()
 // ENABLE_BLOCKING == 0;
 bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 {
-	u_long mode = *option;
+
 #ifdef _WIN32
+	u_long mode = *option;
 	int errchk = ioctlsocket(socket, FIONBIO, &mode);
 	if (errchk == NO_ERROR)
 	{
 		return false;
 	}
-	else
+	else // error
 	{
 		std::cout << "ioctlsocket() failed.\n";
 		getError();
@@ -587,12 +588,65 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 	}
 #endif//_WIN32
 #ifdef __linux__
-	int errchk = ioctl();
-	if (errchk != zxjkxzjoij)
+
+	if (*option == DISABLE_BLOCKING)
 	{
-		std::cout << "ioctl() failed.\n";
-		getError();
-		DBG_DISPLAY_ERROR_LOCATION();
+		int current_flag = fcntl(socket, F_GETFL);
+		if (current_flag == -1)
+		{
+			std::cout << "fcntl() failed getting flag.\n";
+			getError();
+			DBG_DISPLAY_ERROR_LOCATION();
+		}
+		if (current_flag == O_NONBLOCK)
+		{
+			DBG_TXT("Warning: Tried to set non-blocking flag on a socket that is already non-blocking.");
+			return false;
+		}
+		else
+		{
+			int errchk = fcntl(socket, F_SETFL, O_NONBLOCK);
+			if (errchk < 0)
+			{
+				std::cout << "fcntl() failed setting non_block flag.\n";
+				getError();
+				DBG_DISPLAY_ERROR_LOCATION();
+				return true;
+			}
+		}
+
+	}
+	else // *option == ENABLE_BLOCKING
+	{
+		// Clear the flag, thereby making the mode == ENABLE_BLOCKING
+		int enable_blocking = O_NONBLOCK;
+		enable_blocking &= ~O_NONBLOCK;
+
+		int current_flag = fcntl(socket, F_GETFL);
+		if (current_flag == -1)
+		{
+			std::cout << "fcntl() failed getting flag.\n";
+			getError();
+			DBG_DISPLAY_ERROR_LOCATION();
+		}
+		if (current_flag == O_NONBLOCK)
+		{
+			DBG_TXT("Warning: Tried to set enable blocking flag on a socket that is already blocking.");
+			return false;
+		}
+		else
+		{
+			int errchk = fcntl(socket, F_SETFL, enable_blocking);
+			if (errchk < 0)
+			{
+				std::cout << "fcntl() failed to set the enable blocking flag.\n";
+				getError();
+				DBG_DISPLAY_ERROR_LOCATION();
+				return true;
+			}
+		}
 	}
 #endif//__linux__
+
+	return true;
 }

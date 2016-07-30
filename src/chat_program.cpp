@@ -415,6 +415,11 @@ void* Connection::posixStartClientThread(void * instance)
 	return nullptr;
 }
 
+
+
+
+
+
 void Connection::clientThread(void * instance)
 {
 	Connection* self = static_cast <Connection*> (instance);
@@ -467,13 +472,27 @@ void Connection::clientThread(void * instance)
 
 #ifdef _WIN32
 		const int WOULD_BLOCK = WSAEWOULDBLOCK;
+		const int OPERATION_ALREADY_IN_PROGRESS = WSAEALREADY;
+		const int OPERATION_NOW_IN_PROGRESS = WSAEINPROGRESS;
 #endif//_WIN32
 #ifdef __linux__
 		const int WOULD_BLOCK = EWOULDBLOCK;
+		const int OPERATION_ALREADY_IN_PROGRESS = EALREADY;
+		const int OPERATION_NOW_IN_PROGRESS = EINPROGRESS;
 #endif//__linux__
 
+		// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set.
+		// Set the socket count in the WriteSet struct to 0.
+		FD_ZERO(&WriteSet);
+
 		// Attempt to connect to target
+		errno = 0;
 		int r = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		if (self->EXIT_NOW == true)
+		{
+			self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
+			self->exitThread(nullptr);
+		}
 		if (r == 0)
 		{
 			// Connected immediately
@@ -482,41 +501,60 @@ void Connection::clientThread(void * instance)
 		if (r != 0)
 		{
 			int err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
-			if (err_chk == SOCKET_ERROR)
-			{
-				std::cout << "Closing client thread due to connect() error.\n";
-				DBG_DISPLAY_ERROR_LOCATION();
-				self->exitThread(nullptr);
-			}
-			else if (err_chk == WSAEALREADY || err_chk == WSAEINPROGRESS || err_chk == WOULD_BLOCK)
+			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK)
 			{
 				// We must be in the middle of successfully connecting to the peer, if
-				// WSAEINPROGRESS triggered the if, or connect() is still trying to connect
-				// to the peer if WSAEALREADY triggered it.
-				// Therefore let us move on to select() to see when we have
+				// OPERATION_NOW_IN_PROGRESS triggered the if, or connect() is still trying to connect
+				// to the peer if OPERATION_ALREADY_IN_PROGRESS triggered it.
+				// Therefore let us move on to select() to see if we have
 				// completed our connection.
-				// WSAEINPROGRESS == connect() is in the middle of something
+				// OPERATION_NOW_IN_PROGRESS == connect() is in the middle of something
 				// WOULD_BLOCK == connect() is in the process of trying to connect to the peer. It may or may not succeed.
 
-
-				// Please use the macros FD_SET, FD_CHECK, FD_CLEAR, when dealing with struct fd_set
-				// set the socket count in the WriteSet struct to 0.
-				FD_ZERO(&WriteSet);
-				// Put specified socket into the socket array located in WriteSet
-				// Format is:  FD_SET(int fd, fd_set *WriteSet);
-				FD_SET(self->ClientSocketClass.fd_socket, &WriteSet);
+				// If fd_socket isn't set in the WriteSet struct, set it.
+				if (FD_ISSET(self->ClientSocketClass.fd_socket, &WriteSet) == false)
+				{
+					// Put specified socket into the socket array located in WriteSet
+					// Format is:  FD_SET(int fd, fd_set *WriteSet);
+					FD_SET(self->ClientSocketClass.fd_socket, &WriteSet);
+				}
 
 				// Used by select(). It makes it wait for x amount of time to wait for a readable socket to appear.
+				// Linux select() modifies these values to reflect the amount of time not slept, therefore
+				// they need to be assigned every time.
 				TimeValue.tv_sec = 2;
+				TimeValue.tv_usec = 0;
 
 
-				// select() returns the number of handles that are ready and contained in the fd_set structure
+				// select() returns the number of socket handles that are ready and contained in the fd_set structure
+				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errchk = select(self->ClientSocketClass.fd_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
+				if (self->EXIT_NOW == true)
+				{
+					self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
+					self->exitThread(nullptr);
+				}
 				if (errchk == SOCKET_ERROR)
 				{
 					self->ClientSocketClass.getError();
 					std::cout << "ClientThread() select Error.\n";
 					DBG_DISPLAY_ERROR_LOCATION();
+
+					// Get error information from the socket, not just from select()
+					// The effectiveness of this is untested so far as I haven't seen select error yet.
+					int errorz = 0;
+					u_int len = sizeof(errorz);
+					int sock_opt_errorchk = getsockopt(self->ClientSocketClass.fd_socket, SOL_SOCKET, SO_ERROR, &errorz, &len);
+					if(sock_opt_errorchk < 0)
+					{
+						std::cout << "getsockopt() failed.\n";
+						DBG_DISPLAY_ERROR_LOCATION();
+					}
+					else if (sock_opt_errorchk > 0)
+					{
+						std::cout << "getsockopt() returned: " << errorz << "\n";
+					}
+
 					self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
 					std::cout << "Closing connect socket b/c of the error. Ending client thread.\n";
 					self->exitThread(nullptr);
@@ -531,28 +569,34 @@ void Connection::clientThread(void * instance)
 					}
 					self->exitThread(nullptr);
 				}
-				else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
+				else if (errchk > 0)	// select() told us that at least 1 readable socket has appeared
 				{
+					// Try to tell everyone that the client thread is the winner
 					if (setWinnerMutex(CLIENT_WON) != CLIENT_WON)
 					{
+						// Server thread must have won the race
 						self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
 						if (global_verbose == true)
 							std::cout << "Exiting client thread because the server thread won the race.\n";
 						self->exitThread(nullptr);
 					}
-					else
+					else// Client is confirmed as the winner of the race.
 					{
 						SocketClass::global_socket = self->ClientSocketClass.fd_socket;
-						break;
+						// connect() one more time to fully connect to the available socket.
+						// connect() should return 0 (success) at this point.
+						continue;
 					}
 				}
 			}
 			else
 			{
+				self->ClientSocketClass.outputSocketErrorToConsole(errchk);
 				DBG_DISPLAY_ERROR_LOCATION();
+				std::cout << "Exiting client thread.\n";
 				self->exitThread(nullptr);
 			}
-		}	
+		}
 	}
 
 	// Display who the user is connected with.
@@ -586,6 +630,7 @@ void Connection::clientThread(void * instance)
 	// Exiting chat program
 	self->exitThread(nullptr);
 }
+
 
 // remote_host is /* optional */    default == "Peer".
 // remote_host is the IP that we are connected to.
