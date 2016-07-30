@@ -680,8 +680,8 @@ void Connection::loopedReceiveMessagesThread()
 		else if (bytes == SOCKET_ERROR)
 		{
             #ifdef __linux__
-			const int CONNECTION_RESET = 104;
-			const int BLOCKING_OPERATION_CANCELED = EINTR; // is this correct? check when on linux
+			const int CONNECTION_RESET = ECONNRESET;
+			const int BLOCKING_OPERATION_CANCELED = EINTR;
             #endif// __linux__
 			#ifdef _WIN32
 			const int CONNECTION_RESET = WSAECONNRESET;

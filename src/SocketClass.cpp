@@ -244,15 +244,6 @@ int SocketClass::connect(const sockaddr* name, int name_len)
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
 
-	//ptr = result;	// can't remember why this was necessary
-
-	//PclientSockaddr_in = (sockaddr_in *)ptr->ai_addr;
-	//void *voidAddr;
-	//char ipstr[INET_ADDRSTRLEN];
-	//voidAddr = &(PclientSockaddr_in->sin_addr);
-	//inet_ntop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));
-	//InetNtop(ptr->ai_family, voidAddr, ipstr, sizeof(ipstr));		//windows only
-
 	// Connect to server
 	int errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
