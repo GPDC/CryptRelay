@@ -277,6 +277,7 @@ void Connection::serverThread(void * instance)
 		TimeValue.tv_sec = 2;
 
 		// select() returns the number of handles that are ready and contained in the fd_set structure
+		errno = 0;
 		errchk = select(self->ServerSocketClass.fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 		if (errchk == SOCKET_ERROR)
 		{
@@ -526,6 +527,7 @@ void Connection::clientThread(void * instance)
 
 				// select() returns the number of socket handles that are ready and contained in the fd_set structure
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
+				errno = 0;
 				errchk = select(self->ClientSocketClass.fd_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
 				if (self->exit_now == true)
 				{
