@@ -67,7 +67,7 @@ public:
 
 	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
 	// during specific situations, and if additional information is needed about the current socket it can be accessed.
-	SOCKET fd_socket;
+	SOCKET fd_socket = INVALID_SOCKET;
 
 	// A global socket used as a way to communicate between threads.
 	static SOCKET global_socket;

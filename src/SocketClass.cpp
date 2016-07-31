@@ -50,7 +50,7 @@
 #endif//__linux__
 
 // Used by threads after a race winner has been established
-SOCKET SocketClass::global_socket;
+SOCKET SocketClass::global_socket = INVALID_SOCKET;
 
 
 SocketClass::SocketClass()
