@@ -503,6 +503,7 @@ bool UPnP::autoAddPortForwardRule()
 					// Making sure error info is displayed even after that many attempts has failed.
 					if (try_again_count == try_again_count_limit)
 					{
+						std::cout << "case 501: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
 							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
@@ -549,6 +550,7 @@ bool UPnP::autoAddPortForwardRule()
 					// Making sure error info is displayed even after that many attempts has failed.
 					if (try_again_count == try_again_count_limit)
 					{
+						std::cout << "case 718: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
 							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
@@ -586,6 +588,7 @@ bool UPnP::autoAddPortForwardRule()
 				 // If we are out of attempts, or if UPNP_AddPortMapping() failed hard
 				if ((try_again == false) || (try_again_count == try_again_count_limit))
 				{
+					std::cout << "UPNP hard fail. try_again_count: " << try_again_count << ", bool try_again: " << try_again << "\n";
 					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
 						upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 					return false;
