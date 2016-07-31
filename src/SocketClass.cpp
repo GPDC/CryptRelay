@@ -71,7 +71,7 @@ bool SocketClass::WSAStartup()
 	if (global_verbose == true)
 		std::cout << "Initializing Winsock... ";
 
-	int errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
+	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (errchk != 0)
 	{
 		getError();
@@ -86,11 +86,11 @@ bool SocketClass::WSAStartup()
 
 // Use this to set socket options such as broadcast, keepalive, max msg size, etc
 // If this function returns true, it is up to you to close the socket if desired.
-bool SocketClass::setsockopt(int level, int option_name, const char* option_value, int option_length)
+bool SocketClass::setsockopt(int32_t level, int32_t option_name, const char* option_value, int32_t option_length)
 {
 	if (global_verbose == true)
 		std::cout << "Setting socket options... ";
-	int errchk = ::setsockopt(fd_socket, level, option_name, option_value, option_length);
+	int32_t errchk = ::setsockopt(fd_socket, level, option_name, option_value, option_length);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -103,7 +103,7 @@ bool SocketClass::setsockopt(int level, int option_name, const char* option_valu
 }
 
 // Create a socket. Returns INVALID_SOCKET on error.
-SOCKET SocketClass::socket(int address_family, int socket_type, int protocol)
+SOCKET SocketClass::socket(int32_t address_family, int32_t socket_type, int32_t protocol)
 {
 	if (global_verbose == true)
 		std::cout << "Creating Socket... ";
@@ -123,12 +123,12 @@ SOCKET SocketClass::socket(int address_family, int socket_type, int protocol)
 	return fd_socket;
 }
 
-bool SocketClass::bind(const sockaddr *name, int name_len)
+bool SocketClass::bind(const sockaddr *name, int32_t name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Binding ... associating local address with the socket... ";
 	// Associating local ip address with the socket
-	int errchk = ::bind(fd_socket, name, name_len);
+	int32_t errchk = ::bind(fd_socket, name, name_len);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -144,10 +144,10 @@ bool SocketClass::bind(const sockaddr *name, int name_len)
 }
 
 // There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
-int SocketClass::send(const char* buffer, int buffer_length, int flags)
+int32_t SocketClass::send(const char* buffer, int32_t buffer_length, int32_t flags)
 {
 	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
-	int errchk = ::send(fd_socket, buffer, buffer_length, flags);
+	int32_t errchk = ::send(fd_socket, buffer, buffer_length, flags);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -159,9 +159,9 @@ int SocketClass::send(const char* buffer, int buffer_length, int flags)
 }
 
 // returns total number of bytes sent if there is no error.
-int SocketClass::sendto(const char* buf, int buf_len, int flags, const sockaddr *target, int target_len)
+int32_t SocketClass::sendto(const char* buf, int32_t buf_len, int32_t flags, const sockaddr *target, int32_t target_len)
 {
-	int errchk = ::sendto(fd_socket, buf, buf_len, flags, target, target_len);
+	int32_t errchk = ::sendto(fd_socket, buf, buf_len, flags, target, target_len);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -175,9 +175,9 @@ int SocketClass::sendto(const char* buf, int buf_len, int flags, const sockaddr 
 }
 
 // Returns number of bytes received if there is no error.
-int SocketClass::recv(char* buf, int buf_len, int flags)
+int32_t SocketClass::recv(char* buf, int32_t buf_len, int32_t flags)
 {
-	int errchk = ::recv(fd_socket, buf, buf_len, flags);
+	int32_t errchk = ::recv(fd_socket, buf, buf_len, flags);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -193,7 +193,7 @@ int SocketClass::recv(char* buf, int buf_len, int flags)
 	return errchk; // Number of bytes received
 }
 
-BYTE_SIZE SocketClass::recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len)
+BYTE_SIZE SocketClass::recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len)
 {
 	if (global_verbose == true)
 		std::cout << "Waiting to receive a msg...\n";
@@ -210,13 +210,13 @@ BYTE_SIZE SocketClass::recvfrom(char *buf, int buf_len, int flags, sockaddr* fro
 }
 
 // For TCP use, not UDP
-int SocketClass::connect(const sockaddr* name, int name_len)
+int32_t SocketClass::connect(const sockaddr* name, int32_t name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Attempting to connect to someone...\n";
 
 	// Connect to server
-	int errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
+	int32_t errchk = ::connect(fd_socket, name, name_len);	// Returns 0 on success
 	if (errchk == SOCKET_ERROR)
 	{
 		return SOCKET_ERROR;
@@ -235,7 +235,7 @@ bool SocketClass::listen()
 {
 	if (global_verbose == true)
 		std::cout << "listen() called.\n";
-	int errchk = ::listen(fd_socket, SOMAXCONN);
+	int32_t errchk = ::listen(fd_socket, SOMAXCONN);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -253,7 +253,7 @@ SOCKET SocketClass::accept()
 	socklen_t addr_size;
 #endif//__linux__
 #ifdef _WIN32
-	int addr_size;
+	int32_t addr_size;
 #endif//_WIN32
 	sockaddr_storage incomingAddr;
 	memset(&incomingAddr, 0, sizeof(incomingAddr));
@@ -288,7 +288,7 @@ bool SocketClass::getaddrinfo(std::string target_ip, std::string target_port, co
 	if (global_verbose == true)
 		std::cout << "getaddrinfo given: IP address and port... ";
 	
-	int errchk = ::getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);    //added & too ppresult on linux
+	int32_t errchk = ::getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);    //added & too ppresult on linux
 	if (errchk != 0)
 	{
 		getError();;
@@ -305,9 +305,9 @@ bool SocketClass::getaddrinfo(std::string target_ip, std::string target_port, co
 // struct sockaddr_in storage;
 // so it would be:  inet_pton(AF_INET, "192.168.1.1", &storage.sin_addr);
 // returns 1 on success.
-int SocketClass::inet_pton(int family, char* ip_addr, void* paddr_buf)
+int32_t SocketClass::inet_pton(int32_t family, char* ip_addr, void* paddr_buf)
 {
-	int errchk = ::inet_pton(family, ip_addr, paddr_buf);
+	int32_t errchk = ::inet_pton(family, ip_addr, paddr_buf);
 	if (errchk == 0)
 	{
 		std::cout << "inet_pton: paddr_buf points to invalid IPV4 or IPV6 string.\n";
@@ -325,11 +325,11 @@ int SocketClass::inet_pton(int family, char* ip_addr, void* paddr_buf)
 // Shuts down the current connection that is active on the given socket.
 // The shutdown operation is one of three macros.
 // SD_RECEIVE, SD_SEND, SD_BOTH.
-bool SocketClass::shutdown(SOCKET socket, int operation)
+bool SocketClass::shutdown(SOCKET socket, int32_t operation)
 {
 	std::cout << "Shutting down the connection... ";
 	// shutdown the connection since we're done
-	int errchk = ::shutdown(socket, operation);
+	int32_t errchk = ::shutdown(socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
@@ -382,13 +382,13 @@ void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
 // On linux, this function returns errno codes.
 // getError() will output the error code + description unless
 // output_to_console arg is given false.
-int SocketClass::getError(bool output_to_console)
+int32_t SocketClass::getError(bool output_to_console)
 {
 	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
 	// that WSAStartup() has been performed. WSAGetLastError() doesn't work unless you start WSAStartup();
 
 #ifdef __linux__
-	int errsv = errno;	// Quickly saving the error incase it is quickly lost.
+	int32_t errsv = errno;	// Quickly saving the error incase it is quickly lost.
 
 	if (output_to_console == true)
 	{
@@ -399,7 +399,7 @@ int SocketClass::getError(bool output_to_console)
 #endif//__linux__
 
 #ifdef _WIN32
-	int errsv = ::WSAGetLastError();
+	int32_t errsv = ::WSAGetLastError();
 
 	if (output_to_console == true)
 	{
@@ -412,11 +412,11 @@ int SocketClass::getError(bool output_to_console)
 
 // On windows it expects a WSAERROR code.
 // On linux it expects an errno code.
-void SocketClass::outputSocketErrorToConsole(int error_code)
+void SocketClass::outputSocketErrorToConsole(int32_t error_code)
 {
 #ifdef __linux__
 	// Buffer for strerror_r() to put text into.
-	const int STR_BUF_SIZE = 100;
+	const int32_t STR_BUF_SIZE = 100;
 	char str_buf[STR_BUF_SIZE] = { 0 };
 
 	char * str_buf_for_output = nullptr;
@@ -432,7 +432,7 @@ void SocketClass::outputSocketErrorToConsole(int error_code)
 	}
 #endif//__linux__
 #ifdef _WIN32
-	int tchar_count = 0;
+	int32_t tchar_count = 0;
 
 	// FORMAT_MESSAGE_ALLOCATE_BUFFER will allocate a buffer on local heap for error text, therefore
 	// it needs to be freed with LocalFree();
@@ -477,7 +477,7 @@ void SocketClass::coutPeerIPAndPort()
 {
 	sockaddr PeerIPAndPortStorage;
 #ifdef _WIN32
-	int peer_ip_and_port_storage_len = sizeof(sockaddr);
+	int32_t peer_ip_and_port_storage_len = sizeof(sockaddr);
 #endif//_WIN32
 #ifdef __linux__
 	socklen_t peer_ip_and_port_storage_len = sizeof(sockaddr);
@@ -485,7 +485,7 @@ void SocketClass::coutPeerIPAndPort()
 	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
 
 	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
-	int errchk = getpeername(fd_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	int32_t errchk = getpeername(fd_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
 	if (errchk == -1)
 	{
 		getError();
@@ -522,7 +522,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 
 #ifdef _WIN32
 	u_long mode = *option;
-	int errchk = ioctlsocket(socket, FIONBIO, &mode);
+	int32_t errchk = ioctlsocket(socket, FIONBIO, &mode);
 	if (errchk == NO_ERROR)
 	{
 		return false;
@@ -539,7 +539,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 
 	if (*option == DISABLE_BLOCKING)
 	{
-		int current_flag = fcntl(socket, F_GETFL);
+		int32_t current_flag = fcntl(socket, F_GETFL);
 		if (current_flag == -1)
 		{
 			std::cout << "fcntl() failed getting flag.\n";
@@ -553,7 +553,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 		}
 		else
 		{
-			int errchk = fcntl(socket, F_SETFL, O_NONBLOCK);
+			int32_t errchk = fcntl(socket, F_SETFL, O_NONBLOCK);
 			if (errchk < 0)
 			{
 				std::cout << "fcntl() failed setting non_block flag.\n";
@@ -567,10 +567,10 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 	else // *option == ENABLE_BLOCKING
 	{
 		// Clear the flag, thereby making the mode == ENABLE_BLOCKING
-		int enable_blocking = O_NONBLOCK;
+		int32_t enable_blocking = O_NONBLOCK;
 		enable_blocking &= ~O_NONBLOCK;
 
-		int current_flag = fcntl(socket, F_GETFL);
+		int32_t current_flag = fcntl(socket, F_GETFL);
 		if (current_flag == -1)
 		{
 			std::cout << "fcntl() failed getting flag.\n";
@@ -584,7 +584,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 		}
 		else
 		{
-			int errchk = fcntl(socket, F_SETFL, enable_blocking);
+			int32_t errchk = fcntl(socket, F_SETFL, enable_blocking);
 			if (errchk < 0)
 			{
 				std::cout << "fcntl() failed to set the enable blocking flag.\n";
@@ -600,7 +600,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 }
 
 // Get error information from the socket.
-int SocketClass::getSockOptError(SOCKET fd_socket)
+int32_t SocketClass::getSockOptError(SOCKET fd_socket)
 {
 #ifdef _WIN32
 	char errorz = 0;
@@ -611,7 +611,7 @@ int SocketClass::getSockOptError(SOCKET fd_socket)
 	uint32_t len = sizeof(errorz);
 #endif//__linux__
 
-	int sock_opt_errorchk = getsockopt(fd_socket, SOL_SOCKET, SO_ERROR, &errorz, &len);
+	int32_t sock_opt_errorchk = getsockopt(fd_socket, SOL_SOCKET, SO_ERROR, &errorz, &len);
 	if (sock_opt_errorchk == SOCKET_ERROR)
 	{
 		return SOCKET_ERROR;

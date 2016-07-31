@@ -191,9 +191,9 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 		ChatClientInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
 }
 
-int main(int argc, char *argv[])
+int32_t main(int32_t argc, char *argv[])
 {
-	int errchk = 0;
+	int32_t errchk = 0;
 
 	CommandLineInput CLI;
 	// Check what the user wants to do via command line input
@@ -278,13 +278,13 @@ int main(int argc, char *argv[])
 		if (CLI.getMyHostPort().empty() == true)
 		{
 			PortKnock PortTest;
-			const int IN_USE = 1;
-			int my_port_int = 0;
-			const int ATTEMPT_COUNT = 20;
+			const int32_t IN_USE = 1;
+			int32_t my_port_int = 0;
+			const int32_t ATTEMPT_COUNT = 20;
 
 			// Only checking ATTEMPT_COUNT times to see if the port is in use.
 			// Only assigning a new port number ATTEMPT_COUNT times.
-			for (int i = 0; i < ATTEMPT_COUNT; ++i)
+			for (int32_t i = 0; i < ATTEMPT_COUNT; ++i)
 			{
 				if (i == 19)
 				{
@@ -341,7 +341,7 @@ int main(int argc, char *argv[])
 
 	// Wait for ChatServer and ChatClient threads to finish
 #ifdef __linux__
-	int pret = pthread_join(Connection::thread0, NULL);
+	int32_t pret = pthread_join(Connection::thread0, NULL);
             if (pret)
 			{
 				std::cout << "error";
@@ -355,7 +355,7 @@ int main(int argc, char *argv[])
 			}
 #endif//__linux__
 #ifdef _WIN32
-	int thread_wait_errchk = WaitForMultipleObjects(
+	int32_t thread_wait_errchk = WaitForMultipleObjects(
 			(DWORD)2,	// Number of objects in array
 			Connection::ghEvents,	// Array of objects
 			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
@@ -398,9 +398,9 @@ ifdefs must always comment the endif with what it is endifing.
 
 Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks better;
 				{								// Single lines with curly braces, or
-					int i = 5;					// Single lines with no curly braces.
-					int truth = 1;
-					int lie = 0;
+					int32_t i = 5;					// Single lines with no curly braces.
+					int32_t truth = 1;
+					int32_t lie = 0;
 					bool onepptheory = false;
 					bool bear = true;
 					bool big = false;

@@ -16,7 +16,7 @@ public:
 	PortKnock();
 	virtual ~PortKnock();
 
-	int isLocalPortInUse(std::string port, std::string my_local_ip);
+	int32_t isLocalPortInUse(std::string port, std::string my_local_ip);
 
 	// Very simple checking of 1 port. Not for checking many ports quickly.
 	bool isPortOpen(std::string ip, std::string port);

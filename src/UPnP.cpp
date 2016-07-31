@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string>
 #include <time.h>	// needed for localtime_s and localtime_r
-#include <limits.h>	// macros for int, short, char, etc that are defined as their min/max values.
+#include <limits.h>	// macros for int32_t, short, char, etc that are defined as their min/max values.
 
 #include "UPnP.h"
 #include "GlobalTypeHeader.h"
@@ -22,7 +22,7 @@
 #include <stdio.h>
 #include <string>
 #include <time.h>	// needed for localtime_s and localtime_r
-#include <limits.h>	// macros for int, short, char, etc that are defined as their min/max values.
+#include <limits.h>	// macros for int32_t, short, char, etc that are defined as their min/max values.
 
 #include "UPnP.h"
 #include "GlobalTypeHeader.h"
@@ -100,7 +100,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	if (findValidIGD() == true)
 		return;
 
-	int errchk = UPNP_DeletePortMapping(
+	int32_t errchk = UPNP_DeletePortMapping(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			extern_port,
@@ -126,11 +126,11 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 // Stores found devices in struct UPNPDEV* UpnpDevicesList
 void UPnP::findUPnPDevices()
 {
-	int miniupnp_error = 0;		// upnpDiscover() sends error info here.
-	const int TTL_DURATION = 2;
-	const int DISABLE_IPV6 = 0;
-	//const int ENABLE_IPV6 = 1;
-	const int WAIT_TIME = 2000; // max time in milliseconds to wait for a response from device
+	int32_t miniupnp_error = 0;		// upnpDiscover() sends error info here.
+	const int32_t TTL_DURATION = 2;
+	const int32_t DISABLE_IPV6 = 0;
+	//const int32_t ENABLE_IPV6 = 1;
+	const int32_t WAIT_TIME = 2000; // max time in milliseconds to wait for a response from device
 	UpnpDevicesList = upnpDiscover(WAIT_TIME, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, DISABLE_IPV6, TTL_DURATION, &miniupnp_error);
 
 	if (UpnpDevicesList)
@@ -160,7 +160,7 @@ void UPnP::findUPnPDevices()
 bool UPnP::findValidIGD()
 {
 	// Looks at the list of UPnP devices returned by upnpDiscover() to determine if one is a valid IGD
-	int errchk = UPNP_GetValidIGD(
+	int32_t errchk = UPNP_GetValidIGD(
 				UpnpDevicesList,
 				&Urls,
 				&IGDData,
@@ -210,9 +210,9 @@ void UPnP::showInformation()
 	char connection_type[64];
 	char status[64];
 	char last_connection_error[64];
-	unsigned int uptime;
-	unsigned int bitrate_up, bitrate_down;
-	int errchk;
+	uint32_t uptime;
+	uint32_t bitrate_up, bitrate_down;
+	int32_t errchk;
 
 	std::cout << "# Displaying various information:\n";
 
@@ -369,8 +369,8 @@ void UPnP::displayTimeStarted(u_int uptime)
 // where urls for controlling the IGD is.
 void UPnP::getListOfPortForwards()
 {
-	int errchk = 1;
-	int i = 0;
+	int32_t errchk = 1;
+	int32_t i = 0;
 	char index[6];
 	char internal_client[40];
 	char internal_port[6];
@@ -432,8 +432,8 @@ bool UPnP::autoAddPortForwardRule()
 {
 	// Information necessary for UPNP_AddPortMapping()
 	bool try_again = false;
-	const int try_again_count_limit = 20;
-	int try_again_count = 0;					// Limiting the number of attempts to make this work in certain fail cases.
+	const int32_t try_again_count_limit = 20;
+	int32_t try_again_count = 0;					// Limiting the number of attempts to make this work in certain fail cases.
 	const char * description_of_port_forward_entry = "CryptRelay";	// Describe what the port forward entry is for.
 
 	// Amount of time (seconds) that the ports will be forwarded for. "0" == infinite.
@@ -447,7 +447,7 @@ bool UPnP::autoAddPortForwardRule()
 		// Add port forwarding now
 		if (my_local_ip[0] != 0)
 		{
-			int errchk = UPNP_AddPortMapping(
+			int32_t errchk = UPNP_AddPortMapping(
 					Urls.controlURL,
 					IGDData.first.servicetype,
 					upnp_my_external_port.c_str(),
@@ -474,8 +474,8 @@ bool UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int i_internal_port = stoi(upnp_my_internal_port);
-					int i_external_port = stoi(upnp_my_external_port);
+					int32_t i_internal_port = stoi(upnp_my_internal_port);
+					int32_t i_external_port = stoi(upnp_my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
 					if ((i_internal_port < USHRT_MAX && i_external_port < USHRT_MAX)
@@ -520,8 +520,8 @@ bool UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int i_internal_port = stoi(upnp_my_internal_port);
-					int i_external_port = stoi(upnp_my_external_port);
+					int32_t i_internal_port = stoi(upnp_my_internal_port);
+					int32_t i_external_port = stoi(upnp_my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
 					if ( (i_internal_port < USHRT_MAX && i_external_port < USHRT_MAX)
@@ -624,7 +624,7 @@ bool UPnP::autoAddPortForwardRule()
 		// Displays the specific port forward entry to see if it has actually been implemented
 		// ... which it should have since it didn't error.
 		// Needs some of the same information that was given to UPNP_AddPortMapping()
-		int errchk = UPNP_GetSpecificPortMappingEntry(
+		int32_t errchk = UPNP_GetSpecificPortMappingEntry(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			/*in*/	upnp_my_external_port.c_str(),
@@ -690,7 +690,7 @@ void UPnP::autoDeletePortForwardRule()
 	std::cout << "Automatically deleting port forward rule... ";
 
 	// Delete the port forward rule
-	int errchk = UPNP_DeletePortMapping(
+	int32_t errchk = UPNP_DeletePortMapping(
 			Urls.controlURL,
 			IGDData.first.servicetype,
 			upnp_my_external_port.c_str(),

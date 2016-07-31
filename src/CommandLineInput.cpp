@@ -73,7 +73,7 @@ void CommandLineInput::Examples()
 }
 
 // Returns true if the program is intended to exit after calling this function.
-bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
+bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
@@ -82,11 +82,11 @@ bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
 	IPAddress IPAdressFormatCheck;
 
 	// Put all argv's into a vector so they can be compared to strings	// could use strcmp ?
-	for (int i = 0; i < argc; i++)
+	for (int32_t i = 0; i < argc; i++)
 	{
 		arg.push_back(argv[i]);
 	}
-	int arg_size = arg.size();
+	int32_t arg_size = arg.size();
 
 	// If no command line arguments supplied, show the ReadMe
 	if (argc <= 1)
@@ -98,7 +98,7 @@ bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
 	bool err_chk_bool = 0;
 	if (argc >= 2 && arg_size >= 2)
 	{
-		for (int i = 1; i < argc; ++i)
+		for (int32_t i = 1; i < argc; ++i)
 		{
 			if (arg[i] == "-h"
 				|| arg[i] == "-H"

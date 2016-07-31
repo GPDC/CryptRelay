@@ -30,7 +30,7 @@
 //  INVALID_SOCKET is defined as (~0) and is returned from various function calls
 //  to tell the programmer that something went wrong.
 //  On linux it returns -1 for an invalid socket instead of (~0) because SOCKET is
-//  defined as an int on linux, and valid SOCKETs will only be positive.
+//  defined as an int32_t on linux, and valid SOCKETs will only be positive.
 
 #ifndef SocketClass_h__
 #define SocketClass_h__
@@ -51,12 +51,12 @@
 
 
 #ifdef __linux__
-typedef int SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
-#define BYTE_SIZE ssize_t// because recvfrom needs to return ssize_t on linux, and int on win
+typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
+#define BYTE_SIZE ssize_t// because recvfrom needs to return ssize_t on linux, and int32_t on win
 #endif//__linux__
 
 #ifdef _WIN32
-typedef int BYTE_SIZE;	// because recvfrom needs to return ssize_t on linux, and int on win
+typedef int32_t BYTE_SIZE;	// because recvfrom needs to return ssize_t on linux, and int32_t on win
 #endif//_WIN32
 
 class SocketClass
@@ -79,22 +79,22 @@ public:
 	// 3. return a new SocketClass with the socket set.
 
 
-	SOCKET socket(int address_family, int type, int protocol);
+	SOCKET socket(int32_t address_family, int32_t type, int32_t protocol);
 	SOCKET accept();
 
 	bool WSAStartup();
-	bool setsockopt(int level, int option_name, const char* option_value, int option_length);
-	bool bind(const sockaddr *name, int name_len);
-	bool shutdown(SOCKET socket, int operation);
+	bool setsockopt(int32_t level, int32_t option_name, const char* option_value, int32_t option_length);
+	bool bind(const sockaddr *name, int32_t name_len);
+	bool shutdown(SOCKET socket, int32_t operation);
 	bool listen();
 	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
 
-	int inet_pton(int family, char * ip_addr, void * paddr_buf);
-	int connect(const sockaddr* name, int name_len);
-	int send(const char* buffer, int buffer_length, int flags);
-	int sendto(const char* buf, int len, int flags, const sockaddr *to, int to_len);
-	int recv(char* buf, int buf_len, int flags);
-	BYTE_SIZE recvfrom(char *buf, int buf_len, int flags, sockaddr* from, socklen_t* from_len);
+	int32_t inet_pton(int32_t family, char * ip_addr, void * paddr_buf);
+	int32_t connect(const sockaddr* name, int32_t name_len);
+	int32_t send(const char* buffer, int32_t buffer_length, int32_t flags);
+	int32_t sendto(const char* buf, int32_t len, int32_t flags, const sockaddr *to, int32_t to_len);
+	int32_t recv(char* buf, int32_t buf_len, int32_t flags);
+	BYTE_SIZE recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len);
 
 	void closesocket(SOCKET socket);
 	void WSACleanup();
@@ -102,19 +102,19 @@ public:
 	void coutPeerIPAndPort();
 
 
-	const int CONNECTION_REFUSED = -10061;
-	const int TIMEOUT_ERROR = -10060;
+	const int32_t CONNECTION_REFUSED = -10061;
+	const int32_t TIMEOUT_ERROR = -10060;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError(), or errno, code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real error.
-	int getError(bool output_to_console = true);	// This is unlike everything else here - it just retrieves and prints errors.
+	int32_t getError(bool output_to_console = true);	// This is unlike everything else here - it just retrieves and prints errors.
 	const bool DISABLE_CONSOLE_OUTPUT = false;
 
 	// Only intended for use with Socket errors.
 	// Windows expects a WSAERROR code, linux expects errno code.
-	void outputSocketErrorToConsole(int error_code);
+	void outputSocketErrorToConsole(int32_t error_code);
 
 	// Enable or disable the blocking socket option.
 	// By default, blocking is enabled.
@@ -123,7 +123,7 @@ public:
 	const u_long ENABLE_BLOCKING = 0;
 
 	// Get error information from the socket.
-	int getSockOptError(SOCKET fd_socket);
+	int32_t getSockOptError(SOCKET fd_socket);
 	
 
 protected:

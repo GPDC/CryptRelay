@@ -35,9 +35,9 @@ public:
 	static pthread_t thread0;	// Server
 	static pthread_t thread1;	// Client
 	static pthread_t thread2;	// Send()
-	static int ret0;	// Server
-	static int ret1;	// Client
-	static int ret2;	// Send()
+	static int32_t ret0;	// Server
+	static int32_t ret1;	// Client
+	static int32_t ret2;	// Send()
 #endif //__linux__
 #ifdef _WIN32
 	static HANDLE ghEvents[2];	// [0] == server
@@ -99,14 +99,14 @@ private:
 	void exitThread(void* ptr);
 
 	// Variables necessary for determining who won the connection race
-	static const int SERVER_WON;
-	static const int CLIENT_WON;
-	static const int NOBODY_WON;
-	static int global_winner;
+	static const int32_t SERVER_WON;
+	static const int32_t CLIENT_WON;
+	static const int32_t NOBODY_WON;
+	static int32_t global_winner;
 
 	// Server and Client thread must use this function to prevent
 	// a race condition.
-	static int setWinnerMutex(int the_winner);
+	static int32_t setWinnerMutex(int32_t the_winner);
 
 
 	// Continually getline()'s the command prompt to see what the user wants to do.
@@ -132,15 +132,15 @@ private:
 	//addrinfo		 *ptr;		// this would only be used if traversing the list of address structures.
 
 	// Used for copying a host byte order LongLong into a buffer as a network byte order.
-	bool intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert);
+	bool intoBufferHostToNetworkLongLong(char * buf, const int64_t BUF_LEN, int64_t variable_to_convert);
 
 	// This method is thread safe.
 	// Everything in this class should use this instead of the regular ::send(), and
 	// the SocketClass.send().
-	int send(const char * sendbuf, int amount_to_send);
+	int32_t send(const char * sendbuf, int32_t amount_to_send);
 	// This is for the send() located in this class.
-	int total_amount_sent = 0;
-	int bytes_sent = 0;
+	int32_t total_amount_sent = 0;
+	int32_t bytes_sent = 0;
 
 
 	// Sends a file
@@ -149,15 +149,15 @@ private:
 	bool is_send_file_thread_in_use = false;
 
 	// For sending the file size and file name to peer.
-	bool sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file);
-	bool sendFileName(char * buf, const long long BUF_LEN, const std::string& name_and_location_of_file);
+	bool sendFileSize(char * buf, const int64_t BUF_LEN, int64_t size_of_file);
+	bool sendFileName(char * buf, const int64_t BUF_LEN, const std::string& name_and_location_of_file);
 
 	// Copies a file.
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 
 	// For use with anything file related
 	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
-	long long getFileStatsAndDisplaySize(const char * file_name_and_location);
+	int64_t getFileStatsAndDisplaySize(const char * file_name_and_location);
 
 	// If given a direct path to a file, it will return the file name.
 	// Ex: c:\users\me\storage\my_file.txt
@@ -185,24 +185,24 @@ private:
 
 	// Variables necessary for processRecvBuf().
 	// They are here so that the state can be saved even after exiting the funciton.
-	long long position_in_recv_buf = CR_BEGIN;
-	long long process_recv_buf_state = CHECK_FOR_FLAG;
-	long long position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
+	int64_t position_in_recv_buf = CR_BEGIN;
+	int64_t process_recv_buf_state = CHECK_FOR_FLAG;
+	int64_t position_in_message = CR_BEGIN;	// current cursor position inside the imaginary message sent by the peer.
 	int8_t type_of_message_flag = CR_NO_FLAG;
-	long long message_size_part_one = CR_SIZE_NOT_ASSIGNED;
-	long long message_size_part_two = CR_SIZE_NOT_ASSIGNED;
-	long long message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
+	int64_t message_size_part_one = CR_SIZE_NOT_ASSIGNED;
+	int64_t message_size_part_two = CR_SIZE_NOT_ASSIGNED;
+	int64_t message_size = CR_SIZE_NOT_ASSIGNED;		// peer told us this size
 
 	// More variables necessary for processRecvBuf().
-	static const long long INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
-	static const long long RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
+	static const int64_t INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
+	static const int64_t RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];
 	std::string incoming_file_name_from_peer;
 	bool is_file_done_being_written = true;
 
 	// Here is where all messages received are processed to determine what to do with the message.
 	// Some messages might be printed to screen, others are a portion of a file transfer.
-	bool processRecvBuf(char * recv_buf, long long buf_len, long long byte_count);
+	bool processRecvBuf(char * recv_buf, int64_t buf_len, int64_t byte_count);
 
 	enum RecvStateMachine
 	{
@@ -222,21 +222,21 @@ private:
 
 	// Variables for processRecvBuf()
 	// Specifically for the cases that deal with writing an incoming file from the peer.
-	long long bytes_read = 0;
-	long long bytes_written = 0;
-	long long total_bytes_written_to_file = 0;
+	int64_t bytes_read = 0;
+	int64_t bytes_written = 0;
+	int64_t total_bytes_written_to_file = 0;
 
 	// For writing files in processRecvBuf()
 	FILE * WriteFile = nullptr;
 
 	// For use with processRecvBuf()
 	// Using the given buffer, convert the first 8 bytes from Network to Host Long Long
-	int assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes);
+	int32_t assignFileSizeFromPeer(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes);
 	// Variables necessary for assignFileSizeFromPeer();
-	long long file_size_fragment = 0;
-	long long incoming_file_size_from_peer = 0;
-	const int RECV_AGAIN = 0;
-	const int FINISHED = 1;
+	int64_t file_size_fragment = 0;
+	int64_t incoming_file_size_from_peer = 0;
+	const int32_t RECV_AGAIN = 0;
+	const int32_t FINISHED = 1;
 };
 
 #endif //chat_program_h__

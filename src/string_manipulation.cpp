@@ -46,7 +46,7 @@ bool StringManip::split(std::string string, char delimiter, std::vector<std::str
 std::string StringManip::duplicateCharacter(std::string string, char duplicate_character)
 {
 	size_t string_length = string.length();
-	unsigned int i;
+	uint32_t i;
 	for (i = 0; i < string_length && i < UINT_MAX; ++i)
 	{
 		if (string[i] == duplicate_character)

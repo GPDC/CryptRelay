@@ -15,7 +15,7 @@ public:
 	virtual ~CommandLineInput();
 
 	// Set the appropriate variables based on the user's argv[] input.
-	bool setVariablesFromArgv(int argc, char* argv[]);
+	bool setVariablesFromArgv(int32_t argc, char* argv[]);
 
 	// These are used as a way to get the private member variables
 	// while making it clear they can't be changed outside the class.

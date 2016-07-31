@@ -44,12 +44,12 @@
 	pthread_t Connection::thread0 = 0;	// Server
 	pthread_t Connection::thread1 = 0;	// Client
 	pthread_t Connection::thread2 = 0;	// Send()
-	int Connection::ret0 = 0;	// Server
-	int Connection::ret1 = 0;	// Client
-    int Connection::ret2 = 0;	// Send()
+	int32_t Connection::ret0 = 0;	// Server
+	int32_t Connection::ret1 = 0;	// Client
+    int32_t Connection::ret2 = 0;	// Send()
 
     // for the shutdown() function
-    const int SD_BOTH = 2;
+    const int32_t SD_BOTH = 2;
 #endif //__linux__
 
 #ifdef _WIN32
@@ -80,10 +80,10 @@ std::mutex Connection::RaceMutex;
 const std::string Connection::DEFAULT_PORT = "30248";
 
 // Variables necessary for determining who won the connection race
-const int Connection::SERVER_WON = -29;
-const int Connection::CLIENT_WON = -30;
-const int Connection::NOBODY_WON = -25;
-int Connection::global_winner = NOBODY_WON;
+const int32_t Connection::SERVER_WON = -29;
+const int32_t Connection::CLIENT_WON = -30;
+const int32_t Connection::NOBODY_WON = -25;
+int32_t Connection::global_winner = NOBODY_WON;
 
 
 // Flags for send() that indicated what the message is being used for.
@@ -178,7 +178,7 @@ void Connection::createStartServerThread(void * instance)
 	ghEvents[0] = (HANDLE)thread_handle;	// i should be using vector of ghEvents instead
 	if (thread_handle == -1L)
 	{
-		int errsv = errno;
+		int32_t errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		return;
@@ -189,7 +189,7 @@ void Connection::createStartServerThread(void * instance)
 	ghEvents[0] = (HANDLE)_beginthread(startServerThread, 0, instance);		//c style typecast    from: uintptr_t    to: HANDLE.
 	if (ghEvents[0] == (HANDLE)(-1L) )
 	{
-		int errsv = errno;
+		int32_t errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
 		return;
 	} 
@@ -261,7 +261,7 @@ void Connection::serverThread(void * instance)
 	memset(&ReadSet, 0, sizeof(ReadSet));
 
 	// loop check for incoming connections
-	int errchk;
+	int32_t errchk;
 	while (1)
 	{
 		DBG_TXT("Server thread active...");
@@ -270,7 +270,7 @@ void Connection::serverThread(void * instance)
 		// set the socket count in the ReadSet struct to 0.
 		FD_ZERO(&ReadSet);
 		// Put specified socket into the socket array located in ReadSet
-		// Format is:  FD_SET(int fd, fd_set *ReadSet);
+		// Format is:  FD_SET(int32_t fd, fd_set *ReadSet);
 		FD_SET(self->ServerSocketClass.fd_socket, &ReadSet);
 
 		// This has to be in this loop! Linux resets this value every time select() times out.
@@ -387,7 +387,7 @@ void Connection::createStartClientThread(void * instance)
 	ghEvents[1] = (HANDLE)thread_handle;
 	if (thread_handle == -1L)
 	{
-		int errsv = errno;
+		int32_t errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		return;
@@ -398,7 +398,7 @@ void Connection::createStartClientThread(void * instance)
 	ghEvents[1] = (HANDLE)_beginthread(startClientThread, 0, instance);		//c style typecast    from: uintptr_t    to: HANDLE.
 	if (ghEvents[1] == (HANDLE)(-1L) )
 	{
-		int errsv = errno;
+		int32_t errsv = errno;
 		std::cout << "_beginthread() error: " << errsv << "\n";
 		return;
 	} 
@@ -431,7 +431,7 @@ void Connection::clientThread(void * instance)
 		self->exitThread(nullptr);
 	}
 
-	int errchk;
+	int32_t errchk;
 	addrinfo ClientHints;
 	addrinfo* ClientConnectionInfo;
 	
@@ -479,14 +479,14 @@ void Connection::clientThread(void * instance)
 		// OPERATION_NOW_IN_PROGRESS == connect() is in the middle of negotiating the connection to the peer.
 		// WOULD_BLOCK == connect() is in the process of trying to connect to the peer. The peer might not even exist.
 #ifdef _WIN32
-		const int WOULD_BLOCK = WSAEWOULDBLOCK;
-		const int OPERATION_ALREADY_IN_PROGRESS = WSAEALREADY;
-		const int OPERATION_NOW_IN_PROGRESS = WSAEINPROGRESS;
+		const int32_t WOULD_BLOCK = WSAEWOULDBLOCK;
+		const int32_t OPERATION_ALREADY_IN_PROGRESS = WSAEALREADY;
+		const int32_t OPERATION_NOW_IN_PROGRESS = WSAEINPROGRESS;
 #endif//_WIN32
 #ifdef __linux__
-		const int WOULD_BLOCK = EWOULDBLOCK;
-		const int OPERATION_ALREADY_IN_PROGRESS = EALREADY;
-		const int OPERATION_NOW_IN_PROGRESS = EINPROGRESS;
+		const int32_t WOULD_BLOCK = EWOULDBLOCK;
+		const int32_t OPERATION_ALREADY_IN_PROGRESS = EALREADY;
+		const int32_t OPERATION_NOW_IN_PROGRESS = EINPROGRESS;
 #endif//__linux__
 
 
@@ -496,7 +496,7 @@ void Connection::clientThread(void * instance)
 
 		// Attempt to connect to target
 		errno = 0;
-		int conn_return_val = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		int32_t conn_return_val = self->ClientSocketClass.connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 		if (self->exit_now == true)
 		{
 			self->ClientSocketClass.closesocket(self->ClientSocketClass.fd_socket);
@@ -509,7 +509,7 @@ void Connection::clientThread(void * instance)
 		}
 		if (conn_return_val != 0)
 		{
-			int err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
+			int32_t err_chk = self->ClientSocketClass.getError(self->ClientSocketClass.DISABLE_CONSOLE_OUTPUT);
 			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK)
 			{
 				// Let us move on to select() to see if we have completed the connection.
@@ -518,7 +518,7 @@ void Connection::clientThread(void * instance)
 				if (FD_ISSET(self->ClientSocketClass.fd_socket, &WriteSet) == false)
 				{
 					// Put specified socket into the socket array located in WriteSet
-					// Format is:  FD_SET(int fd, fd_set *WriteSet);
+					// Format is:  FD_SET(int32_t fd, fd_set *WriteSet);
 					FD_SET(self->ClientSocketClass.fd_socket, &WriteSet);
 				}
 
@@ -545,7 +545,7 @@ void Connection::clientThread(void * instance)
 
 					// Get error information from the socket, not just from select()
 					// The effectiveness of this is untested so far as I haven't seen select error yet.
-					int errorz = self->ClientSocketClass.getSockOptError(self->ClientSocketClass.fd_socket);
+					int32_t errorz = self->ClientSocketClass.getSockOptError(self->ClientSocketClass.fd_socket);
 					if (errorz == SOCKET_ERROR)
 					{
 						std::cout << "getsockopt() failed.\n";
@@ -676,11 +676,11 @@ void Connection::loopedReceiveMessagesThread()
 	process_recv_buf_state = CHECK_FOR_FLAG;
 
 	// Buffer for receiving messages
-	static const long long recv_buf_len = 512;
+	static const int64_t recv_buf_len = 512;
 	char recv_buf[recv_buf_len];
 
-	const int CONNECTION_GRACEFULLY_CLOSED = 0; // when recv() returns 0, it means gracefully closed.
-	int bytes = 0;	
+	const int32_t CONNECTION_GRACEFULLY_CLOSED = 0; // when recv() returns 0, it means gracefully closed.
+	int32_t bytes = 0;	
 	while (1)
 	{
 		bytes = ::recv(SocketClass::global_socket, (char *)recv_buf, recv_buf_len, 0);
@@ -694,15 +694,15 @@ void Connection::loopedReceiveMessagesThread()
 		else if (bytes == SOCKET_ERROR)
 		{
             #ifdef __linux__
-			const int CONNECTION_RESET = ECONNRESET;
-			const int BLOCKING_OPERATION_CANCELED = EINTR;
+			const int32_t CONNECTION_RESET = ECONNRESET;
+			const int32_t BLOCKING_OPERATION_CANCELED = EINTR;
             #endif// __linux__
 			#ifdef _WIN32
-			const int CONNECTION_RESET = WSAECONNRESET;
-			const int BLOCKING_OPERATION_CANCELED = WSAEINTR;
+			const int32_t CONNECTION_RESET = WSAECONNRESET;
+			const int32_t BLOCKING_OPERATION_CANCELED = WSAEINTR;
 			#endif// _WIN32
 
-			int errchk = ClientServerSocketClass->getError(ClientServerSocketClass->DISABLE_CONSOLE_OUTPUT);
+			int32_t errchk = ClientServerSocketClass->getError(ClientServerSocketClass->DISABLE_CONSOLE_OUTPUT);
 
 			// If errchk == BLOCKING_OPERATION_CANCELED, don't report the error.
 			// else, report whatever error happened.
@@ -779,7 +779,7 @@ bool Connection::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 // how to interpret the incoming message. For example as a file,
 // or as a chat message.
 // To see a list of flags, look in the header file.
-int Connection::send(const char * sendbuf, int amount_to_send)
+int32_t Connection::send(const char * sendbuf, int32_t amount_to_send)
 {
 	// Whatever thread gets here first, will lock
 	// the door so that nobody else can come in.
@@ -821,7 +821,7 @@ void Connection::loopedGetUserInputThread()
 	std::thread file_transfer;
 	std::string user_input;
 		
-	const long long CHAT_BUF_LEN = 4096;
+	const int64_t CHAT_BUF_LEN = 4096;
 	char* chat_buf = new char[CHAT_BUF_LEN];
 
 	while (1)
@@ -869,7 +869,7 @@ void Connection::loopedGetUserInputThread()
 
 
 			// get the size of the array
-			long long split_strings_size = split_strings.size();
+			int64_t split_strings_size = split_strings.size();
 
 			// There should be two strings in the vector.
 			// [0] should be -f
@@ -882,14 +882,14 @@ void Connection::loopedGetUserInputThread()
 			std::string file_name_and_loca;
 			std::string file_encryption_opt;
 			// Determine if user wants to send a file or Encrypt & send a file.
-			for (long long i = 0; i < split_strings_size; ++i)
+			for (int64_t i = 0; i < split_strings_size; ++i)
 			{
 				if (split_strings[(u_int)i] == "-f" && i < split_strings_size - 1)
 				{
 					// The first string will always be -f. All strings after that
 					// will be concatenated, and then have the spaces re-added after
 					// to prevent issues with spaces in file names and paths.
-					for (int b = 2; b < split_strings_size; ++b)
+					for (int32_t b = 2; b < split_strings_size; ++b)
 					{
 						split_strings[1] += ' ' + split_strings[b];
 					}
@@ -925,7 +925,7 @@ void Connection::loopedGetUserInputThread()
 					// The first string will always be -f. All strings after that
 					// will be concatenated, and then have the spaces re-added after
 					// to prevent issues with spaces in file names and paths.
-					for (int b = 2; b < split_strings_size; ++b)
+					for (int32_t b = 2; b < split_strings_size; ++b)
 					{
 						split_strings[1] += ' ' + split_strings[b];
 					}
@@ -963,7 +963,7 @@ void Connection::loopedGetUserInputThread()
 		{
 			// User input can't exceed USHRT_MAX b/c that is the maximum size
 			// that is able to be sent to the peer. (artifically limited).
-			long long user_input_length = user_input.length();
+			int64_t user_input_length = user_input.length();
 			if (user_input_length > USHRT_MAX)
 			{
 				std::cout << "User input exceeded " << USHRT_MAX << ". Exiting\n";
@@ -971,7 +971,7 @@ void Connection::loopedGetUserInputThread()
 				break;
 			}
 
-			long long amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
+			int64_t amount_to_send = CR_RESERVED_BUFFER_SPACE + user_input_length;
 
 			if (CHAT_BUF_LEN >= CR_RESERVED_BUFFER_SPACE)
 			{
@@ -1000,7 +1000,7 @@ void Connection::loopedGetUserInputThread()
 				DBG_DISPLAY_ERROR_LOCATION();
 				break;
 			}
-			int b = send((char *)chat_buf, (int)amount_to_send);
+			int32_t b = send((char *)chat_buf, (int32_t)amount_to_send);
 			if (b == SOCKET_ERROR)
 			{
 				if (global_verbose == true)
@@ -1035,9 +1035,9 @@ bool Connection::displayFileSize(const char* file_name_and_location, myStat * Fi
 		return true;
 	}
 	// Shifting the bits over by 10. This divides it by 2^10 aka 1024
-	long long KB = FileStatBuf->st_size >> 10;
-	long long MB = KB >> 10;
-	long long GB = MB >> 10;
+	int64_t KB = FileStatBuf->st_size >> 10;
+	int64_t MB = KB >> 10;
+	int64_t GB = MB >> 10;
 	std::cout << "Displaying file size as Bytes: " << FileStatBuf->st_size << "\n";
 	std::cout << "As KB: " << KB << "\n";
 	std::cout << "As MB: " << MB << "\n";
@@ -1072,25 +1072,25 @@ bool Connection::copyFile(const char * read_file_name_and_location, const char *
 	}
 
 	// Get file stastics and cout the size of the file
-	long long size_of_file_to_be_copied = getFileStatsAndDisplaySize(read_file_name_and_location);
+	int64_t size_of_file_to_be_copied = getFileStatsAndDisplaySize(read_file_name_and_location);
 
 	// Please make a sha hash of the file here so it can be checked with the
 	// hash of the copy later.
 
-	long long bytes_read;
-	long long bytes_written;
-	long long total_bytes_written_to_file = 0;
+	int64_t bytes_read;
+	int64_t bytes_written;
+	int64_t total_bytes_written_to_file = 0;
 
-	long long twenty_five_percent = size_of_file_to_be_copied / 4;	// divide it by 4
-	long long fifty_percent = size_of_file_to_be_copied / 2;	//divide it by two
-	long long seventy_five_percent = size_of_file_to_be_copied - twenty_five_percent;
+	int64_t twenty_five_percent = size_of_file_to_be_copied / 4;	// divide it by 4
+	int64_t fifty_percent = size_of_file_to_be_copied / 2;	//divide it by two
+	int64_t seventy_five_percent = size_of_file_to_be_copied - twenty_five_percent;
 
 	bool twenty_five_already_spoke = false;
 	bool fifty_already_spoke = false;
 	bool seventy_five_already_spoke = false;
 
 	// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
-	const long long buffer_size = 8 * 1024 * 1024;
+	const int64_t buffer_size = 8 * 1024 * 1024;
 	char* buffer = new char[buffer_size];
 
 	std::cout << "Starting Copy file...\n";
@@ -1160,7 +1160,7 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 	// (8 * 1024) == 8,192 aka 8KB, and 8192 * 1024 == 8,388,608 aka 8MB
 	// Buffer size must NOT be bigger than 65,536 bytes (u_short).
-	const long long BUF_LEN = USHRT_MAX;
+	const int64_t BUF_LEN = USHRT_MAX;
 	char * buf = new char[BUF_LEN];
 
 	// Open the file
@@ -1200,7 +1200,7 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 	}
 
 	// Get file statistics and display the size of the file
-	long long size_of_file = 0;
+	int64_t size_of_file = 0;
 	size_of_file = getFileStatsAndDisplaySize(name_and_location_of_file.c_str());
 	if (size_of_file == -1)
 	{
@@ -1225,9 +1225,9 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 
 	// Send the file to peer.
-	long long bytes_read = 0;
-	long long bytes_sent = 0;
-	long long total_bytes_sent = 0;
+	int64_t bytes_read = 0;
+	int64_t bytes_sent = 0;
+	int64_t total_bytes_sent = 0;
 
 	// We are treating bytes_read as a u_short, instead of size_t
 	// because we don't want to clog the send() with only file
@@ -1269,7 +1269,7 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 			buf[2] = (char)(bytes_read);
 
 			// Send the message
-			bytes_sent = send(buf, (int)bytes_read + CR_RESERVED_BUFFER_SPACE);
+			bytes_sent = send(buf, (int32_t)bytes_read + CR_RESERVED_BUFFER_SPACE);
 			if (bytes_sent == SOCKET_ERROR)
 			{
 				std::cout << "send() in sendFileThread() failed. File transfer of: " << file_name << " stopped.\n";
@@ -1299,7 +1299,7 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 // Server and Client thread must use this function to prevent
 // a race condition.
-int Connection::setWinnerMutex(int the_winner)
+int32_t Connection::setWinnerMutex(int32_t the_winner)
 {
 	RaceMutex.lock();
 
@@ -1314,7 +1314,7 @@ int Connection::setWinnerMutex(int the_winner)
 }
 
 // Returns false when everything is fine, and wants to be given more to process.
-bool Connection::processRecvBuf(char * recv_buf, long long recv_buf_len, long long received_bytes)
+bool Connection::processRecvBuf(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
 {
 	position_in_recv_buf = CR_BEGIN;	// the current cursor position inside the buffer.
 
@@ -1327,7 +1327,7 @@ bool Connection::processRecvBuf(char * recv_buf, long long recv_buf_len, long lo
 		{
 			if (position_in_message < message_size)
 			{
-				long long amount_to_write = message_size - position_in_message;
+				int64_t amount_to_write = message_size - position_in_message;
 				if (amount_to_write > received_bytes - position_in_recv_buf)
 					amount_to_write = received_bytes - position_in_recv_buf;
 
@@ -1469,8 +1469,8 @@ bool Connection::processRecvBuf(char * recv_buf, long long recv_buf_len, long lo
 		}
 		case TAKE_FILE_SIZE_FROM_PEER:
 		{
-			// convert the file size in the buffer from network long long to
-			// host long long. It assigns the variable incoming_file_size_from_peer
+			// convert the file size in the buffer from network int64_t to
+			// host int64_t. It assigns the variable incoming_file_size_from_peer
 			// a value.
 			if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) != FINISHED)
 			{
@@ -1631,22 +1631,22 @@ bool Connection::processRecvBuf(char * recv_buf, long long recv_buf_len, long lo
 }
 
 // For use with RecvBufStateMachine only.
-int Connection::assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, long long received_bytes)
+int32_t Connection::assignFileSizeFromPeer(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
 {
-	// The peer is sending the size of his file as a long long.
+	// The peer is sending the size of his file as a int64_t.
 	// This means we will receive 8 file size fragments.
 	if (file_size_fragment == 0)
 	{
 		incoming_file_size_from_peer = 0;
 	}
 
-	while (file_size_fragment < sizeof(long long))
+	while (file_size_fragment < sizeof(int64_t))
 	{
 		if (position_in_recv_buf >= received_bytes)
 		{
 			return RECV_AGAIN;
 		}
-		incoming_file_size_from_peer |= ((long long)(u_char)recv_buf[position_in_recv_buf]) << (64 - 8 * (file_size_fragment + 1));
+		incoming_file_size_from_peer |= ((int64_t)(u_char)recv_buf[position_in_recv_buf]) << (64 - 8 * (file_size_fragment + 1));
 		++position_in_recv_buf;
 		++position_in_message;
 		++file_size_fragment;
@@ -1657,9 +1657,9 @@ int Connection::assignFileSizeFromPeer(char * recv_buf, long long recv_buf_len, 
 	return FINISHED;
 }
 
-bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF_LEN, long long variable_to_convert)
+bool Connection::intoBufferHostToNetworkLongLong(char * buf, const int64_t BUF_LEN, int64_t variable_to_convert)
 {
-	if (BUF_LEN > (long long)sizeof(variable_to_convert))
+	if (BUF_LEN > (int64_t)sizeof(variable_to_convert))
 	{
 		buf[3] = (char)(variable_to_convert >> 56);
 		buf[4] = (char)(variable_to_convert >> 48);
@@ -1675,9 +1675,9 @@ bool Connection::intoBufferHostToNetworkLongLong(char * buf, const long long BUF
 	return true;
 }
 
-bool Connection::sendFileSize(char * buf, const long long BUF_LEN, long long size_of_file)
+bool Connection::sendFileSize(char * buf, const int64_t BUF_LEN, int64_t size_of_file)
 {
-	char length_of_msg = sizeof(long long);
+	char length_of_msg = sizeof(int64_t);
 	// Send the file size to the peer
 	// Set flag and size of the message that is being sent.
 	if (BUF_LEN > CR_RESERVED_BUFFER_SPACE)
@@ -1696,9 +1696,9 @@ bool Connection::sendFileSize(char * buf, const long long BUF_LEN, long long siz
 		std::cout << "Programmer error. Buffer length is too small for operation. sendFileThread(), intoBufferHostToNetworkLongLong().\n";
 		return true;//exit please?
 	}
-	int amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
+	int32_t amount_to_send = CR_RESERVED_BUFFER_SPACE + length_of_msg;
 
-	int b = send((char *)buf, amount_to_send);
+	int32_t b = send((char *)buf, amount_to_send);
 	if (b == SOCKET_ERROR)
 	{
 		return true;
@@ -1706,10 +1706,10 @@ bool Connection::sendFileSize(char * buf, const long long BUF_LEN, long long siz
 	return false;
 }
 
-bool Connection::sendFileName(char * buf, const long long BUF_LEN, const std::string& name_of_file)
+bool Connection::sendFileName(char * buf, const int64_t BUF_LEN, const std::string& name_of_file)
 {
 	// Make sure file name isn't too big
-	long long length_of_msg = name_of_file.length();
+	int64_t length_of_msg = name_of_file.length();
 	if (length_of_msg < 0 || length_of_msg >= 255)
 	{
 		return true;//exit please
@@ -1737,9 +1737,9 @@ bool Connection::sendFileName(char * buf, const long long BUF_LEN, const std::st
 
 	// Converting to network byte order, and copying it into
 	// the buffer.
-	int amount_to_send = CR_RESERVED_BUFFER_SPACE + (int)length_of_msg;
+	int32_t amount_to_send = CR_RESERVED_BUFFER_SPACE + (int32_t)length_of_msg;
 
-	int b = send((char *)buf, amount_to_send);
+	int32_t b = send((char *)buf, amount_to_send);
 	if (b == SOCKET_ERROR)
 	{
 		std::cout << "send() failed during transfer of filename.\n";
@@ -1761,14 +1761,14 @@ std::string Connection::retrieveFileNameFromPath(std::string name_and_location_o
 		return error_empty_string; //exit please
 	}
 
-	const int NO_SLASHES_DETECTED = -1;
-	long long last_seen_slash_location = NO_SLASHES_DETECTED;
-	long long name_and_location_of_file_length = name_and_location_of_file.length();
+	const int32_t NO_SLASHES_DETECTED = -1;
+	int64_t last_seen_slash_location = NO_SLASHES_DETECTED;
+	int64_t name_and_location_of_file_length = name_and_location_of_file.length();
 
 	if (name_and_location_of_file_length < INT_MAX - 1)
 	{
 		// iterate backwords looking for a slash
-		for (long long i = name_and_location_of_file_length; i > 0; --i)
+		for (int64_t i = name_and_location_of_file_length; i > 0; --i)
 		{
 			if (name_and_location_of_file[(u_int)i] == '\\' || name_and_location_of_file[(u_int)i] == '/')
 			{
@@ -1810,16 +1810,16 @@ std::string Connection::retrieveFileNameFromPath(std::string name_and_location_o
 }
 
 // Returns size of the file.
-long long Connection::getFileStatsAndDisplaySize(const char * file_name_and_location)
+int64_t Connection::getFileStatsAndDisplaySize(const char * file_name_and_location)
 {
 	// Get some statistics on the file, such as size, time created, etc.
 #ifdef _WIN32
 	struct __stat64 FileStatBuf;
-	int err_chk = _stat64(file_name_and_location, &FileStatBuf);
+	int32_t err_chk = _stat64(file_name_and_location, &FileStatBuf);
 #endif//_WIN32
 #ifdef __linux__
 	struct stat FileStatBuf;
-	int err_chk = stat(file_name_and_location, &FileStatBuf);
+	int32_t err_chk = stat(file_name_and_location, &FileStatBuf);
 #endif//__linux__
 
 	if (err_chk == -1)

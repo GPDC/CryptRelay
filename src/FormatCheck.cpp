@@ -35,7 +35,7 @@ IPAddress::~IPAddress()
 bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 {
 	std::string ipaddress = ipaddr;
-	int ipaddress_size = ipaddress.size();
+	int32_t ipaddress_size = ipaddress.size();
 
 	// If the string is too big to be an IPV4 address
 	if (ipaddress_size > INET_ADDR_STR_LEN)
@@ -48,11 +48,11 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
 
 	// Check if the formatting for the IP address is correct
-	int period_count = 0;
-	int start = 0;
-	int end = 0;
+	int32_t period_count = 0;
+	int32_t start = 0;
+	int32_t end = 0;
 
-	for (int c = 0; c < ipaddress_size; c++)
+	for (int32_t c = 0; c < ipaddress_size; c++)
 	{
 		// Checking for ascii 0-9 and '.'   ... if it isn't any of those, then it
 		// sends the user to try again with different input.
@@ -65,7 +65,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		}
 	}
 
-	for (int i = 0; i < 4; i++)
+	for (int32_t i = 0; i < 4; i++)
 	{
 		end = findNextPeriod(ipaddress, start);
 		if (end == BAD_FORMAT)
@@ -103,10 +103,10 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 }
 
 
-int IPAddress::findNextPeriod(std::string ipaddress, int start)
+int32_t IPAddress::findNextPeriod(std::string ipaddress, int32_t start)
 {
-	int size_of_ip_address = ipaddress.size();
-	int period_location = -1;
+	int32_t size_of_ip_address = ipaddress.size();
+	int32_t period_location = -1;
 
 	// If it isn't the starting subnet, then give it a +1 or else it
 	// will always find the next period where the last period was.
@@ -148,9 +148,9 @@ int IPAddress::findNextPeriod(std::string ipaddress, int start)
 	return period_location;
 }
 
-bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
+bool IPAddress::checkSubnetRange(std::string ipaddress, int32_t start, int32_t end)
 {
-	int subnet_array_count = end - start;
+	int32_t subnet_array_count = end - start;
 
 	// Add protection for arrays going out of bounds, and
 	// check for invalid IP address at the same time
@@ -160,20 +160,20 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 		return true;
 	}
 
-	const int subnet_array_size = 3;
-	int subnet_array[subnet_array_size] = {};
+	const int32_t subnet_array_size = 3;
+	int32_t subnet_array[subnet_array_size] = {};
 
 	//ascii -> decimal.
-	int last_period = start;
-	for (int i = 0; i < subnet_array_count; i++, last_period++)
+	int32_t last_period = start;
+	for (int32_t i = 0; i < subnet_array_count; i++, last_period++)
 	{
 		subnet_array[i] = ipaddress[last_period] - 48;
 	}
 
 	// The subnet was broken apart into individual single digit numbers.
 	// Now put them back together using multiplication.
-	int total = 0;
-	for (int i = 0; i < subnet_array_count; i++)
+	int32_t total = 0;
+	for (int32_t i = 0; i < subnet_array_count; i++)
 	{
 		total = (total * 10) + subnet_array[i];
 	}
@@ -194,7 +194,7 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int start, int end)
 
 bool IPAddress::isPortFormatCorrect(char* port)
 {
-	int length_of_port = strlen(port);
+	int32_t length_of_port = strlen(port);
 	if (global_verbose == true)
 	{
 		std::cout << "Unverified port: " << port << "\n";
@@ -205,7 +205,7 @@ bool IPAddress::isPortFormatCorrect(char* port)
 		std::cout << "ERROR: Port number is too high\n";
 		return true;
 	}
-	for (int i = 0; i < length_of_port; ++i)	
+	for (int32_t i = 0; i < length_of_port; ++i)	
 	{
 		// ascii 48 == 0 and ascii 57 == 9
 		if (port[i] < 48 || port[i] > 57)
@@ -216,8 +216,8 @@ bool IPAddress::isPortFormatCorrect(char* port)
 	}
 
 	// Convert from ascii to decimal while adding up each individual number
-	int total = 0;
-	for (int i = 0; i < length_of_port; ++i)
+	int32_t total = 0;
+	for (int32_t i = 0; i < length_of_port; ++i)
 	{
 		total = (total * 10) + (port[i] - 48);
 	}

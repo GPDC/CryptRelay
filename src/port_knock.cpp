@@ -52,11 +52,11 @@ PortKnock::~PortKnock()
 // returns < 0 on error
 // returns 0 if port is available
 // returns 1 if port is in use
-int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
+int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
 {
 	SocketClass PKSocketClass;
-	const int IN_USE = 1;
-	const int AVAILABLE = 0;
+	const int32_t IN_USE = 1;
+	const int32_t AVAILABLE = 0;
 	addrinfo Hints;
 	addrinfo* ServerInfo;
 	memset(&Hints, 0, sizeof(Hints));
@@ -82,12 +82,12 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int errchk = ::bind(PKSocketClass.fd_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
+	int32_t errchk = ::bind(PKSocketClass.fd_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 
 #ifdef __linux__
-		int errsv = errno;			//saving the error so it isn't lost
+		int32_t errsv = errno;			//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
 		{
 			PKSocketClass.closesocket(PKSocketClass.fd_socket);
@@ -97,7 +97,7 @@ int PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_
 			return -1;
 #endif//__linux__
 #ifdef _WIN32
-		int errsv = WSAGetLastError();	//saving the error so it isn't lost
+		int32_t errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
 			PKSocketClass.closesocket(PKSocketClass.fd_socket);
@@ -145,7 +145,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 
 	// If connection is successful, it must be an open port
-	int errchk = PKSocketClass.connect(result->ai_addr, result->ai_addrlen);
+	int32_t errchk = PKSocketClass.connect(result->ai_addr, result->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 		PKSocketClass.closesocket(PKSocketClass.fd_socket);
