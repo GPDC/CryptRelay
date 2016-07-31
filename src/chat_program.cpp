@@ -72,7 +72,6 @@ std::mutex Connection::SendMutex;
 std::mutex Connection::RaceMutex;
 
 
-// this default_port being static might not be a good idea.
 // This is the default port for the Connection as long as
 // Connection isn't given any port from the UPnP class,
 // which has its own default port, or given any port from the
@@ -675,7 +674,7 @@ void Connection::loopedReceiveMessagesThread()
 
 	process_recv_buf_state = CHECK_FOR_FLAG;
 
-	// Buffer for receiving messages
+	// Buffer for receiving data from peer
 	static const int64_t recv_buf_len = 512;
 	char recv_buf[recv_buf_len];
 

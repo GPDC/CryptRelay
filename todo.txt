@@ -7,6 +7,7 @@
 -remove displaying of errors of closesocket and shutdown in the deconstructor for Connection class
 -prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will open CryptRelay.exe and start trying to write to it.
 -prevent incompatible symbols from being used with files.
+-replace the old way of doing threads with std::thread so that the whole program is using std::thread.
 
 # Research:
 -(Encryption)I have serious concerns about the fact that messages contain predictable content. Could this be used to reduce brute force decryption time? I don't know much about this area, need research. Could add random amounts of junk data at the beginning and end.
