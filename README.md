@@ -2,8 +2,10 @@
 Implemented:
 - File transfer
 - Chat
+
 Not implemented:
 - Encryption.
+
 If you want to send an encrypted file, you must encrypt it first with an encryption program before sending it through CryptRelay. If you want to send an encrypted message, encrypt it first before sending the message, or encrypt a file with your message inside and send that.
 
 # CryptRelay
@@ -15,7 +17,7 @@ Programmed in Eclipse 3.8.1 when using Debian Linux, and to a small extent Netbe
 Written for C++14.
 
 #External Libraries
-miniupnp v1.9 - LICENSE here
+miniupnp v2.0- LICENSE here
 
 # Building and implementing external libaries
 Please read the respective README_librarynamehere.md files to see how to build and implement the library into your IDE.
