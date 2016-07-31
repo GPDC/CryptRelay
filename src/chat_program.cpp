@@ -863,7 +863,7 @@ void Connection::loopedGetUserInputThread()
 			// Split the string into multiple strings for every space.
 			if (StrManip.split(user_input, ' ', split_strings) == true)
 			{
-				std::cout << "Unexpected error: ";
+				std::cout << "Unexpected error: split()";
 				DBG_DISPLAY_ERROR_LOCATION();
 			}
 
@@ -1180,6 +1180,7 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 	if (file_name.empty() == true)
 	{
 		delete[]buf;
+		std::cout << "Error: couldn't retrieve file name from the given path. Abandoning file transfer.\n";
 		if (fclose(ReadFile))
 			perror("Error closing file designated for writing");
 		is_send_file_thread_in_use = false;
@@ -1188,9 +1189,10 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 	// *** The order in which file name and file size is sent DOES matter! ***
 	// Send the file name to peer
-	if (sendFileName(buf, BUF_LEN, file_name) == false)
+	if (sendFileName(buf, BUF_LEN, file_name) == true)
 	{
 		delete[]buf;
+		std::cout << "Abandoning file transfer due to error.\n";
 		if (fclose(ReadFile))
 			perror("Error closing file designated for writing");
 		is_send_file_thread_in_use = false;
@@ -1211,9 +1213,10 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 
 	// Send file size to peer
-	if (sendFileSize(buf, BUF_LEN, size_of_file) == false)
+	if (sendFileSize(buf, BUF_LEN, size_of_file) == true)
 	{
 		delete[]buf;
+		std::cout << "Abandoning file transfer due to error sending file size.\n";
 		if (fclose(ReadFile))
 			perror("Error closing file designated for writing");
 		is_send_file_thread_in_use = false;
@@ -1698,8 +1701,6 @@ bool Connection::sendFileSize(char * buf, const long long BUF_LEN, long long siz
 	int b = send((char *)buf, amount_to_send);
 	if (b == SOCKET_ERROR)
 	{
-		if (global_verbose == true)
-			std::cout << "Exiting sendFileThread()\n";
 		return true;
 	}
 	return false;
@@ -1741,8 +1742,8 @@ bool Connection::sendFileName(char * buf, const long long BUF_LEN, const std::st
 	int b = send((char *)buf, amount_to_send);
 	if (b == SOCKET_ERROR)
 	{
-		if (global_verbose == true)
-			std::cout << "Exiting sendFileThread()\n";
+		std::cout << "send() failed during transfer of filename.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		return true;
 	}
 	return false;
