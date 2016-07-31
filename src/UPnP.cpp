@@ -75,7 +75,7 @@ void UPnP::standaloneGetListOfPortForwards()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == false)
+	if (findValidIGD() == true)
 		return;
 
 	// Display the list of port forwards
@@ -97,7 +97,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == false)
+	if (findValidIGD() == true)
 		return;
 
 	int errchk = UPNP_DeletePortMapping(
@@ -170,7 +170,7 @@ bool UPnP::findValidIGD()
 	if (errchk == 0)
 	{
 		std::cout << "No valid IGD found.\n";
-		return false;
+		return true;
 	}
 	else
 	{
@@ -196,7 +196,7 @@ bool UPnP::findValidIGD()
 		}
 	}
 
-	return true;
+	return false;
 }
 
 // Display Information such as:
@@ -295,7 +295,7 @@ void UPnP::standaloneShowInformation()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == false)
+	if (findValidIGD() == true)
 		return;
 
 	// Output information to the console
@@ -647,7 +647,7 @@ bool UPnP::autoAddPortForwardRule()
 		}
 	}
 
-	return true; // Success
+	return false; // Success
 }
 
 // Adds a new port forwarding rule.
@@ -662,8 +662,8 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 	findUPnPDevices();
 
 	// Find a valid IGD based off the list filled out by findUPnPDevices()
-	if (findValidIGD() == false)
-		return false;
+	if (findValidIGD() == true)
+		return true;
 
 	// Displays various extra information gathered through UPnP
 	if (global_verbose == true)
@@ -674,10 +674,10 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 		getListOfPortForwards();
 
 	// Add the port forward rule
-	if (autoAddPortForwardRule() == false)
-		return false;
+	if (autoAddPortForwardRule() == true)
+		return true;
 
-	return true;// Success
+	return false;// Success
 }
 
 // Deletes the port forwarding rule created by

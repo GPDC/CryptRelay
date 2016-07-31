@@ -265,7 +265,7 @@ int main(int argc, char *argv[])
 
 		Upnp->findUPnPDevices();
 
-		if (Upnp->findValidIGD() == false)
+		if (Upnp->findValidIGD() == true)
 			return EXIT_FAILURE;
 
 		// Checking to see if the user inputted a port number.
@@ -319,7 +319,7 @@ int main(int argc, char *argv[])
 
 		// Add a port forward rule so we can connect to a peer, and if that
 		// succeeded, then give info to the Connection.
-		if (Upnp->autoAddPortForwardRule() == true)
+		if (Upnp->autoAddPortForwardRule() == false)
 		{
 			// Give IP and port info gathered from the command line and from
 			// the UPnP class to the ChatServer and ChatClient instance

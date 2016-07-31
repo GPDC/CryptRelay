@@ -76,16 +76,16 @@ bool SocketClass::WSAStartup()
 	{
 		getError();
 		std::cout << "WSAStartup failed\n";
-		return false;
+		return true;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
 #endif//_WIN32
-	return true;
+	return false;
 }
 
 // Use this to set socket options such as broadcast, keepalive, max msg size, etc
-// If this function returns false, it is up to you to close the socket if desired.
+// If this function returns true, it is up to you to close the socket if desired.
 bool SocketClass::setsockopt(int level, int option_name, const char* option_value, int option_length)
 {
 	if (global_verbose == true)
@@ -95,27 +95,27 @@ bool SocketClass::setsockopt(int level, int option_name, const char* option_valu
 	{
 		getError();
 		std::cout << "setsockopt() failed.\n";
-		return false;
+		return true;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
-	return true;
+	return false;
 }
 
 // Create a socket. Returns INVALID_SOCKET on error.
 SOCKET SocketClass::socket(int address_family, int socket_type, int protocol)
 {
 	if (global_verbose == true)
-		std::cout << "Creating Socket to listen on... ";
+		std::cout << "Creating Socket... ";
 
-	// Create a SOCKET handle for connecting to server(no ip address here when using TCP. IP addr is assigned with bind)
+	// Create a SOCKET handle for connecting (no ip address here when using TCP. Local IP addr is assigned with bind() or connect())
 	fd_socket = ::socket(address_family, socket_type, protocol);
 	if (fd_socket == INVALID_SOCKET)
 	{
 		getError();
-		std::cout << "Socket failed.\n";
+		std::cout << "Socket() failed.\n";
 		closesocket(fd_socket);
-		return INVALID_SOCKET;//false
+		return INVALID_SOCKET;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
@@ -127,20 +127,20 @@ bool SocketClass::bind(const sockaddr *name, int name_len)
 {
 	if (global_verbose == true)
 		std::cout << "Binding ... associating local address with the socket... ";
-	// Setup the TCP listening socket (putting ip address on the allocated socket)
+	// Associating local ip address with the socket
 	int errchk = ::bind(fd_socket, name, name_len);
 	if (errchk == SOCKET_ERROR)
 	{
 		getError();
 		std::cout << "Bind failed.\n";
 		closesocket(fd_socket);
-		return false;
+		return true;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
 	//freeaddrinfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
 
-	return true;
+	return false;
 }
 
 // There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
@@ -174,6 +174,7 @@ int SocketClass::sendto(const char* buf, int buf_len, int flags, const sockaddr 
 	return errchk;// Number of bytes sent
 }
 
+// Returns number of bytes received if there is no error.
 int SocketClass::recv(char* buf, int buf_len, int flags)
 {
 	int errchk = ::recv(fd_socket, buf, buf_len, flags);
@@ -196,43 +197,13 @@ BYTE_SIZE SocketClass::recvfrom(char *buf, int buf_len, int flags, sockaddr* fro
 {
 	if (global_verbose == true)
 		std::cout << "Waiting to receive a msg...\n";
-	BYTE_SIZE errchk = ::recvfrom(fd_socket, buf, buf_len, flags, from, from_len);// changed from int to ssize_t
+	BYTE_SIZE errchk = ::recvfrom(fd_socket, buf, buf_len, flags, from, from_len);
 	if (errchk == SOCKET_ERROR)
 	{
-		int saved_errno = getError();
-
-#ifdef __linux__
-		if (saved_errno == EAGAIN || saved_errno == EWOULDBLOCK)
-		{
-			std::cout << "Finished receiving messages.\n";
-			return WSAETIMEDOUT;
-		}
-		else
-		{
-			std::cout << "recvfrom failed.\n";
-			closesocket(fd_socket);
-			return SOCKET_ERROR;
-		}
-#endif//__linux__
-#ifdef _WIN32
-		if (saved_errno == WSAETIMEDOUT)
-		{
-			std::cout << "Finished receiving messages.\n";
-			return WSAETIMEDOUT;
-		}
-		else
-		{
-			std::cout << "recvfrom failed.\n";
-			closesocket(fd_socket);
-			return SOCKET_ERROR;
-		}
-#endif//_WIN32
-
+		return SOCKET_ERROR;
 	}
 	if (errchk == 0)	// Connection gracefully closed.
 	{
-		std::cout << "Connection gracefully closed.\n";
-		closesocket(fd_socket);
 		return 0;
 	}
 	return errchk;
@@ -270,9 +241,9 @@ bool SocketClass::listen()
 		getError();
 		std::cout << "listen failed.\n";
 		closesocket(fd_socket);
-		return false;
+		return true;
 	}
-	return true;
+	return false;
 }
 
 // TCP use, not UDP
@@ -322,22 +293,26 @@ bool SocketClass::getaddrinfo(std::string target_ip, std::string target_port, co
 	{
 		getError();;
 		std::cout << "getaddrinfo failed.\n";
-		return false;
+		return true;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
 
-	return true;
+	return false;
 }
 
 // paddr_buf would be something like this:
 // struct sockaddr_in storage;
 // so it would be:  inet_pton(AF_INET, "192.168.1.1", &storage.sin_addr);
+// returns 1 on success.
 int SocketClass::inet_pton(int family, char* ip_addr, void* paddr_buf)
 {
-	int errchk = ::inet_pton(family, ip_addr,paddr_buf);
+	int errchk = ::inet_pton(family, ip_addr, paddr_buf);
 	if (errchk == 0)
+	{
 		std::cout << "inet_pton: paddr_buf points to invalid IPV4 or IPV6 string.\n";
+		return 0;
+	}
 	else if (errchk == -1)
 	{
 		getError();
@@ -361,10 +336,10 @@ bool SocketClass::shutdown(SOCKET socket, int operation)
 		std::cout << "Shutdown failed.\n";
 		std::cout << "Closing socket.\n";
 		closesocket(socket);
-		return false;
+		return true;
 	}
 	std::cout << "Success\n";
-	return true;
+	return false;
 }
 
 void SocketClass::closesocket(SOCKET socket)

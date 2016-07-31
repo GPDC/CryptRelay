@@ -129,10 +129,10 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	hints.ai_socktype = SOCK_STREAM;
 	hints.ai_protocol = IPPROTO_TCP;
 
-	if ((PKSocketClass.getaddrinfo(ip.c_str(), port.c_str(), &hints, &result)) == false)
+	if ((PKSocketClass.getaddrinfo(ip.c_str(), port.c_str(), &hints, &result)) == true)
 	{
 		std::cout << "isPortOpen() failed b/c of getaddrinfo().\n";
-		return false;
+		return true;
 	}
 
 	SOCKET errchk_socket = PKSocketClass.socket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
@@ -141,7 +141,7 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 		PKSocketClass.getError();
 		std::cout << "isPortOpen()'s sock() failed.\n";
 		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return false;
+		return true;
 	}
 
 	// If connection is successful, it must be an open port
@@ -149,12 +149,12 @@ bool PortKnock::isPortOpen(std::string ip, std::string port)
 	if (errchk == SOCKET_ERROR)
 	{
 		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return false;
+		return true;
 	}
 	else
 	{
 		PKSocketClass.shutdown(PKSocketClass.fd_socket, SD_BOTH);
 		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return true;
+		return false;
 	}
 }

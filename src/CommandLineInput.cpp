@@ -72,6 +72,7 @@ void CommandLineInput::Examples()
 
 }
 
+// Returns true if the program is intended to exit after calling this function.
 bool CommandLineInput::setVariablesFromArgv(int argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.

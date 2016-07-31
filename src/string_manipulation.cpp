@@ -36,16 +36,15 @@ bool StringManip::split(std::string string, char delimiter, std::vector<std::str
 		DBG_DISPLAY_ERROR_LOCATION();
 	}
 	else if (ss.fail())
-		return false;
+		return true;
 	
-	return true;
+	return false;
 }
 
 // Finds the specified character (aka the delimiter), and
-// duplicates it by adding another one next to it.
+// duplicates it by inserting another one next to it.
 std::string StringManip::duplicateCharacter(std::string string, char duplicate_character)
 {
-
 	size_t string_length = string.length();
 	unsigned int i;
 	for (i = 0; i < string_length && i < UINT_MAX; ++i)

@@ -82,7 +82,6 @@ public:
 	SOCKET socket(int address_family, int type, int protocol);
 	SOCKET accept();
 
-	// All the bool functions return false when there is an error. True if everything went fine.
 	bool WSAStartup();
 	bool setsockopt(int level, int option_name, const char* option_value, int option_length);
 	bool bind(const sockaddr *name, int name_len);
