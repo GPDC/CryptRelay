@@ -1,8 +1,8 @@
 // main.cpp
 
-// Program name: CryptRelay     version: 0.6.1
+// Program name: CryptRelay
+// Version: 0.8.0
 // Rough outline for future versions:
-// 0.8 == file transfer
 // 0.9 == encryption
 // 1.0 == polished release
 
