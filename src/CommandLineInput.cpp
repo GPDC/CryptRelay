@@ -20,7 +20,7 @@ void CommandLineInput::helpAndReadMe()
 {
 	// 80 chars is width of console
 	std::cout << "\n";
-	std::cout << "-------------------------------------------------------------------------------\n";	//79 dashes + a new line character
+	std::cout << "-------------------------------------------------------------------------------\n";	//79 dashes + new line character
 	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4\n";
 	std::cout << "Format for LAN connection: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
 	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mP 30022\n";
@@ -31,24 +31,24 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "-mL    My local IP address that I want to listen on.\n";
 	std::cout << "-mP    My port number that I want to listen on.\n";
 	std::cout << "-v     Turns on verbose output to your terminal.\n";
-	std::cout << "-lan   Don't connect to the internet. Use LAN only. Currently disables upnp.\n";
+	std::cout << "-lan   Disables upnp. Still possible to connect to internet, just no upnp.\n";
 	std::cout << "-spf   Shows the currently forwarded ports \n";
 	std::cout << "       Format: cryptrelay.exe -spf my_external_port protocol\n";
 	std::cout << "-dpf   Delete a port forward rule.\n";
 	std::cout << "       Format: cryptrelay.exe -dpf protocol my_external_port\n";
-	std::cout << "-si    Show Info   Displays external & local ip, and some UPnP info.\n";
-	std::cout << "--examples        Displays a bunch of example usage scenarios.\n";
+	std::cout << "-si    Show Info displays external & local ip, and some UPnP info.\n";
+	std::cout << "--examples   Displays a bunch of example usage scenarios.\n";
 	std::cout << "Arguments that are able to be used during a chat session:\n";
 	std::cout << "-f     Send a file to the peer you are connected to.\n";
 	std::cout << "       Format: -f C:\\Users\\JohnDoe\\Downloads\\recipe.txt\n";
 	std::cout << "exit() This will exit CryptRelay. Ctrl-c also exits, but not gracefully.\n";
-	std::cout << "\n";
-	std::cout << "NOT YET IMPLEMENTED:\n";
-	std::cout << "Arguments that are able to be used during a chat session:\n";
-	std::cout << "-f     Send a file to the peer you are connected to.\n";
-	std::cout << "       -e Specify the encryption type here.\n";
-	std::cout << "       This copies the file first -> encrypts the copy -> sends it.\n";
-	std::cout << "       Format: -f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
+	//std::cout << "\n";
+	//std::cout << "NOT YET IMPLEMENTED:\n";
+	//std::cout << "Arguments that are able to be used during a chat session:\n";
+	//std::cout << "-f     Send a file to the peer you are connected to.\n";
+	//std::cout << "       -e Specify the encryption type here.\n";
+	//std::cout << "       This copies the file first -> encrypts the copy -> sends it.\n";
+	//std::cout << "       Format: -f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
 	std::cout << "-------------------------------------------------------------------------------\n";
 	std::cout << "\n";
 	std::cout << "\n";
@@ -57,6 +57,7 @@ void CommandLineInput::helpAndReadMe()
 void CommandLineInput::Examples()
 {
 	std::cout << "\n";
+	std::cout << "-------------------------------------------------------------------------------\n";
 	std::cout << "# List of various examples:\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
@@ -66,10 +67,12 @@ void CommandLineInput::Examples()
 	std::cout << "\n";
 	std::cout << "# List of various examples for use during a chat session:\n";
 	std::cout << "-f C:\\Users\\John\\Downloads\\recipe.txt\n";
-	std::cout << "NOT YET IMPLEMENTED:\n";
-	std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
+	std::cout << "exit()\n";
+	//std::cout << "NOT YET IMPLEMENTED:\n";
+	//std::cout << "-f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
+	std::cout << "-------------------------------------------------------------------------------\n";
 	std::cout << "\n";
-
+	std::cout << "\n";
 }
 
 // Returns true if the program is intended to exit after calling this function.
