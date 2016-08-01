@@ -23,9 +23,6 @@
 **/testfile.txt
 **/build_dependency_msvs.txt
 
-**/gsoap-2.8/
-**/pjproject-2.4.5/
-**/libupnp-1.6.19/
 **/miniupnpc-1.9*/
 **/cryptopp*/
 
@@ -34,6 +31,7 @@
 /msvs/UpgradeLog*.htm
 
 **/unused_useful_code.txt
+
 
 .gitattributes
 

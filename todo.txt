@@ -21,6 +21,11 @@
 # Research:
 -(Encryption)I have serious concerns about the fact that messages contain predictable content. Could this be used to reduce brute
  force decryption time? I don't know much about this area, need research. Could add random amounts of junk data at the beginning and end.
+ UPDATE: So i've started learning the super basics of crpytography, and this concern of my is described as KPA, Known Plaintext Attack.
+ Best example of this attack would be: linear cryptanalysis against block ciphers.
+ Would it be easy to find out what the private key is if user A sent a 1 character long message to user B?
+ Having only 1 character would make it easier to do a KPA? Or does KPA need many characters to make
+ it effective? By what % does a KPA reduce the time needed to decrypt generally?
 
 
 
