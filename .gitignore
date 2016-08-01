@@ -27,6 +27,7 @@
 **/pjproject-2.4.5/
 **/libupnp-1.6.19/
 **/miniupnpc-1.9*/
+**/cryptopp*/
 
 **/*.TMP
 
