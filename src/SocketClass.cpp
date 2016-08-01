@@ -143,7 +143,7 @@ bool SocketClass::bind(const sockaddr *name, int32_t name_len)
 	return false;
 }
 
-// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
+// There can be issues with multiple threads calling send() on the same socket.
 int32_t SocketClass::send(const char* buffer, int32_t buffer_length, int32_t flags)
 {
 	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.

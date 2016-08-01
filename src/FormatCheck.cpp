@@ -25,14 +25,15 @@
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
-IPAddress::IPAddress()
+FormatCheck::FormatCheck()
 {
 }
-IPAddress::~IPAddress()
+FormatCheck::~FormatCheck()
 {
 }
 
-bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
+// returns true for correct, false for incorrect
+bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 {
 	std::string ipaddress = ipaddr;
 	int32_t ipaddress_size = ipaddress.size();
@@ -41,7 +42,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 	if (ipaddress_size > INET_ADDR_STR_LEN)
 	{
 		std::cout << "IPV4 address is too big to be valid.\n";
-		return true;
+		return false;
 	}
 
 	if (global_verbose == true)
@@ -61,7 +62,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		if ((ipaddress[c] < '0' || ipaddress[c] > '9') && ipaddress[c] != '.')
 		{
 			std::cout << "Only numbers and periods allowed.\n";
-			return true;
+			return false;
 		}
 	}
 
@@ -70,7 +71,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		end = findNextPeriod(ipaddress, start);
 		if (end == BAD_FORMAT)
 		{
-			return true;
+			return false;
 		}
 		if (end != BAD_FORMAT && end != -1)
 		{
@@ -82,7 +83,7 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 		}
 		if (checkSubnetRange(ipaddress, start, end) == true)
 		{
-			return true;
+			return false;
 		}
 		//back to the future
 		start = end + 1;
@@ -94,16 +95,16 @@ bool IPAddress::isIPV4FormatCorrect(char* ipaddr)
 
 	if (period_count != 3)
 	{
-		return true;
+		return false;
 	}
 	else
 	{
-		return false;
+		return true;
 	}
 }
 
 
-int32_t IPAddress::findNextPeriod(std::string ipaddress, int32_t start)
+int32_t FormatCheck::findNextPeriod(std::string ipaddress, int32_t start)
 {
 	int32_t size_of_ip_address = ipaddress.size();
 	int32_t period_location = -1;
@@ -148,7 +149,7 @@ int32_t IPAddress::findNextPeriod(std::string ipaddress, int32_t start)
 	return period_location;
 }
 
-bool IPAddress::checkSubnetRange(std::string ipaddress, int32_t start, int32_t end)
+bool FormatCheck::checkSubnetRange(std::string ipaddress, int32_t start, int32_t end)
 {
 	int32_t subnet_array_count = end - start;
 
@@ -192,7 +193,7 @@ bool IPAddress::checkSubnetRange(std::string ipaddress, int32_t start, int32_t e
 }
 
 
-bool IPAddress::isPortFormatCorrect(char* port)
+bool FormatCheck::isPortFormatCorrect(char* port)
 {
 	int32_t length_of_port = strlen(port);
 	if (global_verbose == true)

@@ -12,11 +12,11 @@
 #include <string>
 
 
-class IPAddress
+class FormatCheck
 {
 public:
-	IPAddress();
-	virtual ~IPAddress();
+	FormatCheck();
+	virtual ~FormatCheck();
 
 	bool isIPV4FormatCorrect(char* target_ipaddress);
 	bool isPortFormatCorrect(char* port);

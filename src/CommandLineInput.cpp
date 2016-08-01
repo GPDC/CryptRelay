@@ -41,6 +41,7 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "Arguments that are able to be used during a chat session:\n";
 	std::cout << "-f     Send a file to the peer you are connected to.\n";
 	std::cout << "       Format: -f C:\\Users\\JohnDoe\\Downloads\\recipe.txt\n";
+	std::cout << "exit() This will exit CryptRelay. Ctrl-c also exits, but not gracefully.\n";
 	std::cout << "\n";
 	std::cout << "NOT YET IMPLEMENTED:\n";
 	std::cout << "Arguments that are able to be used during a chat session:\n";
@@ -48,7 +49,6 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "       -e Specify the encryption type here.\n";
 	std::cout << "       This copies the file first -> encrypts the copy -> sends it.\n";
 	std::cout << "       Format: -f C:\\Users\\John\\Downloads\\secret_recipe.txt -e RSA-4096\n";
-	std::cout << "exit() This will exit CryptRelay. Another option would pressing ctrl-c.\n";
 	std::cout << "-------------------------------------------------------------------------------\n";
 	std::cout << "\n";
 	std::cout << "\n";
@@ -79,7 +79,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 	// but for now this is simple and easy to read/understand, so its nice.
 	std::vector<std::string> arg;
 
-	IPAddress IPAdressFormatCheck;
+	FormatCheck IPAdressFormatCheck;
 
 	// Put all argv's into a vector so they can be compared to strings	// could use strcmp ?
 	for (int32_t i = 0; i < argc; i++)
@@ -115,7 +115,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == true)
+				if (err_chk_bool == false)
 				{
 					std::cout << "Bad IP address format.\n\n";
 					return true;
@@ -140,7 +140,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mL")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == true)
+				if (err_chk_bool == false)
 					return true;
 				else
 				{
@@ -162,7 +162,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mE")
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == true)
+				if (err_chk_bool == false)
 					return true;
 				else
 				{
