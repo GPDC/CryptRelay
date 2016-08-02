@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <iostream>		// cout
 #include <string>
-#include <string.h> //memset
+#include <string.h>		//memset
 #include <pthread.h>	// <process.h>  multithreading
 #include <thread>
 #include <vector>
@@ -416,10 +416,6 @@ void* Connection::posixStartClientThread(void * instance)
 }
 
 
-
-
-
-
 void Connection::clientThread(void * instance)
 {
 	Connection* self = static_cast <Connection*> (instance);
@@ -741,6 +737,9 @@ void Connection::loopedReceiveMessagesThread()
 }
 
 // Cross platform windows and linux thread exiting. Not for use with std::thread
+// Only intended for use with threads started in this manner:
+// pthread_create()
+// _beginthread();
 void Connection::exitThread(void* ptr)
 {
 #ifdef _WIN32
@@ -1028,7 +1027,7 @@ void Connection::loopedGetUserInputThread()
 
 bool Connection::displayFileSize(const char* file_name_and_location, myStat * FileStatBuf)
 {
-	if (FileStatBuf == NULL)
+	if (FileStatBuf == nullptr)
 	{
 		std::cout << "displayFileSize() failed. NULL pointer.\n";
 		return true;
@@ -1048,30 +1047,47 @@ bool Connection::displayFileSize(const char* file_name_and_location, myStat * Fi
 // This function expects the file name and location of the file
 // to be properly formatted already. That means escape characters
 // must be used to make a path valid '\\'.
-bool Connection::copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location)
+bool Connection::copyFile(const char * file_name_and_location_for_reading, const char * file_name_and_location_for_writing)
 {
 
 	FILE *ReadFile;
 	FILE *WriteF;
 
-	ReadFile = fopen(read_file_name_and_location, "rb");
+	ReadFile = fopen(file_name_and_location_for_reading, "rb");
 	if (ReadFile == NULL)
 	{
 		perror("Error opening file for reading binary");
 		return true;
 	}
-	WriteF = fopen(write_file_name_and_location, "wb");
+	WriteF = fopen(file_name_and_location_for_writing, "wb");
 	if (WriteF == NULL)
 	{
-		if (fclose(ReadFile))
-			perror("Error closing file designated for writing");
-
 		perror("Error opening file for writing binary");
 		return true;
 	}
 
 	// Get file stastics and cout the size of the file
-	int64_t size_of_file_to_be_copied = getFileStatsAndDisplaySize(read_file_name_and_location);
+	int64_t size_of_file_to_be_copied = 0;
+	xplatform_struct_stat FileStats;
+	int32_t errchk = getFileStats(file_name_and_location_for_reading, &FileStats);
+	if (errchk == -1)
+	{
+		std::cout << "Error retrieving file statistics. Abandoning file transfer.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		if (fclose(ReadFile))
+			perror("Error closing file designated for reading");
+		if (fclose(WriteFile))
+			perror("Error closing file designated for writing");
+		is_send_file_thread_in_use = false;
+		return true; //exit please
+	}
+	else // success
+	{
+		// Output to terminal the size of the file in Bytes, KB, MB, GB.
+		displayFileSize(file_name_and_location_for_reading, &FileStats);
+		size_of_file_to_be_copied = FileStats.st_size;
+	}
+
 
 	// Please make a sha hash of the file here so it can be checked with the
 	// hash of the copy later.
@@ -1147,7 +1163,7 @@ bool Connection::copyFile(const char * read_file_name_and_location, const char *
 	return false;
 }
 
-bool Connection::sendFileThread(std::string name_and_location_of_file)
+bool Connection::sendFileThread(std::string file_name_and_path)
 {
 	// sha checking?
 
@@ -1164,9 +1180,11 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 	// Open the file
 	FILE *ReadFile;
-	ReadFile = fopen(name_and_location_of_file.c_str(), "rb");
+	ReadFile = fopen(file_name_and_path.c_str(), "rb");
 	if (ReadFile == NULL)
 	{
+		std::cout << "Error: File transfer aborted. Couldn't open file.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		perror("Error opening file for reading binary sendFileThread");
 		delete[]buf;
 		is_send_file_thread_in_use = false;
@@ -1175,13 +1193,14 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 
 	// Retrieve the name of the file from the string that contains
 	// the path and the name of the file.
-	std::string file_name = retrieveFileNameFromPath(name_and_location_of_file);
+	std::string file_name = retrieveFileNameFromPath(file_name_and_path);
 	if (file_name.empty() == true)
 	{
 		delete[]buf;
 		std::cout << "Error: couldn't retrieve file name from the given path. Abandoning file transfer.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (fclose(ReadFile))
-			perror("Error closing file designated for writing");
+			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
 		return false; //exit please, file name couldn't be found.
 	}
@@ -1191,23 +1210,33 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 	if (sendFileName(buf, BUF_LEN, file_name) == true)
 	{
 		delete[]buf;
-		std::cout << "Abandoning file transfer due to error.\n";
+		std::cout << "Abandoning file transfer due to an error while sending the file name.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (fclose(ReadFile))
-			perror("Error closing file designated for writing");
+			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
 		return true; //exit please
 	}
 
 	// Get file statistics and display the size of the file
 	int64_t size_of_file = 0;
-	size_of_file = getFileStatsAndDisplaySize(name_and_location_of_file.c_str());
-	if (size_of_file == -1)
+	xplatform_struct_stat FileStats;
+	int err_chk = getFileStats(file_name_and_path.c_str(), &FileStats);
+	if (err_chk == -1)
 	{
+		std::cout << "Error retrieving file statistics. Abandoning file transfer.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		delete[]buf;
 		if (fclose(ReadFile))
-			perror("Error closing file designated for writing");
+			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
 		return true; //exit please
+	}
+	else // success
+	{
+		// Output to terminal the size of the file in Bytes, KB, MB, GB.
+		displayFileSize(file_name_and_path.c_str(), &FileStats);
+		size_of_file = FileStats.st_size;
 	}
 
 
@@ -1216,8 +1245,9 @@ bool Connection::sendFileThread(std::string name_and_location_of_file)
 	{
 		delete[]buf;
 		std::cout << "Abandoning file transfer due to error sending file size.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (fclose(ReadFile))
-			perror("Error closing file designated for writing");
+			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
 		return true;// exit please
 	}
@@ -1748,28 +1778,28 @@ bool Connection::sendFileName(char * buf, const int64_t BUF_LEN, const std::stri
 	return false;
 }
 
-std::string Connection::retrieveFileNameFromPath(std::string name_and_location_of_file)
+std::string Connection::retrieveFileNameFromPath(std::string file_name_and_path)
 {
 	std::string error_empty_string;
 	// Remove the last \ or / in the name if there is one, so that the name
 	// of the file can be separated from the path of the file.
-	if (name_and_location_of_file.back() == '\\' || name_and_location_of_file.back() == '/')
+	if (file_name_and_path.back() == '\\' || file_name_and_path.back() == '/')
 	{
 		perror("ERROR: Found a '\\' or a '/' at the end of the file name.\n");
-		std::cout <<"Name and location of file that caused the error: " << name_and_location_of_file << "\n";
+		std::cout <<"Name and location of file that caused the error: " << file_name_and_path << "\n";
 		return error_empty_string; //exit please
 	}
 
 	const int32_t NO_SLASHES_DETECTED = -1;
 	int64_t last_seen_slash_location = NO_SLASHES_DETECTED;
-	int64_t name_and_location_of_file_length = name_and_location_of_file.length();
+	int64_t name_and_location_of_file_length = file_name_and_path.length();
 
 	if (name_and_location_of_file_length < INT_MAX - 1)
 	{
 		// iterate backwords looking for a slash
 		for (int64_t i = name_and_location_of_file_length; i > 0; --i)
 		{
-			if (name_and_location_of_file[(u_int)i] == '\\' || name_and_location_of_file[(u_int)i] == '/')
+			if (file_name_and_path[(u_int)i] == '\\' || file_name_and_path[(u_int)i] == '/')
 			{
 				last_seen_slash_location = i;
 				break;
@@ -1783,9 +1813,9 @@ std::string Connection::retrieveFileNameFromPath(std::string name_and_location_o
 		}
 		else if (last_seen_slash_location < name_and_location_of_file_length)
 		{
-			// Copy the file name from name_and_location_of_file to file_name.
+			// Copy the file name from file_name_and_path to file_name.
 			std::string file_name(
-				name_and_location_of_file,
+				file_name_and_path,
 				(size_t)last_seen_slash_location + 1,
 				(size_t)((last_seen_slash_location + 1) - name_and_location_of_file_length)
 			);
@@ -1808,17 +1838,19 @@ std::string Connection::retrieveFileNameFromPath(std::string name_and_location_o
 	return error_empty_string;
 }
 
-// Returns size of the file.
-int64_t Connection::getFileStatsAndDisplaySize(const char * file_name_and_location)
+
+// Success == 0
+// Error == -1
+// /* IN */ const char * file_name_and_path
+// /* OUT */ xplatform_struct_stat* FileStats
+int32_t Connection::getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats)
 {
 	// Get some statistics on the file, such as size, time created, etc.
 #ifdef _WIN32
-	struct __stat64 FileStatBuf;
-	int32_t err_chk = _stat64(file_name_and_location, &FileStatBuf);
+	int32_t err_chk = _stat64(file_name_and_path, FileStats);
 #endif//_WIN32
 #ifdef __linux__
-	struct stat FileStatBuf;
-	int32_t err_chk = stat(file_name_and_location, &FileStatBuf);
+	int32_t err_chk = stat(file_name_and_path, FileStats);
 #endif//__linux__
 
 	if (err_chk == -1)
@@ -1828,9 +1860,6 @@ int64_t Connection::getFileStatsAndDisplaySize(const char * file_name_and_locati
 	}
 	else
 	{
-		// Output to terminal the size of the file in Bytes, KB, MB, GB.
-		displayFileSize(file_name_and_location, &FileStatBuf);
-
-		return FileStatBuf.st_size;
+		return 0;// success
 	}
 }

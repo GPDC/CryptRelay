@@ -16,7 +16,7 @@ CommandLineInput::~CommandLineInput()
 {
 }
 
-void CommandLineInput::helpAndReadMe()
+void CommandLineInput::displayHelpAndReadMe()
 {
 	// 80 chars is width of console
 	std::cout << "\n";
@@ -54,7 +54,7 @@ void CommandLineInput::helpAndReadMe()
 	std::cout << "\n";
 }
 
-void CommandLineInput::Examples()
+void CommandLineInput::displayExamples()
 {
 	std::cout << "\n";
 	std::cout << "-------------------------------------------------------------------------------\n";
@@ -94,7 +94,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 	// If no command line arguments supplied, show the ReadMe
 	if (argc <= 1)
 	{
-		helpAndReadMe();
+		displayHelpAndReadMe();
 		return true;
 	}
 	// Check all argv inputs to see what the user wants to do
@@ -112,7 +112,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 				|| arg[i] == "--help"
 				|| arg[i] == "--Help")
 			{
-				helpAndReadMe();
+				displayHelpAndReadMe();
 				return true;
 			}
 			else if (i < arg_size - 1 && arg[i] == "-t")
@@ -126,7 +126,8 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 				else
 				{
 					target_ip_address = argv[i + 1];
-					++i;	// Because we already took the information from i + 1, there is no need to check what i + 1 is, so we skip it by doing ++i;
+					++i;	// Because we already took the information from i + 1,
+					        // there is no need to check what i + 1 is, so we skip it by doing ++i;
 				}
 			}
 			else if (i < arg_size - 1 && arg[i] == "-tP")
@@ -175,7 +176,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			}
 			else if (arg[i] == "--examples")
 			{
-				Examples();
+				displayExamples();
 				return true;
 			}
 			else if (arg[i] == "-v")
@@ -208,7 +209,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			}
 			else
 			{
-				helpAndReadMe();
+				displayHelpAndReadMe();
 				return true;
 			}
 		}

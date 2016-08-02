@@ -19,9 +19,24 @@
 #ifndef chat_program_h__
 #define chat_program_h__
 
+#ifdef __linux__
 #include <string>
 #include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
 #include "SocketClass.h"
+#endif//__linux__
+#ifdef _WIN32
+#include <string>
+#include <mutex>
+#include "SocketClass.h"
+#endif//_WIN32
+
+
+#ifdef _WIN32
+#define xplatform_struct_stat struct __stat64
+#endif//_WIN32
+#ifdef __linux__
+#define xplatform_struct_stat struct stat
+#endif//__linux__
 
 
 class Connection
@@ -76,7 +91,7 @@ private:
 	static const std::string DEFAULT_PORT;
 
 
-	//mutex for use in this class' send()
+	// mutex for use in this class' send()
 	static std::mutex SendMutex;
 	// mutex for use with server and client threads to prevent a race condition.
 	static std::mutex RaceMutex;
@@ -94,8 +109,10 @@ private:
 	// Thread used to handle receiving messages.
 	void loopedReceiveMessagesThread();
 
-	// Cross platform windows and linux thread exiting
-	// Not for use with std::thread
+	// Cross platform windows and linux thread exiting. Not for use with std::thread
+	// Only intended for use with threads started in this manner:
+	// pthread_create()
+	// _beginthread();
 	void exitThread(void* ptr);
 
 	// Variables necessary for determining who won the connection race
@@ -144,25 +161,25 @@ private:
 
 
 	// Sends a file
-	bool sendFileThread(std::string file_name);
+	bool sendFileThread(std::string file_name_and_path);
 	// This is only for use with sendFileThread()
 	bool is_send_file_thread_in_use = false;
 
 	// For sending the file size and file name to peer.
 	bool sendFileSize(char * buf, const int64_t BUF_LEN, int64_t size_of_file);
-	bool sendFileName(char * buf, const int64_t BUF_LEN, const std::string& name_and_location_of_file);
+	bool sendFileName(char * buf, const int64_t BUF_LEN, const std::string& name_of_file);
 
 	// Copies a file.
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 
 	// For use with anything file related
-	bool displayFileSize(const char* file_name_and_location, myStat * FileStatBuf);
-	int64_t getFileStatsAndDisplaySize(const char * file_name_and_location);
+	bool displayFileSize(const char* file_name_and_path, myStat * FileStatBuf);
+	int32_t getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
 
 	// If given a direct path to a file, it will return the file name.
 	// Ex: c:\users\me\storage\my_file.txt
 	// will return: my_file.txt
-	std::string retrieveFileNameFromPath(std::string name_and_location_of_file);
+	std::string retrieveFileNameFromPath(std::string file_name_and_path);
 
 
 	// Flags that indicate what the message is being used for.

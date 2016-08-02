@@ -37,8 +37,8 @@ public:
 protected:
 private:
 
-	void helpAndReadMe();
-	void Examples();
+	void displayHelpAndReadMe();
+	void displayExamples();
 
 	// These private member variables are able to be viewed outside this class
 	// by using the appropriate corresponding public function.
