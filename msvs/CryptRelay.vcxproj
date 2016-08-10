@@ -23,6 +23,7 @@
     <ClInclude Include="..\src\CommandLineInput.h" />
     <ClInclude Include="..\src\FileTransfer.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
+    <ClInclude Include="..\src\Protocol.h" />
     <ClInclude Include="..\src\UserInput.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
     <ClInclude Include="..\src\ApplicationLayer.h" />
@@ -38,6 +39,7 @@
     <ClCompile Include="..\src\CommandLineInput.cpp" />
     <ClCompile Include="..\src\FileTransfer.cpp" />
     <ClCompile Include="..\src\FormatCheck.cpp" />
+    <ClCompile Include="..\src\Protocol.cpp" />
     <ClCompile Include="..\src\UserInput.cpp" />
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\PortKnock.cpp" />

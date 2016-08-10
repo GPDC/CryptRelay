@@ -68,8 +68,8 @@ private:
 	int64_t message_size_part_two = 0;
 	int64_t message_size = 0;		    // peer told us this size
 
-										// More variables necessary for decideActionBasedOnFlag().
-										// These are related to an incoming file transfer
+	// More variables necessary for decideActionBasedOnFlag().
+	// These are related to an incoming file transfer
 	static const int64_t INCOMING_FILE_NAME_FROM_PEER_SIZE = 200;
 	static const int64_t RESERVED_NULL_CHAR_FOR_FILE_NAME = 1;
 	char incoming_file_name_from_peer_cstr[INCOMING_FILE_NAME_FROM_PEER_SIZE];

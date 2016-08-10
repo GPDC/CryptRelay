@@ -10,6 +10,7 @@
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
+#include "Protocol.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -21,6 +22,7 @@
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
+#include "Protocol.h"
 #endif//_WIN32
 
 
@@ -37,19 +39,6 @@
 
 #endif // __linux__
 
-
-// Flags for send() that indicate what the message is being used for.
-// CR == CryptRelay
-const int8_t ApplicationLayer::MsgFlags::NO_FLAG = 0;
-const int8_t ApplicationLayer::MsgFlags::SIZE_NOT_ASSIGNED = 0;
-const int8_t ApplicationLayer::MsgFlags::CHAT = 1;
-const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_CHAT = 2;
-const int8_t ApplicationLayer::MsgFlags::FILE_NAME = 30;
-const int8_t ApplicationLayer::MsgFlags::FILE_SIZE = 31;
-const int8_t ApplicationLayer::MsgFlags::FILE_DATA = 32;
-const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_NAME = 33;
-const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_SIZE = 34;
-const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_DATA = 35;
 
 // How many characters at the beginning of the buffer that should be
 // reserved for usage of a flag, (1) and size of the message (2). (1 + 2 == 3)
@@ -197,7 +186,7 @@ int32_t ApplicationLayer::send(const char * sendbuf, int32_t amount_to_send)
 int64_t ApplicationLayer::sendChatStr(std::string& buf)
 {
 	int64_t message_length = buf.length();
-	if (setFlagsAndMsgSize(buf, message_length, message_length, MsgFlags::CHAT) == -1)
+	if (setFlagsAndMsgSize(buf, message_length, message_length, Protocol::MsgFlags::CHAT) == -1)
 	{
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
@@ -219,7 +208,7 @@ int64_t ApplicationLayer::sendFileName(std::string name_of_file)
 	int64_t message_length = name_of_file.length();
 
 	// Put flag and message size into the first CR_RESERVED_BUFFER_SPACE chars.
-	if (setFlagsAndMsgSize(name_of_file, message_length, message_length, MsgFlags::FILE_NAME) == -1)
+	if (setFlagsAndMsgSize(name_of_file, message_length, message_length, Protocol::MsgFlags::FILE_NAME) == -1)
 	{
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
@@ -247,7 +236,7 @@ int32_t ApplicationLayer::sendFileSize(char * buf, const int32_t BUF_LEN, int64_
 
 	int32_t message_length = sizeof(file_size);
 
-	if (setFlagsAndMsgSize(buf, BUF_LEN, message_length, MsgFlags::FILE_SIZE) == -1)
+	if (setFlagsAndMsgSize(buf, BUF_LEN, message_length, Protocol::MsgFlags::FILE_SIZE) == -1)
 	{
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
@@ -280,7 +269,7 @@ int32_t ApplicationLayer::sendFileData(char * buf, const int32_t BUF_LEN, int32_
 		return -1;
 	}
 
-	if (setFlagsAndMsgSize(buf, BUF_LEN, message_length, MsgFlags::FILE_DATA) == -1)
+	if (setFlagsAndMsgSize(buf, BUF_LEN, message_length, Protocol::MsgFlags::FILE_DATA) == -1)
 	{
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;

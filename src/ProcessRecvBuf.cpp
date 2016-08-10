@@ -4,7 +4,7 @@
 
 #include "ProcessRecvBuf.h"
 #include "GlobalTypeHeader.h"
-#include "ApplicationLayer.h"
+#include "Protocol.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -12,7 +12,7 @@
 
 #include "ProcessRecvBuf.h"
 #include "GlobalTypeHeader.h"
-#include "ApplicationLayer.h"
+#include "Protocol.h"
 #endif//_WIN32
 
 
@@ -256,13 +256,13 @@ bool ProcessRecvBuf::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_l
 
 				// Now that we have a flag and the size of the message,
 				// set the state based on the message flag
-				if (message_flag == ApplicationLayer::MsgFlags::FILE_DATA)
+				if (message_flag == Protocol::MsgFlags::FILE_DATA)
 					state = WRITE_FILE_FROM_PEER;
-				else if (message_flag == ApplicationLayer::MsgFlags::FILE_NAME)
+				else if (message_flag == Protocol::MsgFlags::FILE_NAME)
 					state = TAKE_FILE_NAME_FROM_PEER;
-				else if (message_flag == ApplicationLayer::MsgFlags::FILE_SIZE)
+				else if (message_flag == Protocol::MsgFlags::FILE_SIZE)
 					state = TAKE_FILE_SIZE_FROM_PEER;
-				else if (message_flag == ApplicationLayer::MsgFlags::CHAT)
+				else if (message_flag == Protocol::MsgFlags::CHAT)
 					state = OUTPUT_CHAT_FROM_PEER;
 				else
 				{
