@@ -87,7 +87,10 @@ public:
 	SOCKET socket(int32_t address_family, int32_t type, int32_t protocol);
 	SOCKET accept();
 
+	// Cross-platform WSAStartup();
+	// For every WSAStartup() that is called, a WSACleanup() must be called.
 	bool WSAStartup();
+
 	bool setsockopt(int32_t level, int32_t option_name, const char* option_value, int32_t option_length);
 	bool bind(const sockaddr *name, int32_t name_len);
 	bool shutdown(SOCKET socket, int32_t operation);
@@ -96,19 +99,27 @@ public:
 
 	int32_t inet_pton(int32_t family, char * ip_addr, void * paddr_buf);
 	int32_t connect(const sockaddr* name, int32_t name_len);
-	//int32_t send(const char* buffer, int32_t buffer_length, int32_t flags);
-	//int32_t sendto(const char* buf, int32_t len, int32_t flags, const sockaddr *to, int32_t to_len);
-	//int32_t recv(char* buf, int32_t buf_len, int32_t flags);
-	//BYTE_SIZE recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len);
 
+	// Cross-platform closing of a socket / fd.
 	void closesocket(SOCKET socket);
+
+	// Crossplatform WSACleanup();
+	// For every WSAStartup() that is called, a WSACleanup() must be called.
 	void WSACleanup();
+
+	// All addrinfo structures that have been allocated by the getaddrinfo()
+	// function must be freed once they are done being used. Since the function
+	// gives you a pointer to the allocated addrinfo structure, you should
+	// do something like this example:
+	// addrinfo * ServerConnectionInfo = nullptr;
+	// getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
+	// 	if (ServerConnectionInfo != nullptr)
+	//		Socket->freeaddrinfo(&ServerConnectionInfo);
+	//
+	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 	void freeaddrinfo(addrinfo** ppAddrInfo);
 	void coutPeerIPAndPort();
 
-
-	const int32_t CONNECTION_REFUSED = -10061;
-	const int32_t TIMEOUT_ERROR = -10060;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the

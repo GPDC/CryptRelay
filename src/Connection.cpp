@@ -70,16 +70,10 @@ int32_t Connection::global_winner = NOBODY_WON;
 Connection::Connection(SocketClass* SocketClassInstance)
 {
 	Socket = SocketClassInstance;
-	ConnectionInfo = nullptr;
 }
 Connection::~Connection()
 {
-	// ****IMPORTANT****
-	// All addrinfo structures must be freed once they are done being used.
-	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
-	// Check comments in the freeaddrinfo() to see how its done.
-	if (ConnectionInfo != nullptr)
-		Socket->freeaddrinfo(&ConnectionInfo);
+
 }
 
 
@@ -110,35 +104,60 @@ void Connection::setIPandPort(std::string target_extrnl_ip_address, std::string 
 }
 
 void Connection::serverThread()
-{
-	memset(&Hints, 0, sizeof(Hints));
-	// These are the settings for the connection
-	Hints.ai_family = AF_INET;		//ipv4
-	Hints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
-	//Hints.ai_flags = AI_PASSIVE;	// Use local-host address
-	Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+{	
+	// ServerHints is used by getaddrinfo()
+	// once ServerHints is given to getaddrinfo() it will fill out *ServerConnectionInfo
+	addrinfo ServerHints;
 
-	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ConnectionInfo
-	// Now we use ConnectionInfo instead of Hints.
+	// After being given to getaddrinfo(), it will fill out ServerConnectionInfo.
+	// It now contains all relevant info for ip address, family, protocol, etc.
+	// *ServerConnectionInfo is ONLY used if there is a getaddrinfo().
+	addrinfo * ServerConnectionInfo = nullptr;
+
+	memset(&ServerHints, 0, sizeof(ServerHints));
+
+	// These are the settings for the connection
+	ServerHints.ai_family = AF_INET;		//ipv4
+	ServerHints.ai_socktype = SOCK_STREAM;	// Connect using reliable connection
+	//ServerHints.ai_flags = AI_PASSIVE;	// Use local-host address
+	ServerHints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
+
+	// Place target ip and port, and ServerHints about the connection type into a linked list named addrinfo *ServerConnectionInfo
+	// Now we use ServerConnectionInfo instead of ServerHints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (Socket->getaddrinfo(my_local_ip, my_local_port, &Hints, &ConnectionInfo) == true)
+	if (Socket->getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo) == true)
+	{
+		if (ServerConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
+	}
+
 
 	// Create socket
-	SOCKET errchk_socket = Socket->socket(ConnectionInfo->ai_family, ConnectionInfo->ai_socktype, ConnectionInfo->ai_protocol);
-	if (errchk_socket == INVALID_SOCKET)
+	SOCKET errchk_socket = Socket->socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
+	if (errchk_socket == INVALID_SOCKET || errchk_socket == SOCKET_ERROR)
+	{
+		if (ServerConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
-	else if (errchk_socket == SOCKET_ERROR)
-		return;
+	}
 
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (Socket->bind(ConnectionInfo->ai_addr, ConnectionInfo->ai_addrlen) == true)
+	if (Socket->bind(ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == true)
+	{
+		if (ServerConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
+	}
 
 	// Set the socket to listen for incoming connections
 	if (Socket->listen() == true)
+	{
+		if (ServerConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
+	}
 
 
 	// Needed to provide a time to select()
@@ -177,6 +196,8 @@ void Connection::serverThread()
 			DBG_DISPLAY_ERROR_LOCATION();
 			Socket->closesocket(Socket->fd_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
+			if (ServerConnectionInfo != nullptr)
+				Socket->freeaddrinfo(&ServerConnectionInfo);
 			return;
 		}
 		else if (global_winner == CLIENT_WON)
@@ -184,9 +205,9 @@ void Connection::serverThread()
 			// Close the socket because the client thread won the race.
 			Socket->closesocket(Socket->fd_socket);
 			if (global_verbose == true)
-			{
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
-			}
+			if (ServerConnectionInfo != nullptr)
+				Socket->freeaddrinfo(&ServerConnectionInfo);
 			return;
 		}
 		else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
@@ -201,6 +222,8 @@ void Connection::serverThread()
 			{
 				Socket->getError();
 				DBG_DISPLAY_ERROR_LOCATION();
+				if (ServerConnectionInfo != nullptr)
+					Socket->freeaddrinfo(&ServerConnectionInfo);
 				return;
 			}
 
@@ -211,6 +234,8 @@ void Connection::serverThread()
 			if (setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
 				Socket->closesocket(Socket->fd_socket);
+				if (ServerConnectionInfo != nullptr)
+					Socket->freeaddrinfo(&ServerConnectionInfo);
 				return;
 			}
 
@@ -222,6 +247,8 @@ void Connection::serverThread()
 	Socket->coutPeerIPAndPort();
 	std::cout << "Acting as the server.\n\n\n\n\n\n\n\n\n\n";
 
+	if (ServerConnectionInfo != nullptr)
+		Socket->freeaddrinfo(&ServerConnectionInfo);
 	return;
 }
 
@@ -229,9 +256,15 @@ void Connection::serverThread()
 void Connection::clientThread()
 {
 	int32_t errchk;
+
+	// ClientHints is used by getaddrinfo()
+	// once ClientHints is given to getaddrinfo() it will fill out *ServerConnectionInfo
 	addrinfo ClientHints;
-	addrinfo* ClientConnectionInfo;
-	
+
+	// After being given to getaddrinfo(), it will fill out ServerConnectionInfo.
+	// It now contains all relevant info for ip address, family, protocol, etc.
+	// *ClientConnectionInfo is ONLY used if there is a getaddrinfo().
+	addrinfo * ClientConnectionInfo = nullptr;
 
 	memset(&ClientHints, 0, sizeof(ClientHints));
 	// These are the settings for the connection
@@ -240,22 +273,30 @@ void Connection::clientThread()
 	//ClientHints.ai_flags = AI_PASSIVE;    // Use local-host address
 	ClientHints.ai_protocol = IPPROTO_TCP;	// Connect using TCP
 
-	// Place target ip and port, and ClientHints about the connection type into a linked list named addrinfo *ConnectionInfo
+	// Place target ip and port, and ClientHints about the connection type into a linked list named addrinfo* ClientConnectionInfo
 	// Now we use ClientConnectionInfo instead of ClientHints in order to access the information.
 	if (Socket->getaddrinfo(target_external_ip, target_external_port, &ClientHints, &ClientConnectionInfo) == true)
+	{
+		if (ClientConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
+	}
 
 	// Create socket
 	SOCKET errchk_socket = Socket->socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
-	if (errchk_socket == INVALID_SOCKET)
+	if (errchk_socket == INVALID_SOCKET || errchk_socket == SOCKET_ERROR)
+	{
+		if (ClientConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
-	else if (errchk_socket == SOCKET_ERROR)
-		return;
+	}
 
 	// Disable blocking on the socket
 	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->DISABLE_BLOCKING) == true)
 	{
 		std::cout << "Exiting client thread due to error.\n";
+		if (ClientConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
@@ -298,6 +339,8 @@ void Connection::clientThread()
 		if (exit_now == true)
 		{
 			Socket->closesocket(Socket->fd_socket);
+			if (ClientConnectionInfo != nullptr)
+				Socket->freeaddrinfo(&ClientConnectionInfo);
 			return;
 		}
 		if (conn_return_val == 0)
@@ -307,8 +350,9 @@ void Connection::clientThread()
 		}
 		if (conn_return_val != 0)
 		{
+			const int32_t NO_SOCKET_ERROR = 0;
 			int32_t err_chk = Socket->getError(Socket->DISABLE_CONSOLE_OUTPUT);
-			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK || err_chk == 0)
+			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK || err_chk == NO_SOCKET_ERROR)
 			{
 				// Let us move on to select() to see if we have completed the connection.
 
@@ -333,6 +377,8 @@ void Connection::clientThread()
 				if (exit_now == true)
 				{
 					Socket->closesocket(Socket->fd_socket);
+					if (ClientConnectionInfo != nullptr)
+						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				if (errchk == SOCKET_ERROR)
@@ -357,6 +403,8 @@ void Connection::clientThread()
 
 					Socket->closesocket(Socket->fd_socket);
 					std::cout << "Closing connect socket b/c of the error. Ending client thread.\n";
+					if (ClientConnectionInfo != nullptr)
+						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				else if (global_winner == SERVER_WON)
@@ -364,9 +412,9 @@ void Connection::clientThread()
 					// Close the socket because the server thread won the race.
 					Socket->closesocket(Socket->fd_socket);
 					if (global_verbose == true)
-					{
 						std::cout << "Closed connect socket, because the winner is: " << global_winner << ". Ending client thread.\n";
-					}
+					if (ClientConnectionInfo != nullptr)
+						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				else if (errchk > 0)	// select() told us that at least 1 readable socket has appeared
@@ -378,6 +426,8 @@ void Connection::clientThread()
 						Socket->closesocket(Socket->fd_socket);
 						if (global_verbose == true)
 							std::cout << "Exiting client thread because the server thread won the race.\n";
+						if (ClientConnectionInfo != nullptr)
+							Socket->freeaddrinfo(&ClientConnectionInfo);
 						return;
 					}
 					else// Client is confirmed as the winner of the race.
@@ -402,6 +452,8 @@ void Connection::clientThread()
 				Socket->closesocket(Socket->fd_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Exiting client thread.\n";
+				if (ClientConnectionInfo != nullptr)
+					Socket->freeaddrinfo(&ClientConnectionInfo);
 				return;
 			}
 		}
@@ -416,9 +468,13 @@ void Connection::clientThread()
 	{
 		Socket->getError();
 		DBG_DISPLAY_ERROR_LOCATION();
+		if (ClientConnectionInfo != nullptr)
+			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
+	if (ClientConnectionInfo != nullptr)
+		Socket->freeaddrinfo(&ClientConnectionInfo);
 	return;
 }
 

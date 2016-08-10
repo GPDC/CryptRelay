@@ -85,20 +85,9 @@ private:
 	typedef struct stat xplatform_struct_stat;
 #endif//__linux__
 
-	SocketClass* Socket;
-
-	// Hints is used by getaddrinfo()
-	// once Hints is given to getaddrinfo() it will return *ConnectionInfo
-	addrinfo		 Hints;
-
-	// after being given to getaddrinfo(), ConnectionInfo now contains all relevant info for
-	// ip address, family, protocol, etc.
-	// *ConnectionInfo is ONLY used if there is a getaddrinfo().
-	addrinfo		 *ConnectionInfo;
-	//addrinfo		 *ptr;		// this would only be used if traversing the list of address structures.
+	SocketClass * Socket;
 
 	static const std::string DEFAULT_PORT;
-
 
 	// Server and Client thread must use this function to prevent
 	// a race condition.

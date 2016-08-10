@@ -127,7 +127,6 @@ bool SocketClass::bind(const sockaddr *name, int32_t name_len)
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
-	//freeaddrinfo(result);   //shouldn't need the info gathered by getaddrinfo now that bind has been called
 
 	return false;
 }
@@ -277,7 +276,7 @@ bool SocketClass::getaddrinfo(std::string target_ip, std::string target_port, co
 	if (global_verbose == true)
 		std::cout << "getaddrinfo given: IP address and port... ";
 	
-	int32_t errchk = ::getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);    //added & too ppresult on linux
+	int32_t errchk = ::getaddrinfo(target_ip.c_str(), target_port.c_str(), phints, ppresult);
 	if (errchk != 0)
 	{
 		getError();;
@@ -348,6 +347,17 @@ void SocketClass::WSACleanup()
 #endif//_WIN32
 }
 
+
+// All addrinfo structures that have been allocated by the getaddrinfo()
+// function must be freed once they are done being used. Since the function
+// gives you a pointer to the allocated addrinfo structure, you should
+// do something like this example:
+// addrinfo * ServerConnectionInfo = nullptr;
+// getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
+// 	if (ServerConnectionInfo != nullptr)
+//		Socket->freeaddrinfo(&ServerConnectionInfo);
+//
+// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
 {
 	::freeaddrinfo(*ppAddrInfo);
