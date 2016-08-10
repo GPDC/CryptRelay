@@ -52,7 +52,12 @@
 
 #ifdef __linux__
 typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Windows.
-#define BYTE_SIZE ssize_t// because recvfrom needs to return ssize_t on linux, and int32_t on win
+
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#define SOCKET_ERROR	(-1)	// I belive this was just because linux didn't already have a SOCKET_ERROR macro.
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH			SHUT_RDWR//0x02			// ^
 #endif//__linux__
 
 #ifdef _WIN32

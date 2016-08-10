@@ -5,29 +5,36 @@
 #include <sys/socket.h>	// <Winsock2.h>
 #include <netdb.h>
 #include <thread>
+#include <limits>
 
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
-#include "ProcessRecvBuf.h"
 #endif//__linux__
 
 #ifdef _WIN32
 #include <iostream>
 #include <WS2tcpip.h>
 #include <thread>
+#include <limits>
 
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
-#include "ProcessRecvBuf.h"
 #endif//_WIN32
 
 
 #ifdef __linux__
+
+#ifndef INVALID_SOCKET
 #define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#endif//INVALID_SOCKET
+
+#ifndef SOCKET_ERROR
 #define SOCKET_ERROR	(-1)			// To indicate SOCKET_ERROR, Windows returns -1 from socket functions, and linux returns -1.
 										// Linux doesn't distinguish between INVALID_SOCKET and SOCKET_ERROR. It just returns -1 on error.
+#endif//SOCKET_ERROR
+
 #endif // __linux__
 
 
@@ -252,7 +259,7 @@ int32_t ApplicationLayer::sendFileSize(char * buf, const int32_t BUF_LEN, int64_
 
 	// Send it
 	int32_t total_bytes_sent = sendCharBuf(buf, BUF_LEN, message_length);
-	return total_amount_sent;
+	return total_bytes_sent;
 }
 
 // This method writes over the first CR_RESERVED_BUFFER_SPACE bytes of the given buffer.
@@ -325,8 +332,6 @@ void ApplicationLayer::loopedReceiveMessages()
 	// Receive until the peer shuts down the connection
 	if (global_verbose == true)
 		std::cout << "Recv loop started...\n";
-
-	ProcessRecvBuf ProcRecv(this);
 
 	// Buffer for receiving data from peer
 	static const int64_t recv_buf_len = 512;

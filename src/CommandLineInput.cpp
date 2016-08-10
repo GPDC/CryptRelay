@@ -7,7 +7,6 @@
 #include "CommandLineInput.h"
 #include "GlobalTypeHeader.h"
 #include "FormatCheck.h"
-#include "UPnP.h"
 #endif//__linux__
 
 #ifdef _WIN32
@@ -18,7 +17,6 @@
 #include "CommandLineInput.h"
 #include "GlobalTypeHeader.h"
 #include "FormatCheck.h"
-#include "UPnP.h"
 #endif//_WIN32
 
 

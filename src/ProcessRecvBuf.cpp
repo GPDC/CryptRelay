@@ -21,10 +21,9 @@
 #endif//_WIN32
 
 
-ProcessRecvBuf::ProcessRecvBuf(ApplicationLayer* ApplicationLayerInstance)
+ProcessRecvBuf::ProcessRecvBuf()
 {
 	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
-	AppLay = ApplicationLayerInstance;
 }
 ProcessRecvBuf::~ProcessRecvBuf()
 {
@@ -36,7 +35,7 @@ bool ProcessRecvBuf::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_l
 {
 	position_in_recv_buf = 0;	// the current cursor position inside the buffer.
 
-								// RecvStateMachine
+	// RecvStateMachine
 	while (1)
 	{
 		switch (state)

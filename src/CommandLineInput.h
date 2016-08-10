@@ -3,8 +3,8 @@
 // Overview:
 // The purpose of this class is to parse command line input.
 
-#ifndef CommandLineInput_h___
-#define CommandLineInput_h___
+#ifndef CommandLineInput_h__
+#define CommandLineInput_h__
 #include <string>
 
 
@@ -58,4 +58,4 @@ public:
 	const std::string& getDeleteThisSpecificPortForwardProtocol() { return delete_this_specific_port_forward_protocol; }
 };
 
-#endif
+#endif// CommandLineInput_h__

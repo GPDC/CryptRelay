@@ -21,7 +21,7 @@ class ApplicationLayer;
 class ProcessRecvBuf
 {
 public:
-	ProcessRecvBuf(ApplicationLayer* ProtocolInstance);
+	ProcessRecvBuf();
 	virtual ~ProcessRecvBuf();
 
 	// Here is where all messages received are processed to determine what to do with the message.
@@ -34,20 +34,12 @@ public:
 	FILE * WriteFile = nullptr;
 
 
-	// Accessors
-	const std::string& getIncomingFileNameFromPeer();
-	const bool& getIsFileDoneBeingWritten();
-
-
 protected:
 private:
 
 	// Prevent anyone from copying this class.
 	ProcessRecvBuf(ProcessRecvBuf& ProcessInstance) = delete;			    // disable copy operator
 	ProcessRecvBuf& operator=(ProcessRecvBuf& ProcessInstance) = delete;  // disable assignment operator
-
-
-	ApplicationLayer* AppLay;
 
 
 	enum RecvStateMachine
@@ -100,6 +92,15 @@ private:
 	int64_t incoming_file_size_from_peer = 0;
 	const int32_t RECV_AGAIN = 0;
 	const int32_t FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER = 1;
+
+public:
+
+	// set Accessors
+
+
+	// get Accessors
+	const std::string& getIncomingFileNameFromPeer();
+	const bool& getIsFileDoneBeingWritten();
 };
 
 #endif//ProcessRecvBuf_h__

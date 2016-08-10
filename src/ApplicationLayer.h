@@ -14,11 +14,15 @@
 #ifdef __linux__
 #include <string>
 #include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
+
+#include "ProcessRecvBuf.h"
 #endif//__linux__
 
 #ifdef _WIN32
 #include <string>
 #include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
+
+#include "ProcessRecvBuf.h"
 #endif//_WIN32
 
 // Forward declaration
@@ -118,6 +122,8 @@ private:
 	// Prevent anyone from copying this class
 	ApplicationLayer(ApplicationLayer& ApplicationLayerInstance) = delete;			  // disable copy operator
 	ApplicationLayer& operator=(ApplicationLayer& ApplicationLayerInstance) = delete; // disable assignment operator
+
+	ProcessRecvBuf ProcRecv;
 
 	// This method is thread safe.
 	// Everything in CryptRelay that wants to send information to the peer
