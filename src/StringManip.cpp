@@ -34,7 +34,7 @@ StringManip::~StringManip()
 // a delimiter of a ' ' will create a new string every time it encounters a ' '.
 // For example: the quick brown fox
 // is turned into: str1 == the, str2 == quick, str3 == brown, str4 == fox
-bool StringManip::split(std::string string, char delimiter, std::vector<std::string> &elements)
+bool StringManip::split(const std::string& string, char delimiter, std::vector<std::string> &elements)
 {
 	std::stringstream ss(string);
 	std::string item;
@@ -66,7 +66,7 @@ bool StringManip::split(std::string string, char delimiter, std::vector<std::str
 
 // Finds the specified character (aka the delimiter), and
 // duplicates it by inserting another one next to it.
-std::string StringManip::duplicateCharacter(std::string string, char duplicate_character)
+std::string StringManip::duplicateCharacter(std::string& string, char duplicate_character)
 {
 	size_t string_length = string.length();
 	uint32_t i;

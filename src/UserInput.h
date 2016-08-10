@@ -60,8 +60,15 @@ public:
 protected:
 private:
 
+	// Prevent someone from copying this class.
+	UserInput(UserInput& UserInputInstance) = delete; // disable copy operator
+	UserInput& operator=(UserInput& UserInputInstance) = delete; // disable assignment operator
+
+	// Makes sure we are able to supply the FileTransfer class with reasonably correct input.
+	int32_t prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input);
+
 	// Callbacks
-	callback_fn_start_file_transfer * callback_StartFileXfer = nullptr; // Start the filetransfer.
+	callback_fn_start_file_transfer * callback_StartThreadedFileXfer = nullptr; // Start the filetransfer.
 	callback_fn_send_chat * callbackSendChatMsg = nullptr; // Send a chat message to the peer.
 	callback_fn_end_connection * callbackEndConnection = nullptr; // close() and shutdown() the connected socket.
 
@@ -69,7 +76,7 @@ private:
 public:
 
 	// Accessors
-	void setCallbackStartFileXfer(callback_fn_start_file_transfer * ptr) { callback_StartFileXfer = ptr; }
+	void setCallbackStartFileXfer(callback_fn_start_file_transfer * ptr) { callback_StartThreadedFileXfer = ptr; }
 	void setCallbackSendChatMessage(callback_fn_send_chat * ptr) { callbackSendChatMsg = ptr; }
 	void setCallbackEndConnection(callback_fn_end_connection * ptr) { callbackEndConnection = ptr; }
 };

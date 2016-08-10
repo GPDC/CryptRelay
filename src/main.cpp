@@ -207,7 +207,7 @@ ApplicationLayer* AppLayer = nullptr;
 
 // returns 0 on success.
 // returns -1 when a file is still being transfered, and needs to wait for it to finish.
-int32_t startFileXfer(const std::string& file_name_and_path)
+int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 {
 	// If true, there must be a FileTransfer class instance.
 	if (FileXfer != nullptr)
@@ -231,7 +231,7 @@ int32_t startFileXfer(const std::string& file_name_and_path)
 			else // A thread must not exist. This shouldn't be possible to get here.
 			{
 				DBG_DISPLAY_ERROR_LOCATION();
-				std::cout << "Error: impossible else statement reached. startFileXfer()\n";
+				std::cout << "Error: impossible else statement reached. startThreadedFileXfer()\n";
 				return -1;
 			}
 		}
@@ -467,7 +467,7 @@ int32_t main(int32_t argc, char *argv[])
 	// because it needs to be able to send things through the ApplicationLayer
 	// using these callbacks in order to have data arrive at the peer.
 	UserInput UserInput_o;
-	UserInput_o.setCallbackStartFileXfer(&startFileXfer);
+	UserInput_o.setCallbackStartFileXfer(&startThreadedFileXfer);
 	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
 	UserInput_o.setCallbackEndConnection(endConnection);
 

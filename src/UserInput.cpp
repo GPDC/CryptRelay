@@ -101,74 +101,33 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		}
 		case SEND_FILE:
 		{
-			// Split the string into multiple strings for every space.
-			StringManip StrManip;
-			std::vector <std::string> split_strings_vector;
-			if (StrManip.split(user_input, ' ', split_strings_vector) == true)
+			// prepareUserInputForFileXfer() assigns this.
+			std::string file_name_and_path;
+			// Adds any necessary escape characters for '\'s,
+			// Makes sure user typed something after "-f", Ex: "-f something_like_a_path_to_a_file"
+			if (prepareUserInputForFileXfer(user_input, file_name_and_path) == -1)
 			{
-				std::cout << "Unexpected error: split()";
-				DBG_DISPLAY_ERROR_LOCATION();
-			}
-
-			// get the size of the array
-			int64_t split_strings_size = split_strings_vector.size();
-
-			// There should be two strings in the vector.
-			// [0] should be -f
-			// [1] should be the file name and path
-			if (split_strings_size < 2)
-			{
-				std::cout << "Error: not enough arguments given.\n"; // Non-fatal error.
 				state = BEGINNING_STATE;
 				return 0;
 			}
 
-			std::string file_name_and_path;
-			// Determine if user wants to send a file or Encrypt & send a file.
-			for (int64_t i = 0; i < split_strings_size; ++i)
+			// Try to start the file transfer.
+			if (callback_StartThreadedFileXfer != nullptr)
 			{
-				if (split_strings_vector[(uint32_t)i] == "-f" && i < split_strings_size - 1)
+				if (callback_StartThreadedFileXfer(file_name_and_path) == -1)
 				{
-					// The first string will always be -f. All strings after that
-					// will be concatenated, and then have the spaces re-added after
-					// to prevent issues with spaces in file names and paths.
-					for (int32_t b = 2; b < split_strings_size; ++b)
-					{
-						split_strings_vector[1] += ' ' + split_strings_vector[b];
-					}
-
-					// There should be two strings in the vector.
-					// [0] should be -f
-					// [1] should be the file name
-					if (split_strings_size >= 2)
-					{
-						file_name_and_path = split_strings_vector[1];
-
-						// Fix the user's input to add an escape character to every '\'
-						StrManip.duplicateCharacter(file_name_and_path, '\\');
-					}
-
-					// create a file xfer instance, which will make
-					// it start a threaded sendFile().
-					if (callback_StartFileXfer != nullptr)
-					{
-						if (callback_StartFileXfer(file_name_and_path) == -1)
-						{
-							// Couldn't start the file transfer
-							std::cout << "Error: A file transfer is already in progress. Please wait until it is finished.\n";
-						}
-					}
-					else // Programmer error, never set the callback
-					{
-						std::cout << "Error: File transfer never started. Programmer error. callback_StartFileXfer == nullptr.\n";
-						DBG_DISPLAY_ERROR_LOCATION();
-					}
-
-					state = BEGINNING_STATE;
-					return 0;
+					// Couldn't start the file transfer
+					std::cout << "Error: A file transfer is already in progress. Please wait until it is finished.\n";
 				}
 			}
-			break;
+			else // Programmer error, never set the callback
+			{
+				std::cout << "Error: File transfer never started. Programmer error. callback_StartThreadedFileXfer == nullptr.\n";
+				DBG_DISPLAY_ERROR_LOCATION();
+			}
+
+			state = BEGINNING_STATE;
+			return 0;
 		}
 		case EXIT_GRACEFULLY:
 		{
@@ -219,3 +178,138 @@ bool UserInput::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 
 	return false;
 }
+
+// /* IN */ std::string& user_input is the source string that will be prepared for file transfer.
+// /* OUT */ std::string& prepared_user_input is the modified file name and path
+// Returns -1, error.
+// Returns 0, success.
+int32_t UserInput::prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input)
+{
+	// Split the string into multiple strings for every space.
+	StringManip StrManip;
+	std::vector <std::string> split_strings_vector;
+	if (StrManip.split(user_input, ' ', split_strings_vector) == true)
+	{
+		std::cout << "Unexpected error: split(). File transfer never started due to error.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		return -1;
+	}
+
+	// get the size of the array
+	int64_t split_strings_size = split_strings_vector.size();
+
+	// There should be at least two strings in the vector.
+	// [0] should be -f
+	// [1] should be the file name and path
+	// [2] and onwards could exist if there were spaces in the file name or path
+	if (split_strings_size < 2)
+	{
+		std::cout << "Error: not enough arguments given.\n";
+		return -1;
+	}
+
+
+	if (split_strings_vector[0] == "-f" && split_strings_size >= 2)
+	{
+		// Incase the file name and path had spaces in it,
+		// concatenate everything after [1], since [0]
+		// should just be "-f".
+		for (int32_t b = 2; b < split_strings_size; ++b)
+		{
+			split_strings_vector[1] += ' ' + split_strings_vector[b];
+		}
+
+		// There should now only be two strings in the vector.
+		// [0] should be -f
+		// [1] should be the file name
+		if (split_strings_size >= 2)
+		{
+			prepared_user_input = split_strings_vector[1];
+
+			// Fix the user's input to add an escape character to every '\'
+			StrManip.duplicateCharacter(prepared_user_input, '\\');
+		}
+	}
+	
+	return 0;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+	//// Split the string into multiple strings for every space.
+	//StringManip StrManip;
+	//std::vector <std::string> split_strings_vector;
+	//if (StrManip.split(user_input, ' ', split_strings_vector) == true)
+	//{
+	//	std::cout << "Unexpected error: split()";
+	//	DBG_DISPLAY_ERROR_LOCATION();
+	//}
+
+	//// get the size of the array
+	//int64_t split_strings_size = split_strings_vector.size();
+
+	//// There should be two strings in the vector.
+	//// [0] should be -f
+	//// [1] should be the file name and path
+	//if (split_strings_size < 2)
+	//{
+	//	std::cout << "Error: not enough arguments given.\n"; // Non-fatal error.
+	//	state = BEGINNING_STATE;
+	//	return 0;
+	//}
+
+	//std::string file_name_and_path;
+	//// Determine if user wants to send a file or Encrypt & send a file.
+	//for (int64_t i = 0; i < split_strings_size; ++i)
+	//{
+	//	if (split_strings_vector[(uint32_t)i] == "-f" && i < split_strings_size - 1)
+	//	{
+	//		// The first string will always be -f. All strings after that
+	//		// will be concatenated, and then have the spaces re-added after
+	//		// to prevent issues with spaces in file names and paths.
+	//		for (int32_t b = 2; b < split_strings_size; ++b)
+	//		{
+	//			split_strings_vector[1] += ' ' + split_strings_vector[b];
+	//		}
+
+	//		// There should be two strings in the vector.
+	//		// [0] should be -f
+	//		// [1] should be the file name
+	//		if (split_strings_size >= 2)
+	//		{
+	//			file_name_and_path = split_strings_vector[1];
+
+	//			// Fix the user's input to add an escape character to every '\'
+	//			StrManip.duplicateCharacter(file_name_and_path, '\\');
+	//		}
+
+	//		// create a file xfer instance, which will make
+	//		// it start a threaded sendFile().
+	//		if (callback_StartThreadedFileXfer != nullptr)
+	//		{
+	//			if (callback_StartThreadedFileXfer(file_name_and_path) == -1)
+	//			{
+	//				// Couldn't start the file transfer
+	//				std::cout << "Error: A file transfer is already in progress. Please wait until it is finished.\n";
+	//			}
+	//		}
+	//		else // Programmer error, never set the callback
+	//		{
+	//			std::cout << "Error: File transfer never started. Programmer error. callback_StartThreadedFileXfer == nullptr.\n";
+	//			DBG_DISPLAY_ERROR_LOCATION();
+	//		}
+
+	//		state = BEGINNING_STATE;
+	//		return 0;
+	//	}
