@@ -35,8 +35,8 @@
 #include "Connection.h"
 #include "PortKnock.h"
 #include "UserInput.h"
-#include "ProcessUserInput.h"
 #include "ApplicationLayer.h"
+#include "FileTransfer.h"
 
 #include "UPnP.h"
 #endif//__linux__
@@ -56,8 +56,8 @@
 #include "Connection.h"
 #include "PortKnock.h"
 #include "UserInput.h"
-#include "ProcessUserInput.h"
 #include "ApplicationLayer.h"
+#include "FileTransfer.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -460,9 +460,12 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Start up the ApplicationLayer, giving it the SocketClass
 	// instance which contains the socket that won the race.
+	// This will
 	AppLayer = new ApplicationLayer(WinningSocket);
 
-	// UserInput instance must be created after the ApplicationLayer instance.
+	// UserInput instance must be created after the ApplicationLayer instance,
+	// because it needs to be able to send things through the ApplicationLayer
+	// using these callbacks in order to have data arrive at the peer.
 	UserInput UserInput_o;
 	UserInput_o.setCallbackStartFileXfer(&startFileXfer);
 	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
