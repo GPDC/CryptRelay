@@ -103,6 +103,7 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		{
 			// prepareUserInputForFileXfer() assigns this.
 			std::string file_name_and_path;
+
 			// Adds any necessary escape characters for '\'s,
 			// Makes sure user typed something after "-f", Ex: "-f something_like_a_path_to_a_file"
 			if (prepareUserInputForFileXfer(user_input, file_name_and_path) == -1)
@@ -152,6 +153,7 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		default:// Should be possible to reach this with the current design
 		{
 			// Treating it like an error.
+			std::cout << "FATAL ERROR: UserInput's state machine reached default.\n";
 			state = BEGINNING_STATE;
 			return -1;
 		}
