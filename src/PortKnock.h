@@ -1,12 +1,12 @@
-//port_knock.h
+// PortKnock.h
 // ummmm not sure why I've put this inside CryptRelay... ******* PENDING DELETION *******
 
 // Overview:
 // This class deals with all checks for open ports and closed ports.
 // Class PortKnock does not do input validation.
 
-#ifndef port_knock_h__
-#define port_knock_h__
+#ifndef PortKnock_h__
+#define PortKnock_h__
 
 #include "CommandLineInput.h"
 
@@ -25,4 +25,4 @@ protected:
 private:
 };
 
-#endif//port_knock_h__
+#endif//PortKnock_h__

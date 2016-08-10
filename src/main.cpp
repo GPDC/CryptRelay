@@ -1,7 +1,7 @@
 // main.cpp
 
 // Program name: CryptRelay
-// Version: 0.8.0
+// Version: 0.8.1
 // Rough outline for future versions:
 // 0.9 == encryption
 // 1.0 == polished release
@@ -26,13 +26,17 @@
 #include <cerrno>
 #include <arpa/inet.h>
 
+#include <thread>
 #include <pthread.h>	//<process.h>
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "SocketClass.h"
-#include "chat_program.h"
-#include "port_knock.h"
+#include "Connection.h"
+#include "PortKnock.h"
+#include "UserInput.h"
+#include "ProcessUserInput.h"
+#include "ApplicationLayer.h"
 
 #include "UPnP.h"
 #endif//__linux__
@@ -43,14 +47,17 @@
 #include <vector>
 
 #include <WS2tcpip.h>
-
+#include <thread>
 #include <process.h>	//<pthread.h>
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
 #include "SocketClass.h"
-#include "chat_program.h"
-#include "port_knock.h"
+#include "Connection.h"
+#include "PortKnock.h"
+#include "UserInput.h"
+#include "ProcessUserInput.h"
+#include "ApplicationLayer.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -58,30 +65,31 @@
 
 bool global_verbose = false;
 bool global_debug = true;
+bool exit_now = false;
 
 // Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
 
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
-// /* to */ Connection* ChatServerInstance
-// /* to */ Connection* ChatClientInstance
+// /* to */ Connection* ServerConnectInstance
+// /* to */ Connection* ServerConnectInstance
 void cliGivesIPAndPortToChatProgram(
 		const CommandLineInput* CLI,
-		Connection* ChatServerInstance,
-		Connection* ChatClientInstance
+		Connection* ServerConnectInstance,
+		Connection* ClientConnectInstance
 	);
 
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
 // /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
-// /* to */ Connection* ChatServerInstance
-// /* to */ Connection* ChatClientInstance
+// /* to */ Connection* ServerConnectInstance
+// /* to */ Connection* ServerConnectInstance
 void upnpGivesIPAndPortToChatProgram(
 		const CommandLineInput* CLI,
 		const UPnP* UpnpInstance,
-		Connection* ChatServerInstance,
-		Connection* ChatClientInstance
+		Connection* ServerConnectInstance,
+		Connection* ClientConnectInstance
 	);
 
 // Give user supplied port to the UPnP class
@@ -95,49 +103,49 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	}
 }
 
-void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ChatServerInstance, Connection* ChatClientInstance)
+void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerConnectInstance, Connection* ClientConnectInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
 	// and give them to the chat program.
 
-	// Give IP and port info to the ChatServer instance
+	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ChatServerInstance->target_external_ip = CLI->getTargetIpAddress();
+		ServerConnectInstance->target_external_ip = CLI->getTargetIpAddress();
 
 	if (CLI->getTargetPort().empty() == false)
-		ChatServerInstance->target_external_port = CLI->getTargetPort();
+		ServerConnectInstance->target_external_port = CLI->getTargetPort();
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ChatServerInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ServerConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ChatServerInstance->my_local_ip = CLI->getMyIpAddress();
+		ServerConnectInstance->my_local_ip = CLI->getMyIpAddress();
 
 	if (CLI->getMyHostPort().empty() == false)
-		ChatServerInstance->my_local_port = CLI->getMyHostPort();
+		ServerConnectInstance->my_local_port = CLI->getMyHostPort();
 
 
-	// Give IP and port info to the ChatClient instance
+	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ChatClientInstance->target_external_ip = CLI->getTargetIpAddress();
+		ClientConnectInstance->target_external_ip = CLI->getTargetIpAddress();
 
 	if (CLI->getTargetPort().empty() == false)
-		ChatClientInstance->target_external_port = CLI->getTargetPort();
+		ClientConnectInstance->target_external_port = CLI->getTargetPort();
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ChatClientInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ClientConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ChatClientInstance->my_local_ip = CLI->getMyIpAddress();
+		ClientConnectInstance->my_local_ip = CLI->getMyIpAddress();
 
 	if (CLI->getMyHostPort().empty() == false)
-		ChatClientInstance->my_local_port = CLI->getMyHostPort();
+		ClientConnectInstance->my_local_port = CLI->getMyHostPort();
 }
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
 // class tried to give.
-void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, Connection* ChatServerInstance, Connection* ChatClientInstance)
+void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, Connection* ServerConnectInstance, Connection* ClientConnectInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -145,51 +153,138 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	// Otherwise, we will just take the IP and Port that
 	// the UPnP class has gathered / made.
 
-	// Give IP and port info to the ChatServer instance
+	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ChatServerInstance->target_external_ip = CLI->getTargetIpAddress();
+		ServerConnectInstance->target_external_ip = CLI->getTargetIpAddress();
 
 	if (CLI->getTargetPort().empty() == false)
-		ChatServerInstance->target_external_port = CLI->getTargetPort();
+		ServerConnectInstance->target_external_port = CLI->getTargetPort();
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ChatServerInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ServerConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
 	else
-		ChatServerInstance->my_external_ip = UpnpInstance->my_external_ip;
+		ServerConnectInstance->my_external_ip = UpnpInstance->my_external_ip;
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ChatServerInstance->my_local_ip = CLI->getMyIpAddress();
+		ServerConnectInstance->my_local_ip = CLI->getMyIpAddress();
 	else
-		ChatServerInstance->my_local_ip = UpnpInstance->my_local_ip;
+		ServerConnectInstance->my_local_ip = UpnpInstance->my_local_ip;
 
 	if (CLI->getMyHostPort().empty() == false)
-		ChatServerInstance->my_local_port = CLI->getMyHostPort();
+		ServerConnectInstance->my_local_port = CLI->getMyHostPort();
 	else
-		ChatServerInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
+		ServerConnectInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
 
 
-	// Give IP and port info to the ChatClient instance
+	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ChatClientInstance->target_external_ip = CLI->getTargetIpAddress();
+		ClientConnectInstance->target_external_ip = CLI->getTargetIpAddress();
 
 	if (CLI->getTargetPort().empty() == false)
-		ChatClientInstance->target_external_port = CLI->getTargetPort();
+		ClientConnectInstance->target_external_port = CLI->getTargetPort();
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ChatClientInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ClientConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
 	else
-		ChatClientInstance->my_external_ip = UpnpInstance->my_external_ip;
+		ClientConnectInstance->my_external_ip = UpnpInstance->my_external_ip;
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ChatClientInstance->my_local_ip = CLI->getMyIpAddress();
+		ClientConnectInstance->my_local_ip = CLI->getMyIpAddress();
 	else
-		ChatClientInstance->my_local_ip = UpnpInstance->my_local_ip;
+		ClientConnectInstance->my_local_ip = UpnpInstance->my_local_ip;
 
 	if (CLI->getMyHostPort().empty() == false)
-		ChatClientInstance->my_local_port = CLI->getMyHostPort();
+		ClientConnectInstance->my_local_port = CLI->getMyHostPort();
 	else
-		ChatClientInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
+		ClientConnectInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
 }
+
+FileTransfer* FileXfer = nullptr;
+ApplicationLayer* AppLayer = nullptr;
+
+
+
+
+// returns 0 on success.
+// returns -1 when a file is still being transfered, and needs to wait for it to finish.
+int32_t startFileXfer(const std::string& file_name_and_path)
+{
+	// If true, there must be a FileTransfer class instance.
+	if (FileXfer != nullptr)
+	{
+		// Check if the file transfer is done
+		if (FileXfer->is_send_file_thread_in_use == false)
+		{
+			// if the thread exists
+			if (FileXfer->send_file_thread.joinable() == true)
+			{
+				// Wait for it to finish whatever it is doing, and then destroy it.
+				FileXfer->send_file_thread.join();
+
+				// Upon creation of a FileTransfer instance, it will
+				// create a threaded sendFile() in the constructor.
+				bool send_file = true;
+				delete(FileXfer); // destroy an old one if there is one.
+				FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file);
+				return 0;
+			}
+			else // A thread must not exist. This shouldn't be possible to get here.
+			{
+				DBG_DISPLAY_ERROR_LOCATION();
+				std::cout << "Error: impossible else statement reached. startFileXfer()\n";
+				return -1;
+			}
+		}
+		else // File transfer is still in progress. Please wait until it is finished.
+		{
+			return -1;
+		}
+	}
+	else // no FileTransfer class instance, let's create one.
+	{
+		bool send_file = true;
+		delete(FileXfer);
+		FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file);
+		return 0;
+	}
+
+	return 0;
+}
+
+// Returns -1, error
+// returns total bytes sent, success
+int64_t sendChatMessage(std::string& user_input)
+{
+	// Prevent the user from sending 'nothing' to the peer.
+	if (user_input.length() == 0)
+	{
+		const int32_t ZERO_BYTES_SENT = 0;
+		return ZERO_BYTES_SENT;
+	}
+	if (AppLayer != nullptr)
+		return AppLayer->sendChatStr(user_input);
+	else
+		return -1;
+}
+
+// shutdown() and close() the socket
+// returns -1, error
+// returns 0, success
+int32_t endConnection()
+{
+	if (AppLayer != nullptr)
+	{
+		if (AppLayer->endConnection() == 0)
+			return 0;
+		else
+			return -1;
+	}
+	else
+		return -1;
+}
+
+
+
 
 int32_t main(int32_t argc, char *argv[])
 {
@@ -206,8 +301,12 @@ int32_t main(int32_t argc, char *argv[])
 	std::cout << "Welcome to CryptRelay Alpha release 0.8.0\n";
 
 	UPnP* Upnp = nullptr;		// Not sure if the user wants to use UPnP yet, so just preparing with a pointer.
-	Connection ChatServer;
-	Connection ChatClient;
+
+	SocketClass ServerSocket;
+	SocketClass ClientSocket;
+	Connection ServerConnect(&ServerSocket);
+	Connection ClientConnect(&ClientSocket);
+
 
 	if (CLI.getShowInfoUpnp() == true)
 	{
@@ -242,19 +341,16 @@ int32_t main(int32_t argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 
-		// Give IP and port info to the ChatServer and ChatClient instance
-		cliGivesIPAndPortToChatProgram(&CLI, &ChatServer, &ChatClient);
+		// Give IP and port info to the ServerConnect and ServerConnect instance
+		cliGivesIPAndPortToChatProgram(&CLI, &ServerConnect, &ClientConnect);
 	}
 	if (CLI.getUseUpnpToConnectToPeer() == true)
 	{
-		Upnp = new UPnP;	// deltag:9940   (this is just so I can ctrl-f and find where I delete this.
-							// If I could make this a plug-in or something of the sort to automatically
-							// add tags to everything or keep track of it, that would be pretty cool.
+		Upnp = new UPnP;
 
 		// Give the user's inputted port to the UPnP Class
 		// so that it will port forward what he wanted.
 		cliGivesPortToUPnP(&CLI, Upnp);
-
 
 		// in order to check if port is open (atleast in this upnp related function)
 		// these must be done first:
@@ -322,8 +418,8 @@ int32_t main(int32_t argc, char *argv[])
 		if (Upnp->autoAddPortForwardRule() == false)
 		{
 			// Give IP and port info gathered from the command line and from
-			// the UPnP class to the ChatServer and ChatClient instance
-			upnpGivesIPAndPortToChatProgram(&CLI, Upnp, &ChatServer, &ChatClient);
+			// the UPnP class to the ServerConnect and ServerConnect instance
+			upnpGivesIPAndPortToChatProgram(&CLI, Upnp, &ServerConnect, &ClientConnect);
 		}
 		else
 		{
@@ -332,46 +428,69 @@ int32_t main(int32_t argc, char *argv[])
 		}
 	}
 
-	// Actually starting the chat program now that we have all of the
-	// needed information gathered and stored.
-	
-	// BEGIN THREAD RACE
-	Connection::createStartServerThread(&ChatServer);			//<-----------------
-	Connection::createStartClientThread(&ChatClient);			//<----------------
+	// Being thread race to attempt a connection with the peer.
+	std::cout << "Attempting to connect to peer...\n";
+	std::thread ServerThread = std::thread(&Connection::serverThread, &ServerConnect);
+	std::thread ClientThread = std::thread(&Connection::clientThread, &ClientConnect);
 
-	// Wait for ChatServer and ChatClient threads to finish
-#ifdef __linux__
-	int32_t pret = pthread_join(Connection::thread0, NULL);
-            if (pret)
-			{
-				std::cout << "error";
-				DBG_DISPLAY_ERROR_LOCATION();
-			}
-	pret = pthread_join(Connection::thread1, NULL);
-            if (pret)
-			{
-				std::cout << "error";
-				DBG_DISPLAY_ERROR_LOCATION();
-			}
-#endif//__linux__
-#ifdef _WIN32
-	int32_t thread_wait_errchk = WaitForMultipleObjects(
-			(DWORD)2,	// Number of objects in array
-			Connection::ghEvents,	// Array of objects
-			TRUE,		// Wait for all objects if it is set to TRUE. FALSE == wait for any one object to finish. Return value indicates the returned thread(s?).
-			INFINITE	// Its going to wait this long, OR until all threads are finished, in order to continue.
-		);
-	if (thread_wait_errchk == WAIT_FAILED)
+	// Wait for the Server and Client threads to finish.
+	if (ServerThread.joinable() == true)
+		ServerThread.join();
+	if (ClientThread.joinable() == true)
+		ClientThread.join();
+	
+	// Server and Client thread must have finished and set the
+	// global_winner variable. Let's see which one won the race.
+	// From now on we use the winner's socket that they are connected on.
+	SocketClass* WinningSocket = nullptr;
+	if (Connection::global_winner == Connection::CLIENT_WON)
 	{
-		std::cout << "Error " << GetLastError() << ". WaitForMultipleObjects() failed.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
+		WinningSocket = &ClientSocket;
 	}
-#endif//_WIN32	
+	else if (Connection::global_winner == Connection::SERVER_WON)
+	{
+		WinningSocket = &ServerSocket;
+	}
+	else
+	{
+		std::cout << "failure.\n";
+		std::cout << "Fatal error, nobody won the race.\n";
+		return 1;
+	}
 
-	
-	delete Upnp;	// deltag:9940
+	// Start up the ApplicationLayer, giving it the SocketClass
+	// instance which contains the socket that won the race.
+	AppLayer = new ApplicationLayer(WinningSocket);
 
-	return 1;
+	// UserInput instance must be created after the ApplicationLayer instance.
+	UserInput UserInput_o;
+	UserInput_o.setCallbackStartFileXfer(&startFileXfer);
+	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
+	UserInput_o.setCallbackEndConnection(endConnection);
+
+	// Start getting the user's input.
+	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, &UserInput_o);
+
+	// Start receiving data from peer.
+	std::thread recv_messages_thread = std::thread(&ApplicationLayer::loopedReceiveMessages, AppLayer);
+
+
+	// Wait for all threads to finish.
+	if (user_input_thread.joinable() == true)
+		user_input_thread.join();
+	if (recv_messages_thread.joinable() == true)
+		recv_messages_thread.join();
+	if (FileXfer != nullptr)
+	{
+		if (FileXfer->send_file_thread.joinable() == true)
+			FileXfer->send_file_thread.join();
+	}
+
+	delete(FileXfer);
+	delete(AppLayer);
+	delete(Upnp);
+
+	return 0;
 //===================================== End Chat Program =====================================
 }
 

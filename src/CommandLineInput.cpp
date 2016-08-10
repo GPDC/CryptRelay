@@ -1,4 +1,5 @@
-//CommandLineInput.cpp
+// CommandLineInput.cpp
+#ifdef _WIN32
 #include <string>
 #include <iostream>
 #include <vector>
@@ -7,6 +8,19 @@
 #include "GlobalTypeHeader.h"
 #include "FormatCheck.h"
 #include "UPnP.h"
+#endif//__linux__
+
+#ifdef _WIN32
+#include <string>
+#include <iostream>
+#include <vector>
+
+#include "CommandLineInput.h"
+#include "GlobalTypeHeader.h"
+#include "FormatCheck.h"
+#include "UPnP.h"
+#endif//_WIN32
+
 
 CommandLineInput::CommandLineInput()
 {
@@ -217,56 +231,4 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 
 	// Finished without errors, return success
 	return false;
-}
-
-
-// Public functions used to return a private member variable.
-const bool& CommandLineInput::getShowInfoUpnp()
-{
-	return show_info_upnp;
-}
-const bool& CommandLineInput::getRetrieveListOfPortForwards()
-{
-	return retrieve_list_of_port_forwards;
-}
-const bool& CommandLineInput::getUseLanOnly()
-{
-	return use_lan_only;
-}
-const bool& CommandLineInput::getUseUpnpToConnectToPeer()
-{
-	return use_upnp_to_connect_to_peer;
-}
-const std::string& CommandLineInput::getTargetIpAddress()
-{
-	return target_ip_address;
-}
-const std::string& CommandLineInput::getTargetPort()
-{
-	return target_port;
-}
-const std::string& CommandLineInput::getMyIpAddress()
-{
-	return my_ip_address;
-}
-const std::string& CommandLineInput::getMyHostPort()
-{
-	return my_host_port;
-}
-const std::string& CommandLineInput::getMyExtIpAddress()
-{
-	return my_ext_ip_address;
-}
-
-const bool& CommandLineInput::getDeleteThisSpecificPortForward()
-{
-	return delete_this_specific_port_forward;
-}
-const std::string& CommandLineInput::getDeleteThisSpecificPortForwardPort()
-{
-	return delete_this_specific_port_forward_port;
-}
-const std::string& CommandLineInput::getDeleteThisSpecificPortForwardProtocol()
-{
-	return delete_this_specific_port_forward_protocol;
 }

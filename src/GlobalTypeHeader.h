@@ -1,4 +1,4 @@
-//GlobalTypeHeader.h
+// GlobalTypeHeader.h
 #ifndef GlobalTypeHeader_h__
 #define GlobalTypeHeader_h__
 
@@ -23,5 +23,8 @@
 
 extern bool global_verbose;
 extern bool global_debug;
+
+// if the user wants to exit the program, exit_now == true;
+extern bool exit_now;
 
 #endif// GlobalTypeHeader_h__

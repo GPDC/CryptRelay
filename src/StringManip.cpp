@@ -1,11 +1,25 @@
-//string_manipulation.cpp
+// StringManip.cpp
+
+#ifdef _WIN32
 #include <string>
 #include <limits.h>
 #include <sstream>
 #include <iostream>
 
 #include "GlobalTypeHeader.h"
-#include "string_manipulation.h"
+#include "StringManip.h"
+#endif// _WIN32
+
+#ifdef __linux__
+#include <string>
+#include <limits.h>
+#include <sstream>
+#include <iostream>
+
+#include "GlobalTypeHeader.h"
+#include "StringManip.h"
+#endif// __linux__
+
 
 StringManip::StringManip()
 {
@@ -30,13 +44,22 @@ bool StringManip::split(std::string string, char delimiter, std::vector<std::str
 		elements.push_back(item);
 	}
 
-	if (ss.eof())
+	// Sidenote: if ss.eof() is reached, then it will set the failbit for ss.fail().
+	if (ss.eof() == true)
 	{
-		std::cout << "Warning: std::ios::eof == true.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
+		// End of file reached.
+		return false;
 	}
-	else if (ss.fail())
-		return true;
+	else // if the failure isn't due to an eof(), then it must be a real failure.
+	{
+		if (ss.fail())
+		{
+			ss.clear(); // fail bit will remain set until cleared.
+			return true;
+		}
+	}
+
+
 	
 	return false;
 }

@@ -70,7 +70,7 @@ public:
 	SOCKET fd_socket = INVALID_SOCKET;
 
 	// A global socket used as a way to communicate between threads.
-	static SOCKET global_socket;
+	//static SOCKET global_socket;
 
 	// in accept(), make it return a whole SocketClass, not a socket.
 	// 1. ::accept() the connection. it is now stored on a temporary socket
@@ -91,10 +91,10 @@ public:
 
 	int32_t inet_pton(int32_t family, char * ip_addr, void * paddr_buf);
 	int32_t connect(const sockaddr* name, int32_t name_len);
-	int32_t send(const char* buffer, int32_t buffer_length, int32_t flags);
-	int32_t sendto(const char* buf, int32_t len, int32_t flags, const sockaddr *to, int32_t to_len);
-	int32_t recv(char* buf, int32_t buf_len, int32_t flags);
-	BYTE_SIZE recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len);
+	//int32_t send(const char* buffer, int32_t buffer_length, int32_t flags);
+	//int32_t sendto(const char* buf, int32_t len, int32_t flags, const sockaddr *to, int32_t to_len);
+	//int32_t recv(char* buf, int32_t buf_len, int32_t flags);
+	//BYTE_SIZE recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len);
 
 	void closesocket(SOCKET socket);
 	void WSACleanup();

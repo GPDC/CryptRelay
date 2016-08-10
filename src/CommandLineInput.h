@@ -17,22 +17,6 @@ public:
 	// Set the appropriate variables based on the user's argv[] input.
 	bool setVariablesFromArgv(int32_t argc, char* argv[]);
 
-	// These are used as a way to get the private member variables
-	// while making it clear they can't be changed outside the class.
-	const bool& getShowInfoUpnp();
-	const bool& getRetrieveListOfPortForwards();
-	const bool& getUseLanOnly();
-	const bool& getUseUpnpToConnectToPeer();
-	const std::string& getTargetIpAddress();
-	const std::string& getTargetPort();
-	const std::string& getMyIpAddress();
-	const std::string& getMyHostPort();
-	const std::string& getMyExtIpAddress();
-	// Specific to -dpf
-	const bool& getDeleteThisSpecificPortForward();
-	const std::string& getDeleteThisSpecificPortForwardPort();
-	const std::string& getDeleteThisSpecificPortForwardProtocol();
-
 
 protected:
 private:
@@ -55,16 +39,23 @@ private:
 	bool delete_this_specific_port_forward = false;
 	std::string delete_this_specific_port_forward_port;
 	std::string delete_this_specific_port_forward_protocol;
+
+public:
+
+	// Accessors:
+	const bool& getShowInfoUpnp()	{ return show_info_upnp; }
+	const bool& getRetrieveListOfPortForwards() { return retrieve_list_of_port_forwards; }
+	const bool& getUseLanOnly() {	return use_lan_only; }
+	const bool& getUseUpnpToConnectToPeer() {	return use_upnp_to_connect_to_peer;	}
+	const std::string& getTargetIpAddress() {	return target_ip_address; }
+	const std::string& getTargetPort() { return target_port; }
+	const std::string& getMyIpAddress() {	return my_ip_address; }
+	const std::string& getMyHostPort() { return my_host_port; }
+	const std::string& getMyExtIpAddress() { return my_ext_ip_address; }
+	// Specific to -dpf
+	const bool& getDeleteThisSpecificPortForward() { return delete_this_specific_port_forward; }
+	const std::string& getDeleteThisSpecificPortForwardPort() { return delete_this_specific_port_forward_port; }
+	const std::string& getDeleteThisSpecificPortForwardProtocol() { return delete_this_specific_port_forward_protocol; }
 };
-
-
-
-
-
-
-
-
-
-
 
 #endif

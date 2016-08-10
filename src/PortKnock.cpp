@@ -1,4 +1,4 @@
-//port_knock.cpp
+// PortKnock.cpp
 
 #ifdef __linux__
 #include <iostream>
@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 #include <signal.h>
 
-#include "port_knock.h"
+#include "PortKnock.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
@@ -25,7 +25,7 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "port_knock.h"
+#include "PortKnock.h"
 #include "SocketClass.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32

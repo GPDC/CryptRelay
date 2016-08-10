@@ -1,5 +1,4 @@
 // SocketClass.cpp
-// See SocketClass.h for more details about SocketClass.cpp
 
 #ifdef __linux__
 #include <iostream>
@@ -48,9 +47,6 @@
 #ifdef __linux__
 #define WSAETIMEDOUT 10060	// possibly temporary... recvfrom() isn't being used?
 #endif//__linux__
-
-// Used by threads after a race winner has been established
-SOCKET SocketClass::global_socket = INVALID_SOCKET;
 
 
 SocketClass::SocketClass()
@@ -143,71 +139,71 @@ bool SocketClass::bind(const sockaddr *name, int32_t name_len)
 	return false;
 }
 
-// There can be issues with multiple threads calling send() on the same socket.
-int32_t SocketClass::send(const char* buffer, int32_t buffer_length, int32_t flags)
-{
-	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
-	int32_t errchk = ::send(fd_socket, buffer, buffer_length, flags);
-	if (errchk == SOCKET_ERROR)
-	{
-		getError();
-		std::cout << "send failed.\n";
-		return SOCKET_ERROR;
-	}
-
-	return errchk; // returns number of bytes sent
-}
-
-// returns total number of bytes sent if there is no error.
-int32_t SocketClass::sendto(const char* buf, int32_t buf_len, int32_t flags, const sockaddr *target, int32_t target_len)
-{
-	int32_t errchk = ::sendto(fd_socket, buf, buf_len, flags, target, target_len);
-	if (errchk == SOCKET_ERROR)
-	{
-		getError();
-		std::cout << "Sendto failed.\n";
-		closesocket(fd_socket);
-		return SOCKET_ERROR;
-	}
-	if (global_verbose == true)
-		std::cout << "Sendto sent msg: " << buf << "\n";
-	return errchk;// Number of bytes sent
-}
-
-// Returns number of bytes received if there is no error.
-int32_t SocketClass::recv(char* buf, int32_t buf_len, int32_t flags)
-{
-	int32_t errchk = ::recv(fd_socket, buf, buf_len, flags);
-	if (errchk == SOCKET_ERROR)
-	{
-		getError();
-		std::cout << "recv failed.\n";
-		return SOCKET_ERROR;
-	}
-	if (errchk == 0)
-	{
-		std::cout << "Connection gracefully closed.\n";
-		return 0;
-	}
-	
-	return errchk; // Number of bytes received
-}
-
-BYTE_SIZE SocketClass::recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len)
-{
-	if (global_verbose == true)
-		std::cout << "Waiting to receive a msg...\n";
-	BYTE_SIZE errchk = ::recvfrom(fd_socket, buf, buf_len, flags, from, from_len);
-	if (errchk == SOCKET_ERROR)
-	{
-		return SOCKET_ERROR;
-	}
-	if (errchk == 0)	// Connection gracefully closed.
-	{
-		return 0;
-	}
-	return errchk;
-}
+//// There can be issues with multiple threads calling send() on the same socket.
+//int32_t SocketClass::send(const char* buffer, int32_t buffer_length, int32_t flags)
+//{
+//	// There might be issues with multiple threads calling send() on the same socket. Needs further inquiry.
+//	int32_t errchk = ::send(fd_socket, buffer, buffer_length, flags);
+//	if (errchk == SOCKET_ERROR)
+//	{
+//		getError();
+//		std::cout << "send failed.\n";
+//		return SOCKET_ERROR;
+//	}
+//
+//	return errchk; // returns number of bytes sent
+//}
+//
+//// returns total number of bytes sent if there is no error.
+//int32_t SocketClass::sendto(const char* buf, int32_t buf_len, int32_t flags, const sockaddr *target, int32_t target_len)
+//{
+//	int32_t errchk = ::sendto(fd_socket, buf, buf_len, flags, target, target_len);
+//	if (errchk == SOCKET_ERROR)
+//	{
+//		getError();
+//		std::cout << "Sendto failed.\n";
+//		closesocket(fd_socket);
+//		return SOCKET_ERROR;
+//	}
+//	if (global_verbose == true)
+//		std::cout << "Sendto sent msg: " << buf << "\n";
+//	return errchk;// Number of bytes sent
+//}
+//
+//// Returns number of bytes received if there is no error.
+//int32_t SocketClass::recv(char* buf, int32_t buf_len, int32_t flags)
+//{
+//	int32_t errchk = ::recv(fd_socket, buf, buf_len, flags);
+//	if (errchk == SOCKET_ERROR)
+//	{
+//		getError();
+//		std::cout << "recv failed.\n";
+//		return SOCKET_ERROR;
+//	}
+//	if (errchk == 0)
+//	{
+//		std::cout << "Connection gracefully closed.\n";
+//		return 0;
+//	}
+//	
+//	return errchk; // Number of bytes received
+//}
+//
+//BYTE_SIZE SocketClass::recvfrom(char *buf, int32_t buf_len, int32_t flags, sockaddr* from, socklen_t* from_len)
+//{
+//	if (global_verbose == true)
+//		std::cout << "Waiting to receive a msg...\n";
+//	BYTE_SIZE errchk = ::recvfrom(fd_socket, buf, buf_len, flags, from, from_len);
+//	if (errchk == SOCKET_ERROR)
+//	{
+//		return SOCKET_ERROR;
+//	}
+//	if (errchk == 0)	// Connection gracefully closed.
+//	{
+//		return 0;
+//	}
+//	return errchk;
+//}
 
 // For TCP use, not UDP
 int32_t SocketClass::connect(const sockaddr* name, int32_t name_len)
@@ -332,10 +328,6 @@ bool SocketClass::shutdown(SOCKET socket, int32_t operation)
 	int32_t errchk = ::shutdown(socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
-		getError();
-		std::cout << "Shutdown failed.\n";
-		std::cout << "Closing socket.\n";
-		closesocket(socket);
 		return true;
 	}
 	std::cout << "Success\n";
@@ -511,7 +503,7 @@ void SocketClass::coutPeerIPAndPort()
 		// still going to continue the program, this isn't a big deal
 	}
 	else
-		std::cout << "\n\n\n\n\n\nConnection established with: " << remote_host << ":" << remote_hosts_port << "\n\n\n";
+		std::cout << "\n\n\n\n\n\n# Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
 }
 
 // With this method you can enable or disable blocking for a given socket.

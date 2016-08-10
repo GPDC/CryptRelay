@@ -19,23 +19,33 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\chat_program.h" />
+    <ClInclude Include="..\src\Connection.h" />
     <ClInclude Include="..\src\CommandLineInput.h" />
+    <ClInclude Include="..\src\FileTransfer.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
+    <ClInclude Include="..\src\UserInput.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
-    <ClInclude Include="..\src\string_manipulation.h" />
-    <ClInclude Include="..\src\port_knock.h" />
+    <ClInclude Include="..\src\ApplicationLayer.h" />
+    <ClInclude Include="..\src\ProcessRecvBuf.h" />
+    <ClInclude Include="..\src\ProcessUserInput.h" />
+    <ClInclude Include="..\src\StringManip.h" />
+    <ClInclude Include="..\src\PortKnock.h" />
     <ClInclude Include="..\src\SocketClass.h" />
     <ClInclude Include="..\src\UPnP.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\chat_program.cpp" />
+    <ClCompile Include="..\src\Connection.cpp" />
     <ClCompile Include="..\src\CommandLineInput.cpp" />
+    <ClCompile Include="..\src\FileTransfer.cpp" />
     <ClCompile Include="..\src\FormatCheck.cpp" />
+    <ClCompile Include="..\src\UserInput.cpp" />
     <ClCompile Include="..\src\main.cpp" />
-    <ClCompile Include="..\src\port_knock.cpp" />
+    <ClCompile Include="..\src\PortKnock.cpp" />
+    <ClCompile Include="..\src\ApplicationLayer.cpp" />
+    <ClCompile Include="..\src\ProcessRecvBuf.cpp" />
+    <ClCompile Include="..\src\ProcessUserInput.cpp" />
     <ClCompile Include="..\src\SocketClass.cpp" />
-    <ClCompile Include="..\src\string_manipulation.cpp" />
+    <ClCompile Include="..\src\StringManip.cpp" />
     <ClCompile Include="..\src\UPnP.cpp" />
   </ItemGroup>
   <PropertyGroup Label="Globals">

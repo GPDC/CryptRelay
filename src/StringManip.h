@@ -1,15 +1,16 @@
-//string_manipulation.h
+// StringManip.h
 
-// Overview:
-// Things related to string manipulation are here.
-
-// Terminology:
-// Deliminator - 
-
+#ifdef _WIN32
 #include <vector>
+#endif// _WIN32
 
-#ifndef string_manipulation_h__
-#define string_manipulation_h__
+#ifdef __linux__
+#include <vector>
+#endif// __linux__
+
+
+#ifndef StringManip_h__
+#define StringManip_h__
 
 class StringManip
 {
@@ -23,4 +24,4 @@ protected:
 private:
 };
 
-#endif//string_manipulation_h__
+#endif//StringManip_h__

@@ -1,18 +1,30 @@
-﻿# Todo:
--Update state machine design so the control flow is better
+﻿# Todo for v0_9_0 release:
+- encryption
+- sha hashes to make sure file copy & transfer is legit.
 
--encryption
 
+
+# Todo for v1_0_0 release:
 -Fix chat output issue when someone sends you a message while you are typing
 
--sha hashes to make sure file copy & transfer is legit.
+-improve display of file size so that it will show different size when appropriate. I.E. 357.22 MB, 1.21 GB
 
--improve display of file size so that it will show different size when appropriate. I.E. 357.2 MB, 1.2 GB
+-prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will try to
+ open CryptRelay.exe and start trying to write to it if it actually opened it.
 
--prevent opening of CryptRelay.exe. Like if someone sends you a file CryptRelay.exe, you will
- open CryptRelay.exe and start trying to write to it
-.
+-provide options to overwrite files that already exist, or don't overwrite.
+
+-ability to display a list of all files that encountered a problem and aborted during the session.
+
 -prevent incompatible symbols from being used with files.
+
+-localtime_r is erroring (linux). // super low priority. Might even remove it.
+
+-Sequence diagram.
+
+
+# Todo:
+-Update state machine design so the control flow is better
 
 -replace the old way of doing threads with std::thread so that the whole program is using std::thread.
 
@@ -63,13 +75,17 @@
 
 
 # Non-critical errors:
--localtime_r is erroring (linux). // super low priority.
 
 
 
 # Odd behavior:
 
-
+-There was 1 time where person A's client thread errored, but reported success. It exited the client thread.
+ However, the peer (person B) was now connected, acting as the server, to person A, who is acting as the client.
 
 # Note-worthy side effects of actions:
 -ctrl-c doesn't call deconstructors. Therefore it won't automatically delete the port forward that was automatically added at the beginning.
+
+-Windows cmd prompt only accepts 4096 characters at a time. This doesn't affect file transfer or anything,
+ but if you want to send a rediculously long chat message it can't be sent using the cmd prompt. Send
+ it as a txt file instead, or break it up.
