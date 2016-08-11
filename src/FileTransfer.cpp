@@ -244,6 +244,8 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	if (WriteFile == nullptr)
 	{
 		perror("Error opening file for writing binary");
+		if (fclose(ReadFile))
+			perror("Error closing file designated for reading");
 		return true;
 	}
 
