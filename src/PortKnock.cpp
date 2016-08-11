@@ -45,107 +45,147 @@ PortKnock::~PortKnock()
 // returns 1 if port is in use
 int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
 {
-	SocketClass PKSocketClass;
+	SocketClass Socket;
 	const int32_t IN_USE = 1;
 	const int32_t AVAILABLE = 0;
-	addrinfo Hints;
-	addrinfo* ServerInfo;
-	memset(&Hints, 0, sizeof(Hints));
+	addrinfo ServerHints;
+	addrinfo* ServerConnectionInfo;
+	memset(&ServerHints, 0, sizeof(ServerHints));
 
 	// These are the settings for the connection
-	Hints.ai_family = AF_INET;		//ipv4
-	Hints.ai_socktype = SOCK_STREAM;	// Peer will see incoming data as a stream of data, not as packets.
-	Hints.ai_protocol = IPPROTO_TCP;	// Connect using TCP, reliable connection
+	ServerHints.ai_family = AF_INET;		//ipv4
+	ServerHints.ai_socktype = SOCK_STREAM;	// Peer will see incoming data as a stream of data, not as packets.
+	ServerHints.ai_protocol = IPPROTO_TCP;	// Connect using TCP, reliable connection
 
-	// Place target ip and port, and Hints about the connection type into a linked list named addrinfo *ServerInfo
-	// Now we use ServerInfo instead of Hints.
-	// Remember we are only listening as the server, so put in local IP:port
-	if (PKSocketClass.getaddrinfo(my_local_ip, my_local_port, &Hints, &ServerInfo) == false)
-		return false;
+	// Place target ip and port, and ServerHints about the connection type into a linked list named addrinfo *ServerConnectionInfo
+	// Now we use ServerConnectionInfo instead of ServerHints to access the information.
+	// We are only listening as the server, so put in local IP:port
+	if (getaddrinfo(my_local_ip.c_str(), my_local_port.c_str(), &ServerHints, &ServerConnectionInfo) != 0)
+	{	
+		Socket.getError();
+		std::cout << "getaddrinfo() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		if (ServerConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ServerConnectionInfo);
+		return -1;
+	}
+		
 
 	// Create socket
-	SOCKET errchk_socket = PKSocketClass.socket(ServerInfo->ai_family, ServerInfo->ai_socktype, ServerInfo->ai_protocol);
-	if (errchk_socket == INVALID_SOCKET)
+	Socket.fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
+	if (Socket.fd_socket == INVALID_SOCKET || Socket.fd_socket == SOCKET_ERROR)
+	{
+		Socket.getError();
+		std::cout << "socket() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		if (ServerConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ServerConnectionInfo);
 		return -1;
-	else if (errchk_socket == SOCKET_ERROR)
-		return -1;
+	}
+
 
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int32_t errchk = ::bind(PKSocketClass.fd_socket, ServerInfo->ai_addr, ServerInfo->ai_addrlen);
+	int32_t errchk = bind(Socket.fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 
 #ifdef __linux__
-		int32_t errsv = errno;			//saving the error so it isn't lost
-		if (errsv == EADDRINUSE)	//needs checking on linux to make sure this is the correct macro
+		int32_t errsv = errno;		//saving the error so it isn't lost
+		if (errsv == EADDRINUSE)
 		{
-			PKSocketClass.closesocket(PKSocketClass.fd_socket);
+			Socket.closesocket(Socket.fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
+		{
+			std::cout << "bind() failed.\n";
+			DBG_DISPLAY_ERROR_LOCATION();
 			return -1;
+		}
 #endif//__linux__
 #ifdef _WIN32
 		int32_t errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			PKSocketClass.closesocket(PKSocketClass.fd_socket);
+			Socket.closesocket(Socket.fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
+		{
+			std::cout << "bind() failed.\n";
+			DBG_DISPLAY_ERROR_LOCATION();
 			return -1;
+		}
 #endif//_WIN32
 
 	}
 
 	// No errors, must be available
-	PKSocketClass.closesocket(PKSocketClass.fd_socket);
+	Socket.closesocket(Socket.fd_socket);
 	return AVAILABLE;
 }
 
 // Very simple checking of 1 port. Not for checking many ports quickly.
-bool PortKnock::isPortOpen(std::string ip, std::string port)
+// return 1, port is open
+// return 0, port is closed
+// return -1, error
+int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 {
 	if (global_verbose == true)
 		std::cout << "Checking to see if port is open...\n";
 
-	SocketClass PKSocketClass;
-	addrinfo hints;
-	addrinfo* result = nullptr;
-	memset(&hints, 0, sizeof(hints));
+	const int32_t IN_USE = 1;
+	const int32_t AVAILABLE = 0;
+	SocketClass Socket;
+	addrinfo ClientHints;
+	addrinfo* ClientConnectionInfo = nullptr;
+	memset(&ClientHints, 0, sizeof(ClientHints));
 
-	hints.ai_family = AF_INET;
-	hints.ai_socktype = SOCK_STREAM;
-	hints.ai_protocol = IPPROTO_TCP;
+	ClientHints.ai_family = AF_INET;
+	ClientHints.ai_socktype = SOCK_STREAM;
+	ClientHints.ai_protocol = IPPROTO_TCP;
 
-	if ((PKSocketClass.getaddrinfo(ip.c_str(), port.c_str(), &hints, &result)) == true)
+	// Place target ip and port, and ClientHints about the connection type into a linked list named addrinfo *ClientConnectionInfo
+	// Now we use ClientConnectionInfo instead of ClientHints to access the information.
+	if (getaddrinfo(ip.c_str(), port.c_str(), &ClientHints, &ClientConnectionInfo) != 0)
 	{
-		std::cout << "isPortOpen() failed b/c of getaddrinfo().\n";
-		return true;
+		Socket.getError();
+		std::cout << "getaddrinfo() failed. isPortOpen() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		if (ClientConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ClientConnectionInfo);
+		return -1;
 	}
 
-	SOCKET errchk_socket = PKSocketClass.socket(hints.ai_family, hints.ai_socktype, hints.ai_protocol);
-	if (errchk_socket == INVALID_SOCKET)
+	// Create socket
+	Socket.fd_socket = socket(ClientHints.ai_family, ClientHints.ai_socktype, ClientHints.ai_protocol);
+	if (Socket.fd_socket == INVALID_SOCKET || Socket.fd_socket == SOCKET_ERROR)
 	{
-		PKSocketClass.getError();
-		std::cout << "isPortOpen()'s sock() failed.\n";
-		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return true;
+		Socket.getError();
+		std::cout << "socket() failed. isPortOpen() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		if (ClientConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ClientConnectionInfo);
+		return -1;
 	}
 
 	// If connection is successful, it must be an open port
-	int32_t errchk = PKSocketClass.connect(result->ai_addr, result->ai_addrlen);
+	int32_t errchk = connect(Socket.fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
-		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return true;
+		Socket.closesocket(Socket.fd_socket);
+		if (ClientConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ClientConnectionInfo);
+		return 0;
 	}
-	else
+	else // connected
 	{
-		PKSocketClass.shutdown(PKSocketClass.fd_socket, SD_BOTH);
-		PKSocketClass.closesocket(PKSocketClass.fd_socket);
-		return false;
+		Socket.shutdown(Socket.fd_socket, SD_BOTH);
+		Socket.closesocket(Socket.fd_socket);
+		if (ClientConnectionInfo != nullptr)
+			Socket.freeaddrinfo(&ClientConnectionInfo);
+		return 1;
 	}
 }

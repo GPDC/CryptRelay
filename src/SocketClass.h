@@ -10,7 +10,7 @@
 // a slightly higher level function to replace them. The functions will include
 // these new features in order to reduce clutter in the rest of the program:
 // 1. Cross platform windows, linux.
-// 2. Close socket if error occured.
+// 2. 
 // 3. if global_verbose == true, cout extra info to command prompt
 // 4. WSAStartup() is called in the constructor
 // 5. WSACleanup() is called in the deconstructor
@@ -62,22 +62,18 @@ public:
 	// during specific situations, and if additional information is needed about the current socket it can be accessed.
 	SOCKET fd_socket = INVALID_SOCKET;
 
-	SOCKET socket(int32_t address_family, int32_t type, int32_t protocol);
+
+	// Cross-platform accept(), and assigns fd_socket to the newly accept()ed socket.
 	SOCKET accept();
 
 	// Cross-platform WSAStartup();
 	// For every WSAStartup() that is called, a WSACleanup() must be called.
 	bool WSAStartup();
 
-	bool setsockopt(int32_t level, int32_t option_name, const char* option_value, int32_t option_length);
-	bool bind(const sockaddr *name, int32_t name_len);
+	// Outputs to console that the connection is being shutdown
+	// in addition to the normal shutdown() behavior.
 	bool shutdown(SOCKET socket, int32_t operation);
-	bool listen();
-	bool getaddrinfo(std::string target_ip, std::string target_port, const addrinfo *phints, addrinfo **ppresult);
-
-	int32_t inet_pton(int32_t family, char * ip_addr, void * paddr_buf);
-	int32_t connect(const sockaddr* name, int32_t name_len);
-
+	
 	// Cross-platform closing of a socket / fd.
 	void closesocket(SOCKET socket);
 

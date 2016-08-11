@@ -125,8 +125,11 @@ void Connection::serverThread()
 	// Place target ip and port, and ServerHints about the connection type into a linked list named addrinfo *ServerConnectionInfo
 	// Now we use ServerConnectionInfo instead of ServerHints.
 	// Remember we are only listening as the server, so put in local IP:port
-	if (Socket->getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo) == true)
+	if (getaddrinfo(my_local_ip.c_str(), my_local_port.c_str(), &ServerHints, &ServerConnectionInfo) != 0)
 	{
+		Socket->getError();
+		std::cout << "getaddrinfo() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
@@ -134,26 +137,42 @@ void Connection::serverThread()
 
 
 	// Create socket
-	SOCKET errchk_socket = Socket->socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
-	if (errchk_socket == INVALID_SOCKET || errchk_socket == SOCKET_ERROR)
+	Socket->fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
+	if (Socket->fd_socket == INVALID_SOCKET || Socket->fd_socket == SOCKET_ERROR)
 	{
+		Socket->getError();
+		std::cout << "socket() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
 	}
 
+
 	// Assign the socket to an address:port
 	// Binding the socket to the user's local address
-	if (Socket->bind(ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == true)
+	if (bind(Socket->fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
 	{
+		Socket->getError();
+		std::cout << "bind() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		Socket->closesocket(Socket->fd_socket);
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
+		std::cout << "Exiting server thread.\n";
 		return;
 	}
 
 	// Set the socket to listen for incoming connections
-	if (Socket->listen() == true)
+	// SOMAXCONN == max length of queue of pending connections.
+	// It means that the underlying service provider responsible for the socket
+	// will set it to a reasonable value.
+	if (listen(Socket->fd_socket, SOMAXCONN) == SOCKET_ERROR)
 	{
+		Socket->getError();
+		std::cout << "listen() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		Socket->closesocket(Socket->fd_socket);
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
@@ -221,6 +240,8 @@ void Connection::serverThread()
 			if (errchk_socket == INVALID_SOCKET)
 			{
 				Socket->getError();
+				std::cout << "accept() failed.\n";
+				Socket->closesocket(Socket->fd_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				if (ServerConnectionInfo != nullptr)
 					Socket->freeaddrinfo(&ServerConnectionInfo);
@@ -275,17 +296,23 @@ void Connection::clientThread()
 
 	// Place target ip and port, and ClientHints about the connection type into a linked list named addrinfo* ClientConnectionInfo
 	// Now we use ClientConnectionInfo instead of ClientHints in order to access the information.
-	if (Socket->getaddrinfo(target_external_ip, target_external_port, &ClientHints, &ClientConnectionInfo) == true)
+	if (getaddrinfo(target_external_ip.c_str(), target_external_port.c_str(), &ClientHints, &ClientConnectionInfo) != 0)
 	{
+		Socket->getError();
+		std::cout << "getaddrinfo() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
 	// Create socket
-	SOCKET errchk_socket = Socket->socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
-	if (errchk_socket == INVALID_SOCKET || errchk_socket == SOCKET_ERROR)
+	Socket->fd_socket = socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
+	if (Socket->fd_socket == INVALID_SOCKET || Socket->fd_socket == SOCKET_ERROR)
 	{
+		Socket->getError();
+		std::cout << "socket() failed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
@@ -335,7 +362,7 @@ void Connection::clientThread()
 
 		// Attempt to connect to target
 		errno = 0;
-		int32_t conn_return_val = Socket->connect(ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		int32_t conn_return_val = connect(Socket->fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 		if (exit_now == true)
 		{
 			Socket->closesocket(Socket->fd_socket);

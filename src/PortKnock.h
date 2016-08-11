@@ -20,7 +20,7 @@ public:
 	int32_t isLocalPortInUse(std::string port, std::string my_local_ip);
 
 	// Very simple checking of 1 port. Not for checking many ports quickly.
-	bool isPortOpen(std::string ip, std::string port);
+	int32_t isPortOpen(std::string ip, std::string port);
 
 protected:
 private:
