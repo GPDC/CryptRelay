@@ -108,7 +108,7 @@ public:
 	void WSACleanup();
 
 	// All addrinfo structures that have been allocated by the getaddrinfo()
-	// function must be freed once they are done being used. Since the function
+	// function must be freed once they are done being used. Since getaddrinfo()
 	// gives you a pointer to the allocated addrinfo structure, you should
 	// do something like this example:
 	// addrinfo * ServerConnectionInfo = nullptr;
@@ -116,20 +116,22 @@ public:
 	// 	if (ServerConnectionInfo != nullptr)
 	//		Socket->freeaddrinfo(&ServerConnectionInfo);
 	//
-	// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
+	// Never freeaddrinfo() on something that has already been freed.
+	// In order to avoid doing that, check for a nullptr first.
+	// If nullptr, it has already been freed.
 	void freeaddrinfo(addrinfo** ppAddrInfo);
 	void coutPeerIPAndPort();
 
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
-	//	WSAGetLastError(), or errno, code. Example would be to check to see if
-	//	recvfrom() errored because of a timeout, not because of a real error.
-	int32_t getError(bool output_to_console = true);	// This is unlike everything else here - it just retrieves and prints errors.
+	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
+	//	recvfrom() errored because of a timeout, not because of a real fatal error.
+	int32_t getError(bool output_to_console = true);
 	const bool DISABLE_CONSOLE_OUTPUT = false;
 
 	// Only intended for use with Socket errors.
-	// Windows expects a WSAERROR code, linux expects errno code.
+	// Windows outputs a WSAERROR code, linux outputs errno code.
 	void outputSocketErrorToConsole(int32_t error_code);
 
 	// Enable or disable the blocking socket option.

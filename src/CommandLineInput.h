@@ -21,29 +21,34 @@ public:
 protected:
 private:
 
-	void displayHelpAndReadMe();
-	void displayExamples();
+	// Prevent anyone from copying this class
+	CommandLineInput(CommandLineInput& CommandLineInputInstance) = delete; // Delete copy operator
+	CommandLineInput& operator=(CommandLineInput& CommandLineInstance) = delete; // Delete assignment operator
 
-	// These private member variables are able to be viewed outside this class
-	// by using the appropriate corresponding public function.
+
 	bool show_info_upnp = false;
 	bool retrieve_list_of_port_forwards = false;
 	bool use_lan_only = false;
-	bool use_upnp_to_connect_to_peer = true;	// Connection class will always want to use upnp unless the user makes this false
+	bool use_upnp_to_connect_to_peer = true;	// Assume UPnP wants to be used unless the user makes this false.
 	std::string target_ip_address;
 	std::string target_port;
 	std::string my_ip_address;
 	std::string my_host_port;
 	std::string my_ext_ip_address;
+
 	// Specific to -dpf
 	bool delete_this_specific_port_forward = false;
 	std::string delete_this_specific_port_forward_port;
 	std::string delete_this_specific_port_forward_protocol;
 
+	void displayHelpAndReadMe();
+	void displayExamples();
+
+	
 public:
 
 	// Accessors:
-	const bool& getShowInfoUpnp()	{ return show_info_upnp; }
+	const bool& getShowInfoUpnp() { return show_info_upnp; }
 	const bool& getRetrieveListOfPortForwards() { return retrieve_list_of_port_forwards; }
 	const bool& getUseLanOnly() {	return use_lan_only; }
 	const bool& getUseUpnpToConnectToPeer() {	return use_upnp_to_connect_to_peer;	}

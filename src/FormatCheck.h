@@ -24,6 +24,10 @@ public:
 protected:
 private:
 
+	// Prevent anyone from copying this class
+	FormatCheck(FormatCheck& FormatCheckInstance) = delete; // Delete copy operator.
+	FormatCheck& operator=(FormatCheck& FormatCheckInstance) = delete; // Delete assignment operator.
+
 	const int32_t BAD_FORMAT = -100;
 	const int32_t MAX_PORT_LENGTH = 5;
 	const int32_t MAX_PORT_NUMBER = 65535;		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.

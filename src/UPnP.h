@@ -77,6 +77,10 @@ public:
 protected:
 private:
 
+	// Prevent anyone from copying this class
+	UPnP(UPnP& UPnPInstance) = delete; // Delete copy operator
+	UPnP& operator=(UPnP& UPnPInstance) = delete; // Delete assignment operator
+
 	void showInformation();
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);

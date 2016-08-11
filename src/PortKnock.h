@@ -16,6 +16,7 @@ public:
 	PortKnock();
 	virtual ~PortKnock();
 
+	//
 	int32_t isLocalPortInUse(std::string port, std::string my_local_ip);
 
 	// Very simple checking of 1 port. Not for checking many ports quickly.
@@ -23,6 +24,10 @@ public:
 
 protected:
 private:
+
+	// Prevent anyone from copying this class
+	PortKnock(PortKnock& PortKnockInstance) = delete; // Delete copy operator
+	PortKnock& operator=(PortKnock& PortKnockInstance) = delete; // Delete assignment operator
 };
 
 #endif//PortKnock_h__

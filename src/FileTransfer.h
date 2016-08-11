@@ -5,7 +5,7 @@
 // One instance of this class == 1 file transfer thread.
 
 
-// With regards to the current setup of the ProcessRecvBuf class inside the Connection.cpp file,
+// With regards to the current setup of the RecvBufStateMachine inside the ApplicationLayer,
 // it is only possible to send 1 file at a time, even if multiple instances of this class are used.
 // Multiple files can be sent, its just that one has to be completely done sending before the other
 // is to be sent.
@@ -33,15 +33,10 @@ public:
 	FileTransfer(ApplicationLayer* AppLayer, std::string file_name_and_path, bool send_file_bool);
 	virtual ~FileTransfer();
 
-
-	// -----------------------------------------------------
-	// ~CryptRelay specific methods~
-
 	// Sends a file
 	bool sendFile(std::string file_name_and_path);
 	// This is only for use with sendFile()
 	bool is_send_file_thread_in_use = false;
-	// -----------------------------------------------------
 
 	std::thread send_file_thread;
 
@@ -63,15 +58,6 @@ private:
 	const int32_t MAX_FILENAME_LENGTH = 255;
 
 	ApplicationLayer* AppLayer;
-
-
-	// -----------------------------------------------------------------------------------------------
-	// ~CryptRelay specific methods~
-
-	//// For sending the file size and file name to peer.
-	//bool sendFileSize(char * buf, const int64_t BUF_LEN, int64_t size_of_file);
-	//bool sendFileName(char * buf, const int64_t BUF_LEN, const std::string& name_of_file);
-	// ------------------------------------------------------------------------------------------------
 
 
 	// Copies a file.

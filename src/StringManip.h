@@ -22,6 +22,10 @@ public:
 	std::string duplicateCharacter(std::string& string, char delimiter);
 protected:
 private:
+
+	// Prevent anyone from copying this class
+	StringManip(StringManip& StringManipInstance) = delete; // Delete copy operator
+	StringManip& operator=(StringManip& StringManipInstance) = delete; // Delete assignment operator
 };
 
 #endif//StringManip_h__
