@@ -29,11 +29,6 @@
 #endif//_WIN32
 
 
-#ifdef __linux__
-#define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
-#define SOCKET_ERROR	(-1)			// To indicate SOCKET_ERROR, Windows returns -1 from socket functions, and linux returns -1.
-										// Linux doesn't distinguish between INVALID_SOCKET and SOCKET_ERROR. It just returns -1 on error.
-#endif // __linux__
 
 // Forward declaration
 class SocketClass;
