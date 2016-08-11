@@ -6,6 +6,7 @@
 #include <netdb.h>
 #include <sys/stat.h>
 #include <thread>
+#include <limits.h>
 
 #include "FileTransfer.h"
 #include "ApplicationLayer.h"
@@ -15,6 +16,7 @@
 #ifdef _WIN32
 #include <iostream>
 #include <thread>
+#include <limits.h>
 
 #include "FileTransfer.h"
 #include "ApplicationLayer.h"
