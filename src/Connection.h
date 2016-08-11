@@ -22,14 +22,10 @@
 #ifdef __linux__
 #include <string>
 #include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
-
-#include "SocketClass.h"
 #endif//__linux__
 #ifdef _WIN32
 #include <string>
 #include <mutex>
-
-#include "SocketClass.h"
 #endif//_WIN32
 
 

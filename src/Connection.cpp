@@ -17,6 +17,7 @@
 #include "GlobalTypeHeader.h"
 #include "StringManip.h"
 #include "UPnP.h"
+#include "SocketClass.h"
 #endif //__linux__
 
 #ifdef _WIN32
@@ -31,13 +32,9 @@
 #include "GlobalTypeHeader.h"
 #include "StringManip.h"
 #include "UPnP.h"
+#include "SocketClass.h"
 #endif //_WIN32
 
-
-#ifdef __linux__
-    // for the shutdown() function
-    const int32_t SD_BOTH = 2;
-#endif //__linux__
 
 #ifdef _WIN32
 // These are needed for Windows sockets

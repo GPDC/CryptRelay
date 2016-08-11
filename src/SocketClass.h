@@ -48,7 +48,7 @@ typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Window
 #define SOCKET_ERROR	(-1)	// I belive this was just because linux didn't already have a SOCKET_ERROR macro.
 #define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
 #define SD_SEND         SHUT_WR//0x01			// ^
-#define SD_BOTH			SHUT_RDWR//0x02			// ^
+#define SD_BOTH         SHUT_RDWR//0x02			// ^
 #endif//__linux__
 
 
