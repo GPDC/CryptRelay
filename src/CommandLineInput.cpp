@@ -1,5 +1,5 @@
 // CommandLineInput.cpp
-#ifdef _WIN32
+#ifdef __linux__
 #include <string>
 #include <iostream>
 #include <vector>
