@@ -883,7 +883,7 @@ int32_t ApplicationLayer::assignFileSizeFromPeer(char * recv_buf, int64_t recv_b
 		incoming_file_size_from_peer = 0;
 	}
 
-	while (file_size_fragment < sizeof(int64_t))
+	while (file_size_fragment < (int64_t)sizeof(int64_t))
 	{
 		if (position_in_recv_buf >= received_bytes)
 		{
