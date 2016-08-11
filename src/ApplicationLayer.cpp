@@ -281,7 +281,7 @@ int32_t ApplicationLayer::sendFileData(char * buf, const int32_t BUF_LEN, int32_
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
 	}
-	if (message_length > MAXINT32 - CR_RESERVED_BUFFER_SPACE)
+	if (message_length > INT_MAX - CR_RESERVED_BUFFER_SPACE)
 	{
 		std::cout << "Error: sendFileData() was given too large of a message.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
@@ -434,7 +434,7 @@ int32_t ApplicationLayer::endConnection()
 int32_t ApplicationLayer::sendCharBuf(char * buf, const int32_t BUF_LEN, int32_t message_length)
 {
 	int32_t total_amount_to_send = 0;
-	if (message_length > MAXINT32 - CR_RESERVED_BUFFER_SPACE)
+	if (message_length > INT_MAX - CR_RESERVED_BUFFER_SPACE)
 	{
 		std::cout << "Message too big.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
