@@ -4,9 +4,6 @@
 // This class uses the miniupnp library from http://miniupnp.free.fr/
 // Handles all things related to UPnP.
 
-// Warnings:
-// This source file does not do any input validation.
-
 // Terminology:
 // UPnP: Universal Plug and Play
 // IGD: Internet Gateway Device
@@ -29,7 +26,7 @@
 //
 // 4. Now you can do whatever else you want.
 
-// Now that the important steps have been discussed:
+// What are these functions that have 'standalone' as part of their name?:
 // When a function has "standalone" in its name, that is referring to the fact that
 //  it is going to do step 2, and 3 from the important steps list, and then do what the function
 //  set out to do in the first place. In other words, it will execute all functions
@@ -40,8 +37,8 @@
 // List of things that need to be freed after being done with UPnP:
 //
 // 1. freeUPNPDevlist(struct UPNPDev*)  frees the UPNPDev structure.
-//
 // 2. FreeUPNPUrls(struct UPNPUrls)  frees the UPNPUrls structure.
+// Please check deconstructor first to see if it is being freed there.
 
 
 #ifndef UPnP_h__
@@ -81,7 +78,9 @@ private:
 	UPnP(UPnP& UPnPInstance) = delete; // Delete copy operator
 	UPnP& operator=(UPnP& UPnPInstance) = delete; // Delete assignment operator
 
+	// Displays some router information like uptime, external ip && internal ip, max bitrate.
 	void showInformation();
+
 	void getListOfPortForwards();
 	void displayTimeStarted(u_int uptime);
 

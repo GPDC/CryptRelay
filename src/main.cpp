@@ -401,6 +401,7 @@ int32_t main(int32_t argc, char *argv[])
 	
 	if (CLI.getShowInfoUpnp() == true)
 	{
+		// Show some information related to the router, retrieved using UPnP
 		Upnp = new UPnP;
 		Upnp->standaloneShowInformation();
 		delete Upnp;
@@ -435,6 +436,7 @@ int32_t main(int32_t argc, char *argv[])
 		// Give IP and port info to the ServerConnect and ServerConnect instance
 		cliGivesIPAndPortToChatProgram(&CLI, &ServerConnect, &ClientConnect);
 	}
+
 	if (CLI.getUseUpnpToConnectToPeer() == true)
 	{
 		// Forward ports on the router.
@@ -474,12 +476,11 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Start up the ApplicationLayer, giving it the SocketClass
 	// instance which contains the socket that won the race.
-	// This will
 	AppLayer = new ApplicationLayer(WinningSocket);
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer
-	// using these callbacks in order to have data arrive at the peer.
+	// using these callbacks in order to have data arrive (correctly) at the peer.
 	UserInput UserInput_o;
 	UserInput_o.setCallbackStartFileXfer(&startThreadedFileXfer);
 	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
