@@ -5,7 +5,8 @@
 #include <sys/socket.h>	// <Winsock2.h>
 #include <netdb.h>
 #include <thread>
-#include <limits>
+#include <limits.h>
+#include <string.h>
 
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
@@ -16,7 +17,7 @@
 #include <iostream>
 #include <WS2tcpip.h>
 #include <thread>
-#include <limits>
+#include <limits.h>
 
 #include "ApplicationLayer.h"
 #include "SocketClass.h"
