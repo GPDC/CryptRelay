@@ -10,27 +10,18 @@
 // a slightly higher level function to replace them. The functions will include
 // these new features in order to reduce clutter in the rest of the program:
 // 1. Cross platform windows, linux.
-// 2. Super simple error checking and output to command prompt on error
-// 3. Close socket if error occured.
-// 4. if global_verbose == true, cout extra info to command prompt
-// 5. WSAStartup() is called in the constructor
-// 6. WSACleanup() is called in the deconstructor
-// Please note that means whoever is using this class will need to
-// call freeaddrinfo(struct addrinfo) when they need to.
-
-// Warnings:
-// This source file does not do any input validation.
+// 2. Close socket if error occured.
+// 3. if global_verbose == true, cout extra info to command prompt
+// 4. WSAStartup() is called in the constructor
+// 5. WSACleanup() is called in the deconstructor
+// Please note that means freeaddrinfo() is not being called for you.
+// Whoever is using this class will need to
+// call freeaddrinfo(addrinfo* ) when they need to.
 
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
 // fd stands for File Descriptor. It is linux's version of a SOCKET.
-// On windows, a SOCKET handle may have any value between 0 to the maximum size of
-//  and unsigned integer -1. In other words: 0 to INVALID_SOCKET. This means
-//  (~0) is not a value that will ever be assigned as a valid socket. That is why
-//  INVALID_SOCKET is defined as (~0) and is returned from various function calls
-//  to tell the programmer that something went wrong.
-//  On linux it returns -1 for an invalid socket instead of (~0) because SOCKET is
-//  defined as an int32_t on linux, and valid SOCKETs will only be positive.
+
 
 #ifndef SocketClass_h__
 #define SocketClass_h__
@@ -43,8 +34,8 @@
 #include <string>
 #endif//__linux__
 
-#ifdef _WIN32			// Linux equivalent:
-#include <WS2tcpip.h>	// socklen_t
+#ifdef _WIN32
+#include <WS2tcpip.h>
 #include <WinSock2.h>	// <sys/socket.h>
 #include <string>
 #endif//_WIN32
@@ -60,9 +51,6 @@ typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Window
 #define SD_BOTH			SHUT_RDWR//0x02			// ^
 #endif//__linux__
 
-#ifdef _WIN32
-typedef int32_t BYTE_SIZE;	// because recvfrom needs to return ssize_t on linux, and int32_t on win
-#endif//_WIN32
 
 class SocketClass
 {
@@ -73,16 +61,6 @@ public:
 	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
 	// during specific situations, and if additional information is needed about the current socket it can be accessed.
 	SOCKET fd_socket = INVALID_SOCKET;
-
-	// A global socket used as a way to communicate between threads.
-	//static SOCKET global_socket;
-
-	// in accept(), make it return a whole SocketClass, not a socket.
-	// 1. ::accept() the connection. it is now stored on a temporary socket
-	//    inside the accept() function.
-	// 2. Close the previous (non temporary) socket.
-	// 3. return a new SocketClass with the socket set.
-
 
 	SOCKET socket(int32_t address_family, int32_t type, int32_t protocol);
 	SOCKET accept();
@@ -152,7 +130,7 @@ private:
 	SocketClass& operator=(SocketClass& SocketClassInstance) = delete; // disable assignment operator
 
 #ifdef _WIN32
-	WSADATA wsaData;			// for WSAStartup();
+	WSADATA wsaData;	// for WSAStartup();
 #endif//_WIN32
 };
 
