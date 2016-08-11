@@ -76,8 +76,6 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		}
 		case SEND_CHAT_MESSAGE:
 		{
-			int64_t user_input_length = user_input.length();
-
 			// Send the message
 			if (callbackSendChatMsg != nullptr)
 			{
