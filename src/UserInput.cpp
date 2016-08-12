@@ -167,8 +167,6 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 bool UserInput::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 {
 	size_t user_msg_from_terminal_len = user_msg_from_terminal.length();
-	// pls split into multiple strings based on spaces
-	// make a function that takes a string as input, and then return a vector filled with the strings that it split up.
 
 	if (user_msg_from_terminal_len >= 2)
 	{
@@ -188,7 +186,7 @@ int32_t UserInput::prepareUserInputForFileXfer(std::string user_input, std::stri
 	// Split the string into multiple strings for every space.
 	StringManip StrManip;
 	std::vector <std::string> split_strings_vector;
-	if (StrManip.split(user_input, ' ', split_strings_vector) == true)
+	if (StrManip.split(user_input, ' ', split_strings_vector) == -1)
 	{
 		std::cout << "Unexpected error: split(). File transfer never started due to error.\n";
 		DBG_DISPLAY_ERROR_LOCATION();

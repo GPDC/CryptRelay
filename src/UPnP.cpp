@@ -76,7 +76,7 @@ void UPnP::standaloneGetListOfPortForwards()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == true)
+	if (findValidIGD() == -1)
 		return;
 
 	// Display the list of port forwards
@@ -98,7 +98,7 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == true)
+	if (findValidIGD() == -1)
 		return;
 
 	int32_t errchk = UPNP_DeletePortMapping(
@@ -158,7 +158,7 @@ void UPnP::findUPnPDevices()
 // After doing that it fills out struct UPNPUrls Urls and struct IGDdatas IGDDatas
 // with information about the device and urls necessary to control it.
 // This is generally the second step of the 2 important steps. The first step is to findUPnPDevices().
-bool UPnP::findValidIGD()
+int32_t UPnP::findValidIGD()
 {
 	// Looks at the list of UPnP devices returned by upnpDiscover() to determine if one is a valid IGD
 	int32_t errchk = UPNP_GetValidIGD(
@@ -171,7 +171,7 @@ bool UPnP::findValidIGD()
 	if (errchk == 0)
 	{
 		std::cout << "No valid IGD found.\n";
-		return true;
+		return -1;
 	}
 	else
 	{
@@ -197,7 +197,7 @@ bool UPnP::findValidIGD()
 		}
 	}
 
-	return false;
+	return 0;
 }
 
 // Display Information such as:
@@ -296,7 +296,7 @@ void UPnP::standaloneShowInformation()
 	findUPnPDevices();
 
 	// Find valid IGD based off the list returned by upnpDiscover()
-	if (findValidIGD() == true)
+	if (findValidIGD() == -1)
 		return;
 
 	// Output information to the console
@@ -429,7 +429,7 @@ void UPnP::getListOfPortForwards()
 // Add a port forwarding rule.
 // Must have called findValidIGD() first to get
 // your internal IP address, and to have an IGD to talk to.
-bool UPnP::autoAddPortForwardRule()
+int32_t UPnP::autoAddPortForwardRule()
 {
 	// Information necessary for UPNP_AddPortMapping()
 	bool try_again = false;
@@ -592,7 +592,7 @@ bool UPnP::autoAddPortForwardRule()
 					std::cout << "UPNP hard fail. try_again_count: " << try_again_count << ", bool try_again: " << try_again << "\n";
 					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
 						upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
-					return false;
+					return 0;
 				}
 			}
 			else//success
@@ -651,12 +651,12 @@ bool UPnP::autoAddPortForwardRule()
 		}
 	}
 
-	return false; // Success
+	return 0; // Success
 }
 
 // Adds a new port forwarding rule.
 // Displays extra information if global_verbose == true.
-bool UPnP::standaloneAutoAddPortForwardRule()
+int32_t UPnP::standaloneAutoAddPortForwardRule()
 {
 
 	// Enable socket use on Windows
@@ -666,8 +666,8 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 	findUPnPDevices();
 
 	// Find a valid IGD based off the list filled out by findUPnPDevices()
-	if (findValidIGD() == true)
-		return true;
+	if (findValidIGD() == -1)
+		return -1;
 
 	// Displays various extra information gathered through UPnP
 	if (global_verbose == true)
@@ -678,10 +678,10 @@ bool UPnP::standaloneAutoAddPortForwardRule()
 		getListOfPortForwards();
 
 	// Add the port forward rule
-	if (autoAddPortForwardRule() == true)
-		return true;
+	if (autoAddPortForwardRule() == -1)
+		return -1;
 
-	return false;// Success
+	return 0;// Success
 }
 
 // Deletes the port forwarding rule created by

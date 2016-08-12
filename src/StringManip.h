@@ -18,7 +18,7 @@ public:
 	StringManip();
 	virtual ~StringManip();
 
-	bool split(const std::string& string, char delimiter, std::vector<std::string> &vector);
+	int32_t split(const std::string& string, char delimiter, std::vector<std::string> &vector);
 	std::string duplicateCharacter(std::string& string, char delimiter);
 protected:
 private:

@@ -149,7 +149,7 @@ public:
 
 	// Here is where all messages received are processed to determine what to do with the message.
 	// Some messages might be printed to screen, others are a portion of a file transfer.
-	bool decideActionBasedOnFlag(char * recv_buf, int64_t buf_len, int64_t byte_count);
+	int32_t decideActionBasedOnFlag(char * recv_buf, int64_t buf_len, int64_t byte_count);
 
 	// For writing files in decideActionBasedOnFlag().
 	// It is only public because if recv() ever fails inside the ApplicationLayer class,

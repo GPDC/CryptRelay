@@ -316,7 +316,7 @@ void Connection::clientThread()
 	}
 
 	// Disable blocking on the socket
-	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->DISABLE_BLOCKING) == true)
+	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->DISABLE_BLOCKING) == -1)
 	{
 		std::cout << "Exiting client thread due to error.\n";
 		if (ClientConnectionInfo != nullptr)
@@ -488,7 +488,7 @@ void Connection::clientThread()
 	std::cout << "Acting as the client.\n\n\n\n\n\n\n\n\n\n";
 
 	// Re-enable blocking for the socket.
-	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->ENABLE_BLOCKING) == true)
+	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->ENABLE_BLOCKING) == -1)
 	{
 		Socket->getError();
 		DBG_DISPLAY_ERROR_LOCATION();

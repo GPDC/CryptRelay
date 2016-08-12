@@ -229,7 +229,7 @@ int32_t portForwardUsingUPnP()
 
 	Upnp->findUPnPDevices();
 
-	if (Upnp->findValidIGD() == true)
+	if (Upnp->findValidIGD() == -1)
 		return -1;
 
 	// Checking to see if the user inputted a port number.
@@ -283,7 +283,7 @@ int32_t portForwardUsingUPnP()
 
 	// Add a port forward rule so we can connect to a peer, and if that
 	// succeeded, then give info to the Connection.
-	if (Upnp->autoAddPortForwardRule() == false)
+	if (Upnp->autoAddPortForwardRule() == 0)
 	{
 		// Give IP and port info gathered from the command line and from
 		// the UPnP class to the ServerConnect and ServerConnect instance

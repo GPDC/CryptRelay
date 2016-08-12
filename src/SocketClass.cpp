@@ -44,8 +44,6 @@
 
 SocketClass::SocketClass()
 {
-	// Unsure If I should have this here quite frankly, but
-	// it IS necessary for 99% of things in this class.
 	WSAStartup();
 }
 SocketClass::~SocketClass()
@@ -54,7 +52,7 @@ SocketClass::~SocketClass()
 }
 
 // Necessary to do anything with sockets on Windows
-bool SocketClass::WSAStartup()
+int32_t SocketClass::WSAStartup()
 {
 #ifdef _WIN32
 	if (global_verbose == true)
@@ -65,12 +63,12 @@ bool SocketClass::WSAStartup()
 	{
 		getError();
 		std::cout << "WSAStartup failed\n";
-		return true;
+		return -1;
 	}
 	if (global_verbose == true)
 		std::cout << "Success\n";
 #endif//_WIN32
-	return false;
+	return 0;
 }
 
 
@@ -106,17 +104,17 @@ SOCKET SocketClass::accept()
 // Shuts down the current connection that is active on the given socket.
 // The shutdown operation is one of three macros.
 // SD_RECEIVE, SD_SEND, SD_BOTH.
-bool SocketClass::shutdown(SOCKET socket, int32_t operation)
+int32_t SocketClass::shutdown(SOCKET socket, int32_t operation)
 {
 	std::cout << "Shutting down the connection... ";
 	// shutdown the connection since we're done
 	int32_t errchk = ::shutdown(socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
-		return true;
+		return -1;
 	}
 	std::cout << "Success\n";
-	return false;
+	return 0;
 }
 
 void SocketClass::closesocket(SOCKET socket)
@@ -305,7 +303,7 @@ void SocketClass::coutPeerIPAndPort()
 // With this method you can enable or disable blocking for a given socket.
 // DISABLE_BLOCKING == 1;
 // ENABLE_BLOCKING == 0;
-bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
+int32_t SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 {
 
 #ifdef _WIN32
@@ -313,14 +311,14 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 	int32_t errchk = ioctlsocket(socket, FIONBIO, &mode);
 	if (errchk == NO_ERROR)
 	{
-		return false;
+		return 0;
 	}
 	else // error
 	{
 		std::cout << "ioctlsocket() failed.\n";
 		getError();
 		DBG_DISPLAY_ERROR_LOCATION();
-		return true;
+		return -1;
 	}
 #endif//_WIN32
 #ifdef __linux__
@@ -337,7 +335,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 		if (current_flag == O_NONBLOCK)
 		{
 			DBG_TXT("Warning: Tried to set non-blocking flag on a socket that is already non-blocking.");
-			return false;
+			return 0;
 		}
 		else
 		{
@@ -347,7 +345,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 				std::cout << "fcntl() failed setting non_block flag.\n";
 				getError();
 				DBG_DISPLAY_ERROR_LOCATION();
-				return true;
+				return -1;
 			}
 		}
 
@@ -368,7 +366,7 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 		if (current_flag == O_NONBLOCK)
 		{
 			DBG_TXT("Warning: Tried to set enable blocking flag on a socket that is already blocking.");
-			return false;
+			return 0;
 		}
 		else
 		{
@@ -378,13 +376,13 @@ bool SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 				std::cout << "fcntl() failed to set the enable blocking flag.\n";
 				getError();
 				DBG_DISPLAY_ERROR_LOCATION();
-				return true;
+				return -1;
 			}
 		}
 	}
 #endif//__linux__
 
-	return true;
+	return -1;
 }
 
 // Get error information from the socket.

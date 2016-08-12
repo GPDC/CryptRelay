@@ -68,11 +68,11 @@ public:
 
 	// Cross-platform WSAStartup();
 	// For every WSAStartup() that is called, a WSACleanup() must be called.
-	bool WSAStartup();
+	int32_t WSAStartup();
 
 	// Outputs to console that the connection is being shutdown
 	// in addition to the normal shutdown() behavior.
-	bool shutdown(SOCKET socket, int32_t operation);
+	int32_t shutdown(SOCKET socket, int32_t operation);
 	
 	// Cross-platform closing of a socket / fd.
 	void closesocket(SOCKET socket);
@@ -110,7 +110,7 @@ public:
 
 	// Enable or disable the blocking socket option.
 	// By default, blocking is enabled.
-	bool setBlockingSocketOpt(SOCKET socket, const u_long* option);
+	int32_t setBlockingSocketOpt(SOCKET socket, const u_long* option);
 	const u_long DISABLE_BLOCKING = 1;
 	const u_long ENABLE_BLOCKING = 0;
 

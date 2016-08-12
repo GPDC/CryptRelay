@@ -44,7 +44,7 @@ FileTransfer::~FileTransfer()
 
 }
 
-bool FileTransfer::sendFile(std::string file_name_and_path)
+int32_t FileTransfer::sendFile(std::string file_name_and_path)
 {
 	is_send_file_thread_in_use = true;
 
@@ -63,7 +63,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		DBG_DISPLAY_ERROR_LOCATION();
 		perror("Error opening file for reading binary sendFile");
 		is_send_file_thread_in_use = false;
-		return true;
+		return -1;
 	}
 
 	// Retrieve the name of the file from the string that contains
@@ -77,7 +77,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
-		return false; //exit please, file name couldn't be found.
+		return -1; //exit please, file name couldn't be found.
 	}
 
 	// *** The order in which file name and file size is sent DOES matter! ***
@@ -90,7 +90,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
-		return true; //exit please
+		return -1; //exit please
 	}
 
 
@@ -106,7 +106,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
-		return true; //exit please
+		return -1; //exit please
 	}
 	else // success
 	{
@@ -125,7 +125,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		if (fclose(ReadFile))
 			perror("Error closing file designated for reading");
 		is_send_file_thread_in_use = false;
-		return true;// exit please
+		return -1;// exit please
 	}
 
 
@@ -217,7 +217,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 
 	delete[]buf;
 	is_send_file_thread_in_use = false;
-	return false;
+	return 0;
 }
 
 // This function expects the file name and location of the file

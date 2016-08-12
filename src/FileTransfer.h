@@ -34,7 +34,7 @@ public:
 	virtual ~FileTransfer();
 
 	// Sends a file
-	bool sendFile(std::string file_name_and_path);
+	int32_t sendFile(std::string file_name_and_path);
 	// This is only for use with sendFile()
 	bool is_send_file_thread_in_use = false;
 

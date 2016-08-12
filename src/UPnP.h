@@ -54,14 +54,14 @@ public:
 	virtual ~UPnP();
 
 	void findUPnPDevices();					// core function for doing anything in upnp
-	bool findValidIGD();					// core function for doing anything in upnp
+	int32_t findValidIGD();					// core function for doing anything in upnp
 
 	void standaloneShowInformation();
 	void standaloneGetListOfPortForwards();
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
-	bool autoAddPortForwardRule();
+	int32_t autoAddPortForwardRule();
 	void autoDeletePortForwardRule();
-	bool standaloneAutoAddPortForwardRule();
+	int32_t standaloneAutoAddPortForwardRule();
 
 	// These are in public because connection class will
 	// want to know what the user's IP and ports are.

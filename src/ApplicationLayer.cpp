@@ -354,7 +354,7 @@ void ApplicationLayer::loopedReceiveMessages()
 		{
 			// State machine that processes recv_buf and decides what to do
 			// based on the information in the buffer.
-			if (decideActionBasedOnFlag(recv_buf, recv_buf_len, bytes) == true)
+			if (decideActionBasedOnFlag(recv_buf, recv_buf_len, bytes) == -1)
 				break;
 		}
 		else if (bytes == SOCKET_ERROR)
@@ -417,7 +417,7 @@ int32_t ApplicationLayer::endConnection()
 	// This will shutdown the connection on the socket.
 	// closesocket() will interrupt recv() if it is currently blocking.
 	// Done communicating with peer. Proceeding to exit.
-	if (Socket->shutdown(Socket->fd_socket, SD_BOTH) == true)	// SD_BOTH == shutdown both send and receive on the socket.
+	if (Socket->shutdown(Socket->fd_socket, SD_BOTH) == -1)	// SD_BOTH == shutdown both send and receive on the socket.
 	{
 		Socket->getError();
 		std::cout << "Error: shutdown() failed.\n";
@@ -539,7 +539,7 @@ int64_t ApplicationLayer::sendStrBuf(std::string& str_buf, int64_t message_lengt
 // ******************************************************************
 
 // Returns false when everything is fine, and wants to be given more to process.
-bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
+int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
 {
 	position_in_recv_buf = 0;	// the current cursor position inside the buffer.
 
@@ -566,15 +566,10 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 				if (!bytes_written)
 				{
 					perror("Error while writing the file from peer");
-
-					// close file
-
 					if (fclose(WriteFile))
 					{
 						perror("Error closing file for writing");
 					}
-
-
 					// delete file here? This could be dangerous, and should
 					// require user confirmation. Or check to make sure
 					// file didn't exist before trying to open it, then
@@ -604,7 +599,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 
 			if (position_in_recv_buf >= received_bytes)
 			{
-				return false; // go recv() again to get more bytes
+				return 0; // go recv() again to get more bytes
 			}
 			else if (position_in_message == message_size)// must have a new message from the peer.
 			{
@@ -637,7 +632,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 				if (position_in_message == message_size)// must have a new message from the peer.
 					state = CHECK_FOR_FLAG;
 
-				return false; // go recv() again to get more bytes
+				return 0; // go recv() again to get more bytes
 			}
 			else if (position_in_message == message_size)// must have a new message from the peer.
 			{
@@ -708,7 +703,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			// a value.
 			if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) != FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER)
 			{
-				return false;// go recv() again
+				return 0;// go recv() again
 			}
 			else
 			{
@@ -726,7 +721,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 
 			if (position_in_recv_buf >= received_bytes)
 			{
-				return false;
+				return 0;
 			}
 			else
 			{
@@ -742,7 +737,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			// Getting half of the u_short size of the message
 			if (position_in_recv_buf >= received_bytes)
 			{
-				return false;
+				return 0;
 			}
 			else
 			{
@@ -759,7 +754,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			// getting the second half of the u_short size of the message
 			if (position_in_recv_buf >= received_bytes)
 			{
-				return false;
+				return 0;
 			}
 			else
 			{
@@ -786,7 +781,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 
 				if (position_in_recv_buf >= received_bytes)
 				{
-					return false;
+					return 0;
 				}
 				break;
 			}
@@ -797,7 +792,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 		{
 			if (position_in_recv_buf >= received_bytes)
 			{
-				return false;//recv again
+				return 0;//recv again
 			}
 			WriteFile = new FILE;
 			WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
@@ -867,17 +862,17 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 				}
 			}
 
-			return true;
+			return -1;
 		}
 		default:// currently nothing should cause this to execute.
 		{
 			std::cout << "State machine for recv() got to default. Exiting.\n";
-			return true;
+			return -1;
 		}
 		}//end switch
 	}
 
-	return false;
+	return 0;
 }
 
 // For use with RecvBufStateMachine only.
