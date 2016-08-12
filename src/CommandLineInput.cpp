@@ -34,8 +34,9 @@ void CommandLineInput::displayHelpAndReadMe()
 	std::cout << "\n";
 	std::cout << "-------------------------------------------------------------------------------\n";	//79 dashes + new line character
 	std::cout << "Proper format for a normal connection is: cryptrelay.exe -t 1.2.3.4\n";
-	std::cout << "Format for LAN connection: cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.4\n";
-	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe -lan -t 192.168.1.5 -tP 30001 -mP 30022\n";
+	std::cout << "Format for LAN connection: cryptrelay.exe --lan -t 192.168.1.5 -mL 192.168.1.4\n";
+	std::cout << "If you wish to specify the ports yourself: cryptrelay.exe --lan -t 192.168.1.5\n";
+	std::cout << "       -tP 30001 -mL 192.168.1.4 -mP 30022\n";
 	std::cout << "\n";
 	std::cout << "-h     Displays this.\n";
 	std::cout << "-t     The target's IP address.\n";
@@ -43,12 +44,12 @@ void CommandLineInput::displayHelpAndReadMe()
 	std::cout << "-mL    My local IP address that I want to listen on.\n";
 	std::cout << "-mP    My port number that I want to listen on.\n";
 	std::cout << "-v     Turns on verbose output to your terminal.\n";
-	std::cout << "-lan   Disables upnp. Still possible to connect to internet, just no upnp.\n";
-	std::cout << "-spf   Shows the currently forwarded ports \n";
-	std::cout << "       Format: cryptrelay.exe -spf my_external_port protocol\n";
-	std::cout << "-dpf   Delete a port forward rule.\n";
-	std::cout << "       Format: cryptrelay.exe -dpf protocol my_external_port\n";
-	std::cout << "-si    Show Info displays external & local ip, and some UPnP info.\n";
+	std::cout << "--lan     Disables upnp. Still possible to connect to internet, just no upnp.\n";
+	std::cout << "-s     Shows the currently forwarded ports \n";
+	std::cout << "       Format: cryptrelay.exe -s my_external_port protocol\n";
+	std::cout << "-d     Delete a port forward rule.\n";
+	std::cout << "       Format: cryptrelay.exe -d protocol my_external_port\n";
+	std::cout << "-i     Displays external & local ip, and some UPnP info.\n";
 	std::cout << "--examples   Displays a bunch of example usage scenarios.\n";
 	std::cout << "Arguments that are able to be used during a chat session:\n";
 	std::cout << "-f     Send a file to the peer you are connected to.\n";
@@ -73,9 +74,9 @@ void CommandLineInput::displayExamples()
 	std::cout << "# List of various examples:\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5\n";
 	std::cout << "cryptrelay.exe -t 192.168.1.5 -tP 50302\n";
-	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -mL 192.168.1.3\n";
-	std::cout << "cryptrelay.exe -lan -t 192.168.1.5 -tP 50451 -mL 192.168.1.3 -mP 30456\n";
-	std::cout << "cryptrelay.exe -dpf TCP 30023\n";
+	std::cout << "cryptrelay.exe --lan -t 192.168.1.5 -mL 192.168.1.3\n";
+	std::cout << "cryptrelay.exe --lan -t 192.168.1.5 -tP 50451 -mL 192.168.1.3 -mP 30456\n";
+	std::cout << "cryptrelay.exe -d TCP 30023\n";
 	std::cout << "\n";
 	std::cout << "# List of various examples for use during a chat session:\n";
 	std::cout << "-f C:\\Users\\John\\Downloads\\recipe.txt\n";
@@ -195,17 +196,17 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			{
 				global_verbose = true;
 			}
-			else if (arg[i] == "-lan")
+			else if (arg[i] == "--lan")
 			{
 				use_lan_only = true;
 				use_upnp_to_connect_to_peer = false;
 			}
-			else if (arg[i] == "-spf")
+			else if (arg[i] == "-s")
 			{
 				retrieve_list_of_port_forwards = true;
 				return false;
 			}
-			else if (i < arg_size - 2 && arg[i] == "-dpf")
+			else if (i < arg_size - 2 && arg[i] == "-d")
 			{
 				delete_this_specific_port_forward = true;
 				delete_this_specific_port_forward_protocol = arg[i + 1];
@@ -215,7 +216,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 
 				return false;
 			}
-			else if (arg[i] == "-si")
+			else if (arg[i] == "-i")
 			{
 				show_info_upnp = true;
 			}
