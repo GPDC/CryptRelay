@@ -305,7 +305,7 @@ void UPnP::standaloneShowInformation()
 
 // Given the amount of uptime, calculate the time at which
 // the connection(?) has started.
-void UPnP::displayTimeStarted(u_int uptime)
+void UPnP::displayTimeStarted(uint32_t uptime)
 {
 #ifdef commentout // disabling this for now
 	char am_pm[] = "AM";

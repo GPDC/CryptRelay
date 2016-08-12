@@ -82,7 +82,7 @@ private:
 	void showInformation();
 
 	void getListOfPortForwards();
-	void displayTimeStarted(u_int uptime);
+	void displayTimeStarted(uint32_t uptime);
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory

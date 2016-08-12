@@ -43,7 +43,7 @@ void UserInput::loopedGetUserInput()
 // Return 0, success.
 int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 {
-	const int GRACEFUL_EXIT = -2;
+	const int32_t GRACEFUL_EXIT = -2;
 
 	while (1)
 	{
@@ -102,8 +102,8 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 			// prepareUserInputForFileXfer() assigns this.
 			std::string file_name_and_path;
 
+			// Makes sure user typed something after "-f", Ex: "-f C:\something\like\a\path\to\afile"
 			// Adds any necessary escape characters for '\'s,
-			// Makes sure user typed something after "-f", Ex: "-f something_like_a_path_to_a_file"
 			if (prepareUserInputForFileXfer(user_input, file_name_and_path) == -1)
 			{
 				state = BEGINNING_STATE;

@@ -97,7 +97,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 	// Get file statistics and display the size of the file
 	int64_t size_of_file = 0;
 	xplatform_struct_stat FileStats;
-	int err_chk = getFileStats(file_name_and_path.c_str(), &FileStats);
+	int32_t err_chk = getFileStats(file_name_and_path.c_str(), &FileStats);
 	if (err_chk == -1)
 	{
 		delete[]buf;
