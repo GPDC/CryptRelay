@@ -212,8 +212,10 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 	if (ReadFile != nullptr)
 	{
 		if (fclose(ReadFile))
+		{
 			perror("Error closing file designated for reading");
-		DBG_DISPLAY_ERROR_LOCATION();
+			DBG_DISPLAY_ERROR_LOCATION();
+		}
 	}
 
 	delete[]buf;
