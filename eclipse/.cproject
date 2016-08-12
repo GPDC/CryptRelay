@@ -37,7 +37,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.520856678" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.82590663" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
-							<tool commandLinePattern="${COMMAND} -static ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.749836359" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
+							<tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.749836359" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.libs.1543991827" name="Libraries (-l)" superClass="gnu.cpp.link.option.libs" valueType="libs">
 									<listOptionValue builtIn="false" value="pthread"/>
 									<listOptionValue builtIn="false" value="miniupnpc"/>
@@ -45,9 +45,7 @@
 								<option id="gnu.cpp.link.option.paths.927629772" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/home/normaldaveusername/workspace/CryptRelay/miniupnp/miniupnpc"/>
 								</option>
-								<option id="gnu.cpp.link.option.userobjs.1164219613" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs">
-									<listOptionValue builtIn="false" value="&quot;${workspace_loc:/${ProjName}/libminiupnpc.a}&quot;"/>
-								</option>
+								<option id="gnu.cpp.link.option.userobjs.1164219613" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.578228626" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -105,7 +103,7 @@
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.compiler.input.757970690" superClass="cdt.managedbuild.tool.gnu.cpp.compiler.input"/>
 							</tool>
 							<tool id="cdt.managedbuild.tool.gnu.cross.c.linker.1167591551" name="Cross GCC Linker" superClass="cdt.managedbuild.tool.gnu.cross.c.linker"/>
-							<tool commandLinePattern="${COMMAND} -static ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.312708095" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
+							<tool commandLinePattern="${COMMAND} ${FLAGS} ${OUTPUT_FLAG} ${OUTPUT_PREFIX}${OUTPUT} ${INPUTS}" id="cdt.managedbuild.tool.gnu.cross.cpp.linker.312708095" name="Cross G++ Linker" superClass="cdt.managedbuild.tool.gnu.cross.cpp.linker">
 								<option id="gnu.cpp.link.option.paths.934411418" name="Library search path (-L)" superClass="gnu.cpp.link.option.paths" valueType="libPaths">
 									<listOptionValue builtIn="false" value="/home/normaldaveusername/workspace/CryptRelay/miniupnp/miniupnpc"/>
 								</option>
@@ -113,6 +111,7 @@
 									<listOptionValue builtIn="false" value="miniupnpc"/>
 									<listOptionValue builtIn="false" value="pthread"/>
 								</option>
+								<option id="gnu.cpp.link.option.userobjs.1832799695" name="Other objects" superClass="gnu.cpp.link.option.userobjs" valueType="userObjs"/>
 								<inputType id="cdt.managedbuild.tool.gnu.cpp.linker.input.72007512" superClass="cdt.managedbuild.tool.gnu.cpp.linker.input">
 									<additionalInput kind="additionalinputdependency" paths="$(USER_OBJS)"/>
 									<additionalInput kind="additionalinput" paths="$(LIBS)"/>
@@ -144,6 +143,7 @@
 			<resource resourceType="PROJECT" workspacePath="/CryptRelay"/>
 		</configuration>
 	</storageModule>
+	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 	<storageModule moduleId="scannerConfiguration">
 		<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.c.compiler.exe.debug.919538726;cdt.managedbuild.tool.gnu.c.compiler.input.732825231">
@@ -152,18 +152,23 @@
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.526657644;cdt.managedbuild.config.gnu.exe.release.526657644.;cdt.managedbuild.tool.gnu.c.compiler.exe.release.805363733;cdt.managedbuild.tool.gnu.c.compiler.input.572326476">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.1197527539;cdt.managedbuild.tool.gnu.cpp.compiler.input.520856678">
-			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
-		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.cross.c.compiler.1782835190;cdt.managedbuild.tool.gnu.c.compiler.input.58121897">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
-		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1919700627;cdt.managedbuild.tool.gnu.cpp.compiler.input.1511605284">
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.1197527539;cdt.managedbuild.tool.gnu.cpp.compiler.input.520856678">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
 		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.526657644;cdt.managedbuild.config.gnu.exe.release.526657644.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.release.1614801328;cdt.managedbuild.tool.gnu.cpp.compiler.input.1025228532">
 			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
 		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.debug.1410578182;cdt.managedbuild.config.gnu.exe.debug.1410578182.;cdt.managedbuild.tool.gnu.cpp.compiler.exe.debug.1919700627;cdt.managedbuild.tool.gnu.cpp.compiler.input.1511605284">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.526657644;cdt.managedbuild.config.gnu.exe.release.526657644.;cdt.managedbuild.tool.gnu.cross.c.compiler.809741104;cdt.managedbuild.tool.gnu.c.compiler.input.587721368">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
+		<scannerConfigBuildInfo instanceId="cdt.managedbuild.config.gnu.exe.release.526657644;cdt.managedbuild.config.gnu.exe.release.526657644.;cdt.managedbuild.tool.gnu.cross.cpp.compiler.931297062;cdt.managedbuild.tool.gnu.cpp.compiler.input.757970690">
+			<autodiscovery enabled="true" problemReportingEnabled="true" selectedProfileId=""/>
+		</scannerConfigBuildInfo>
 	</storageModule>
-	<storageModule moduleId="org.eclipse.cdt.internal.ui.text.commentOwnerProjectMappings"/>
 </cproject>

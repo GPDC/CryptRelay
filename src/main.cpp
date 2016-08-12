@@ -27,7 +27,7 @@
 #include <arpa/inet.h>
 
 #include <thread>
-#include <pthread.h>	//<process.h>
+//#include <pthread.h>	//<process.h>
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
@@ -446,6 +446,7 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Being thread race to attempt a connection with the peer.
 	std::cout << "Attempting to connect to peer...\n";
+
 	std::thread ServerThread = std::thread(&Connection::serverThread, &ServerConnect);
 	std::thread ClientThread = std::thread(&Connection::clientThread, &ClientConnect);
 
