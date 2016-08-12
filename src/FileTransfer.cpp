@@ -56,7 +56,7 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 	// Open the file
 	FILE *ReadFile;
 	ReadFile = fopen(file_name_and_path.c_str(), "rb");
-	if (ReadFile == NULL)
+	if (ReadFile == nullptr)
 	{
 		delete[]buf;
 		std::cout << "Error: File transfer aborted. Couldn't open file.\n";
@@ -209,13 +209,10 @@ bool FileTransfer::sendFile(std::string file_name_and_path)
 		std::cout << "# File transfer complete: " << file_name << "\n";
 	}
 
-	if (ReadFile != nullptr)
+	if (fclose(ReadFile))
 	{
-		if (fclose(ReadFile))
-		{
-			perror("Error closing file designated for reading");
-			DBG_DISPLAY_ERROR_LOCATION();
-		}
+		perror("Error closing file designated for reading");
+		DBG_DISPLAY_ERROR_LOCATION();
 	}
 
 	delete[]buf;
@@ -242,14 +239,19 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	if (ReadFile == nullptr)
 	{
 		perror("Error opening file for reading binary");
+		DBG_DISPLAY_ERROR_LOCATION();
 		return true;
 	}
 	WriteFile = fopen(file_name_and_location_for_writing, "wb");
 	if (WriteFile == nullptr)
 	{
 		perror("Error opening file for writing binary");
+		DBG_DISPLAY_ERROR_LOCATION();
 		if (fclose(ReadFile))
+		{
 			perror("Error closing file designated for reading");
+			DBG_DISPLAY_ERROR_LOCATION();
+		}
 		return true;
 	}
 
@@ -261,16 +263,18 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	{
 		std::cout << "Error retrieving file statistics. Abandoning file transfer.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		if (ReadFile != nullptr)
+
+		if (fclose(ReadFile))
 		{
-			if (fclose(ReadFile))
-				perror("Error closing file designated for reading");
+			perror("Error closing file designated for reading");
+			DBG_DISPLAY_ERROR_LOCATION();
 		}
-		if (WriteFile != nullptr)
+		if (fclose(WriteFile))
 		{
-			if (fclose(WriteFile))
-				perror("Error closing file designated for writing");
+			perror("Error closing file designated for writing");
+			DBG_DISPLAY_ERROR_LOCATION();
 		}
+		
 		is_send_file_thread_in_use = false;
 		return true; //exit please
 	}
@@ -357,15 +361,15 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 		perror("Read error copying file");
 	}
 
-	if (WriteFile != nullptr)
+	if (fclose(WriteFile))
 	{
-		if (fclose(WriteFile))
-			perror("Error closing file designated for writing");
+		perror("Error closing file designated for writing");
+		DBG_DISPLAY_ERROR_LOCATION();
 	}
-	if (ReadFile != nullptr)
+	if (fclose(ReadFile))
 	{
-		if (fclose(ReadFile))
-			perror("Error closing file designated for reading");
+		perror("Error closing file designated for reading");
+		DBG_DISPLAY_ERROR_LOCATION();
 	}
 
 	delete[]buffer;

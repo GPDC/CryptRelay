@@ -349,7 +349,7 @@ void ApplicationLayer::loopedReceiveMessages()
 	int32_t bytes = 0;
 	while (1)
 	{
-		bytes = ::recv(Socket->fd_socket, (char *)recv_buf, recv_buf_len, 0);
+		bytes = recv(Socket->fd_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
@@ -388,6 +388,7 @@ void ApplicationLayer::loopedReceiveMessages()
 					{
 						if (fclose(WriteFile) != 0)
 						{
+							DBG_DISPLAY_ERROR_LOCATION();
 							perror("Error closing file for writing in binary mode.\n");
 						}
 					}
@@ -555,19 +556,24 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 				if (amount_to_write > received_bytes - position_in_recv_buf)
 					amount_to_write = received_bytes - position_in_recv_buf;
 
+				if (WriteFile == nullptr)
+				{
+					state = ERROR_STATE;
+					break;
+				}
+
 				bytes_written = fwrite(recv_buf + position_in_recv_buf, 1, (size_t)(amount_to_write), WriteFile);
 				if (!bytes_written)
 				{
 					perror("Error while writing the file from peer");
 
 					// close file
-					if (WriteFile != nullptr)
+
+					if (fclose(WriteFile))
 					{
-						if (fclose(WriteFile))
-						{
-							perror("Error closing file for writing");
-						}
+						perror("Error closing file for writing");
 					}
+
 
 					// delete file here? This could be dangerous, and should
 					// require user confirmation. Or check to make sure
@@ -797,7 +803,10 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
 			if (WriteFile == nullptr)
 			{
+				DBG_DISPLAY_ERROR_LOCATION();
 				perror("Error opening file for writing in binary mode.\n");
+				state = ERROR_STATE;
+				break;
 			}
 
 			is_file_done_being_written = false;
@@ -809,6 +818,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			}
 			else // shouldn't be possible if working correctly
 			{
+				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Catastrophic failure. RecvBuf statemachine. Unreachable area.\n";
 				state = ERROR_STATE;
 			}
@@ -817,12 +827,10 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 		}
 		case CLOSE_FILE_FOR_WRITE:
 		{
-			if (WriteFile != nullptr)
+			if (fclose(WriteFile) != 0)		// 0 == successful close
 			{
-				if (fclose(WriteFile) != 0)		// 0 == successful close
-				{
-					perror("Error closing file for writing in binary mode");
-				}
+				DBG_DISPLAY_ERROR_LOCATION();
+				perror("Error closing file for writing in binary mode");
 			}
 
 			// Set it back to default value
@@ -840,6 +848,7 @@ bool ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf
 			}
 			if (position_in_message > message_size)
 			{
+				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "ERROR: position_in_message > message_size , closefileforwrite\n";
 			}
 			state = CHECK_FOR_FLAG;
