@@ -722,14 +722,16 @@ void UPnP::autoDeletePortForwardRule()
 }
 
 // Necessary to do anything with sockets on Windows
+// Returns 0, success.
+// Returns a WSAERROR code if failed.
 int32_t UPnP::WSAStartup()
 {
 #ifdef _WIN32
 	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (errchk != 0)
 	{
-		std::cout << "WSAStartup failed\n";
-		return -1;
+		std::cout << "WSAStartup failed, WSAERROR: " << errchk << "\n";
+		return errchk;
 	}
 #endif//_WIN32
 	return 0;
