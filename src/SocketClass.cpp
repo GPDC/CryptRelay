@@ -44,30 +44,12 @@
 
 SocketClass::SocketClass()
 {
-	// Enable socket use on windows.
-	WSAStartup();
+
 }
 SocketClass::~SocketClass()
 {
-	WSACleanup();
-}
 
-// Necessary to do anything with sockets on Windows
-// Returns 0, success.
-// Returns a WSAERROR code if failed.
-int32_t SocketClass::WSAStartup()
-{
-#ifdef _WIN32
-	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
-	if (errchk != 0)
-	{
-		std::cout << "WSAStartup failed, WSAERROR: " << errchk << "\n";
-		return errchk;
-	}
-#endif//_WIN32
-	return 0;
 }
-
 
 // TCP use, not UDP
 SOCKET SocketClass::accept()
@@ -126,13 +108,6 @@ void SocketClass::closesocket(SOCKET socket)
 
 	if (global_verbose == true)
 		std::cout << "Closed the socket.\n";
-}
-
-void SocketClass::WSACleanup()
-{
-#ifdef _WIN32
-	::WSACleanup();
-#endif//_WIN32
 }
 
 

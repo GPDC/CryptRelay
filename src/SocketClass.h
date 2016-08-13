@@ -66,20 +66,12 @@ public:
 	// Cross-platform accept(), and assigns fd_socket to the newly accept()ed socket.
 	SOCKET accept();
 
-	// Cross-platform WSAStartup();
-	// For every WSAStartup() that is called, a WSACleanup() must be called.
-	int32_t WSAStartup();
-
 	// Outputs to console that the connection is being shutdown
 	// in addition to the normal shutdown() behavior.
 	int32_t shutdown(SOCKET socket, int32_t operation);
 	
 	// Cross-platform closing of a socket / fd.
 	void closesocket(SOCKET socket);
-
-	// Crossplatform WSACleanup();
-	// For every WSAStartup() that is called, a WSACleanup() must be called.
-	void WSACleanup();
 
 	// All addrinfo structures that have been allocated by the getaddrinfo()
 	// function must be freed once they are done being used. Since getaddrinfo()
@@ -124,11 +116,6 @@ private:
 	// Prevent anyone from copying this class.
 	SocketClass(SocketClass& SocketClassInstance) = delete;			   // disable copy operator
 	SocketClass& operator=(SocketClass& SocketClassInstance) = delete; // disable assignment operator
-
-#ifdef _WIN32
-	WSADATA wsaData;	// for WSAStartup();
-#endif//_WIN32
 };
-
 
 #endif//SocketClass_h__
