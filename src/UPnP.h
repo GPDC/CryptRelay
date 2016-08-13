@@ -15,8 +15,8 @@
 
 // Important steps list:
 // Three important steps in order to doing anything with UPnP:
-// 1. Enable socket use on Windows (NOT ANYMORE, I put it in SocketClass's constructor)
-//	  SocketClass.WSAStartup();
+// 1. Enable socket use on Windows (This is done for you in the constructor)
+//	  WSAStartup();
 //
 // 2. Find UPnP devices on the local network
 //	  findUPnPDevices();
@@ -44,8 +44,18 @@
 #ifndef UPnP_h__
 #define UPnP_h__
 
-#include "miniupnpc.h"		// needed in the header file to get the structs going
-#include "SocketClass.h"
+#ifdef __linux__
+#include "miniupnpc.h"
+#endif//__linux__
+
+#ifdef _WIN32
+#include <WS2tcpip.h>
+#include <WinSock2.h>	// <sys/socket.h>
+
+#include "miniupnpc.h"
+#endif//_WIN32
+
+
 
 class UPnP
 {
@@ -78,12 +88,6 @@ private:
 	UPnP(UPnP& UPnPInstance) = delete; // Delete copy operator
 	UPnP& operator=(UPnP& UPnPInstance) = delete; // Delete assignment operator
 
-	// Displays some router information like uptime, external ip && internal ip, max bitrate.
-	void showInformation();
-
-	void getListOfPortForwards();
-	void displayTimeStarted(uint32_t uptime);
-
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory
 	UPNPDev* UpnpDevicesList = nullptr;			
@@ -101,6 +105,20 @@ private:
 	// If this is true, then the deconstructor will delete the port forward
 	// entry that was automatically added using autoAddPortForwardRule()
 	bool port_forward_automatically_added = false;
+
+	// Displays some router information like uptime, external ip && internal ip, max bitrate.
+	void showInformation();
+
+	void getListOfPortForwards();
+	void displayTimeStarted(uint32_t uptime);
+
+	// Cross-platform WSAStartup();
+	// For every WSAStartup() that is called, a WSACleanup() must be called.
+	int32_t WSAStartup();
+
+#ifdef _WIN32
+	WSADATA wsaData;	// for WSAStartup();
+#endif//_WIN32
 };
 
 #endif//UPnP_h__

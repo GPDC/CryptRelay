@@ -12,16 +12,20 @@
 // with the data that it was sent based on the flag.
 
 #ifdef __linux__
+#include <sys/types.h>
+#include <sys/socket.h>	// <Winsock2.h>
+#include <netdb.h>
 #include <string>
-#include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
-
+#include <mutex> // Want to use exceptions and avoid having it never reach unlock? Use std::lock_guard
 #endif//__linux__
 
 #ifdef _WIN32
+#include <WS2tcpip.h>
+#include <WinSock2.h>	// <sys/socket.h>
 #include <string>
-#include <mutex> // btw, need to use std::lock_guard if you want to be able to use exceptions and avoid having it never reach the unlock.
-
+#include <mutex> // Want to use exceptions and avoid having it never reach unlock? std::lock_guard
 #endif//_WIN32
+
 
 // Forward declaration
 class SocketClass;
@@ -135,9 +139,17 @@ private:
 	// It puts the flag and size of the message into the given buffer.
 	int32_t setFlagsAndMsgSize(char * buf, const int32_t BUF_LEN, int32_t length_of_message, int8_t flag);
 	int32_t setFlagsAndMsgSize(std::string& buf, const int64_t BUF_LEN, int64_t length_of_message, int8_t flag);
+
 	int64_t sendStrBuf(std::string& str_buf, int64_t message_length);
 	int32_t sendCharBuf(char * buf, int32_t BUF_LEN, int32_t message_length);
 
+	// Cross-platform WSAStartup();
+	// For every WSAStartup() that is called, a WSACleanup() must be called.
+	int32_t WSAStartup();
+
+#ifdef _WIN32
+	WSADATA wsaData;	// for WSAStartup();
+#endif//_WIN32
 
 
 

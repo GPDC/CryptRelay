@@ -18,7 +18,6 @@
 #endif//__linux__
 
 #ifdef _WIN32
-#include <WinSock2.h>
 #include <iostream>
 #include <stdio.h>
 #include <string>
@@ -35,12 +34,16 @@
 
 
 #ifdef _WIN32
-#pragma comment(lib, "Ws2_32.lib")      // NEEDED for miniupnp library
-#pragma comment(lib, "Iphlpapi.lib")    // NEEDED for miniupnp library
+#pragma comment(lib, "Ws2_32.lib")      // Needed for miniupnp library
+#pragma comment(lib, "Iphlpapi.lib")    // Needed for miniupnp library
 #endif//_WIN32
+
 
 UPnP::UPnP()
 {
+	// Enable socket use on windows.
+	WSAStartup();
+
 	// Making sure there is no arbitrary data in the structs
 	memset(&Urls, 0, sizeof(Urls));
 	memset(&IGDData, 0, sizeof(IGDData));
@@ -59,8 +62,10 @@ UPnP::~UPnP()
 	freeUPNPDevlist(UpnpDevicesList);
 	FreeUPNPUrls(&Urls);
 
-	// Done with Sockets, clean it up.
-	// This is already done in the SocketClass deconstructor
+	// Done with sockets.
+#ifdef _WIN32
+	WSACleanup();
+#endif//_WIN32
 }
 
 
@@ -70,7 +75,7 @@ UPnP::~UPnP()
 void UPnP::standaloneGetListOfPortForwards()
 {
 	// Enable socket use on Windows
-	// This is already done in the SocketClass constructor.
+	// This is already done in the constructor.
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
@@ -714,4 +719,18 @@ void UPnP::autoDeletePortForwardRule()
 	{
 		std::cout << "Success\n";
 	}
+}
+
+// Necessary to do anything with sockets on Windows
+int32_t UPnP::WSAStartup()
+{
+#ifdef _WIN32
+	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errchk != 0)
+	{
+		std::cout << "WSAStartup failed\n";
+		return -1;
+	}
+#endif//_WIN32
+	return 0;
 }

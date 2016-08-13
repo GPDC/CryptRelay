@@ -44,6 +44,7 @@
 
 SocketClass::SocketClass()
 {
+	// Enable socket use on windows.
 	WSAStartup();
 }
 SocketClass::~SocketClass()
@@ -55,9 +56,6 @@ SocketClass::~SocketClass()
 int32_t SocketClass::WSAStartup()
 {
 #ifdef _WIN32
-	if (global_verbose == true)
-		std::cout << "Initializing Winsock... ";
-
 	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
 	if (errchk != 0)
 	{
@@ -65,8 +63,6 @@ int32_t SocketClass::WSAStartup()
 		std::cout << "WSAStartup failed\n";
 		return -1;
 	}
-	if (global_verbose == true)
-		std::cout << "Success\n";
 #endif//_WIN32
 	return 0;
 }

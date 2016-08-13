@@ -25,6 +25,13 @@
 #endif//_WIN32
 
 
+#ifdef _WIN32
+#pragma comment(lib, "Ws2_32.lib")		//tell the linker that Ws2_32.lib file is needed.
+#pragma comment(lib, "Mswsock.lib")
+#pragma comment(lib, "AdvApi32.lib")
+#endif//_WIN32
+
+
 #ifdef __linux__
 
 #ifndef INVALID_SOCKET
@@ -39,7 +46,7 @@
 #endif // __linux__
 
 #ifdef _WIN32
-#pragma warning(disable:4996)		// disable deprecated warning for fopen()
+#pragma warning(disable:4996)			// disable deprecated warning for fopen()
 #endif//_WIN32
 
 
@@ -69,6 +76,9 @@ std::mutex ApplicationLayer::SendMutex;
 
 ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance)
 {
+	// Enable socket use on windows.
+	WSAStartup();
+
 	Socket = SocketClassInstance;
 
 	// Specific to the ProcessRecvBuf state machine
@@ -76,7 +86,10 @@ ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance)
 }
 ApplicationLayer::~ApplicationLayer()
 {
-
+	// Done with sockets.
+#ifdef _WIN32
+	WSACleanup();
+#endif//_WIN32
 }
 
 // buf: This is where the flags and size of the message will be set.
@@ -907,4 +920,18 @@ int32_t ApplicationLayer::assignFileSizeFromPeer(char * recv_buf, int64_t recv_b
 	file_size_fragment = 0;
 
 	return FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER;
+}
+
+// Necessary to do anything with sockets on Windows
+int32_t ApplicationLayer::WSAStartup()
+{
+#ifdef _WIN32
+	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errchk != 0)
+	{
+		std::cout << "WSAStartup failed\n";
+		return -1;
+	}
+#endif//_WIN32
+	return 0;
 }
