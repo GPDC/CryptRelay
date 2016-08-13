@@ -15,9 +15,10 @@
 #include "StringManip.h"
 #endif//_WIN32
 
-UserInput::UserInput()
+UserInput::UserInput(bool turn_verbose_output_on)
 {
-
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
 }
 UserInput::~UserInput()
 {
@@ -184,7 +185,7 @@ bool UserInput::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 int32_t UserInput::prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input)
 {
 	// Split the string into multiple strings for every space.
-	StringManip StrManip;
+	StringManip StrManip(verbose_output);
 	std::vector <std::string> split_strings_vector;
 	if (StrManip.split(user_input, ' ', split_strings_vector) == -1)
 	{

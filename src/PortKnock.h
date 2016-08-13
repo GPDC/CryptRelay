@@ -13,8 +13,11 @@
 class PortKnock
 {
 public:
-	PortKnock();
+	PortKnock(bool turn_verbose_output_on = false);
 	virtual ~PortKnock();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// Checks to see if the specified port is in use on the user's computer.
 	int32_t isLocalPortInUse(std::string port, std::string my_local_ip);

@@ -21,9 +21,10 @@
 #endif// __linux__
 
 
-StringManip::StringManip()
+StringManip::StringManip(bool turn_verbose_output_on)
 {
-
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
 }
 StringManip::~StringManip()
 {

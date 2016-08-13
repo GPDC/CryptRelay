@@ -22,11 +22,11 @@
 
 -Sequence diagram.
 
+-create a logging class.
 
-# Todo:
 -Update state machine design so the control flow is better
 
--replace the old way of doing threads with std::thread so that the whole program is using std::thread.
+-separate the upnp function that retrieves the external IP address into its own UPnP class method. It is stored in showInformation() atm.
 
 
 
@@ -78,7 +78,7 @@
 
 
 
-# Odd behavior:
+# Odd / noteable behavior:
 
 -There was 1 time where person A's client thread errored, but reported success. It exited the client thread.
  However, the peer (person B) was now connected, acting as the server, to person A, who is acting as the client.

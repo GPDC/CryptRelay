@@ -15,8 +15,11 @@
 class StringManip
 {
 public:
-	StringManip();
+	StringManip(bool turn_verbose_output_on = false);
 	virtual ~StringManip();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	int32_t split(const std::string& string, char delimiter, std::vector<std::string> &vector);
 	std::string duplicateCharacter(std::string& string, char delimiter);

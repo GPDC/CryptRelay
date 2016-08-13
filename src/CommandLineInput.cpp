@@ -194,7 +194,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			}
 			else if (arg[i] == "-v")
 			{
-				global_verbose = true;
+				verbose_output = true;
 			}
 			else if (arg[i] == "--lan")
 			{

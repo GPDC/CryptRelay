@@ -36,8 +36,11 @@ class ApplicationLayer
 public:
 
 	// SocketClass in the constructor because
-	ApplicationLayer(SocketClass* SocketClassInstance);
+	ApplicationLayer(SocketClass* SocketClassInstance, bool turn_verbose_output_on = false);
 	~ApplicationLayer();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// ----------------------------------------------------------------------
 	//                       IMPORTANT INFORMATION

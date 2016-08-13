@@ -36,8 +36,11 @@ class SocketClass;
 class Connection
 {
 public:
-	Connection(SocketClass* SocketClassInstance);
+	Connection(SocketClass* SocketClassInstance, bool turn_verbose_output_on = false);
 	virtual ~Connection();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// Server and Client threads
 	// Only 1 of these methods should be running per Connection class instance.

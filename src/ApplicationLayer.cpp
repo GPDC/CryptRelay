@@ -74,8 +74,11 @@ const int32_t ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND = USHRT_MAX;
 std::mutex ApplicationLayer::SendMutex;
 
 
-ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance)
+ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance, bool turn_verbose_output_on)
 {
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
+
 	// Enable socket use on windows.
 	WSAStartup();
 
@@ -351,7 +354,7 @@ void ApplicationLayer::loopedReceiveMessages()
 	// of his message that he sent us.
 
 	// Receive until the peer shuts down the connection
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Recv loop started...\n";
 
 	// Buffer for receiving data from peer

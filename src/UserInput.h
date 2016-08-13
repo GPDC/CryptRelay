@@ -14,8 +14,11 @@
 class UserInput
 {
 public:
-	UserInput();
+	UserInput(bool turn_verbose_output_on = false);
 	~UserInput();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// Continually getline()'s the command prompt to see what the user wants to do.
 	void loopedGetUserInput();

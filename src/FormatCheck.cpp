@@ -27,6 +27,7 @@
 
 FormatCheck::FormatCheck()
 {
+
 }
 FormatCheck::~FormatCheck()
 {
@@ -44,9 +45,6 @@ bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 		std::cout << "IPV4 address is too big to be valid.\n";
 		return false;
 	}
-
-	if (global_verbose == true)
-		std::cout << "Unverified IPaddress = " << ipaddress << "\n";
 
 	// Check if the formatting for the IP address is correct
 	int32_t period_count = 0;
@@ -122,25 +120,13 @@ int32_t FormatCheck::findNextPeriod(std::string ipaddress, int32_t start)
 		// Check for two periods right next to eachother
 		if (ipaddress[start + 1] == '.' && ipaddress[start] == '.')
 		{
-			if (global_verbose == true)
-				std::cout << "2 periods in a row detected.\n";
 			return BAD_FORMAT;
-		}
-
-		if (start == size_of_ip_address - 1)
-		{
-			if (global_verbose == true)
-			{
-				std::cout << "End of ip address string detected.\n";
-			}
 		}
 
 		// If it is a period, save the location. else, increment
 		if (ipaddress[start] == '.')
 		{
 			period_location = start;
-			if (global_verbose == true)
-				std::cout << "Found a period at location: " << period_location << ".\n";
 			if (period_location == 0)
 				return BAD_FORMAT;
 			break;
@@ -180,10 +166,6 @@ bool FormatCheck::checkSubnetRange(std::string ipaddress, int32_t start, int32_t
 	}
 
 	// Check for valid subnet range.
-	if (global_verbose == true)
-	{
-		std::cout << "Subnet addition total = " << total << "\n";
-	}
 	if (total > 255 || total < 0)
 	{
 		std::cout << "Subnet out of range.\n";
@@ -196,10 +178,6 @@ bool FormatCheck::checkSubnetRange(std::string ipaddress, int32_t start, int32_t
 bool FormatCheck::isPortFormatCorrect(char* port)
 {
 	int32_t length_of_port = strlen(port);
-	if (global_verbose == true)
-	{
-		std::cout << "Unverified port: " << port << "\n";
-	}
 
 	if (length_of_port > MAX_PORT_LENGTH)
 	{

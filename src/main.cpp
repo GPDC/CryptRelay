@@ -63,17 +63,17 @@
 #endif//_WIN32
 
 
-bool global_verbose = false;
-bool global_debug = true;
 bool exit_now = false;
 
 
 UPnP* Upnp = nullptr;
+FileTransfer* FileXfer = nullptr;
+ApplicationLayer* AppLayer = nullptr;
 CommandLineInput CLI;
-SocketClass ServerSocket;
-SocketClass ClientSocket;
-Connection ServerConnect(&ServerSocket);
-Connection ClientConnect(&ClientSocket);
+SocketClass ServerSocket(CLI.getVerboseOutput());
+SocketClass ClientSocket(CLI.getVerboseOutput());
+Connection ServerConnect(&ServerSocket, CLI.getVerboseOutput());
+Connection ClientConnect(&ClientSocket, CLI.getVerboseOutput());
 
 
 
@@ -214,7 +214,7 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 // return -1, error
 int32_t portForwardUsingUPnP()
 {
-	Upnp = new UPnP;
+	Upnp = new UPnP(CLI.getVerboseOutput());
 
 	// Give the user's inputted port to the UPnP Class
 	// so that it will port forward what he wanted.
@@ -232,7 +232,7 @@ int32_t portForwardUsingUPnP()
 	if (Upnp->findValidIGD() == -1)
 		return -1;
 
-	// Checking to see if the user inputted a port number.
+	// Checking to see if the user inputted a local port number.
 	// If he didn't, then he probably doesn't care, and just
 	// wants whatever port can be given to him; therefore
 	// we will +1 the port each time isLocalPortInUse() returns
@@ -241,7 +241,7 @@ int32_t portForwardUsingUPnP()
 	// that the Connection will use.
 	if (CLI.getMyHostPort().empty() == true)
 	{
-		PortKnock PortTest;
+		PortKnock PortTest(CLI.getVerboseOutput());
 		const int32_t IN_USE = 1;
 		int32_t my_port_int = 0;
 		const int32_t ATTEMPT_COUNT = 20;
@@ -297,13 +297,6 @@ int32_t portForwardUsingUPnP()
 	}
 }
 
-
-FileTransfer* FileXfer = nullptr;
-ApplicationLayer* AppLayer = nullptr;
-
-
-
-
 // returns 0 on success.
 // returns -1 when a file is still being transfered, and needs to wait for it to finish.
 int32_t startThreadedFileXfer(const std::string& file_name_and_path)
@@ -324,7 +317,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				// create a threaded sendFile() in the constructor.
 				bool send_file = true;
 				delete(FileXfer); // destroy an old one if there is one.
-				FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file);
+				FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 				return 0;
 			}
 			else // A thread must not exist. This shouldn't be possible to get here.
@@ -343,7 +336,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 	{
 		bool send_file = true;
 		delete(FileXfer);
-		FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file);
+		FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 		return 0;
 	}
 
@@ -383,8 +376,6 @@ int32_t endConnection()
 }
 
 
-
-
 int32_t main(int32_t argc, char *argv[])
 {
 	int32_t errchk = 0;
@@ -398,25 +389,27 @@ int32_t main(int32_t argc, char *argv[])
 	//===================================== Starting Chat Program =====================================
 	std::cout << "Welcome to CryptRelay Alpha release 0.8.0\n";
 
-	
+
 	if (CLI.getShowInfoUpnp() == true)
 	{
-		// Show some information related to the router, retrieved using UPnP
-		Upnp = new UPnP;
+		// Show some information related to the router
+		Upnp = new UPnP(CLI.getVerboseOutput());
 		Upnp->standaloneShowInformation();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
 	else if (CLI.getRetrieveListOfPortForwards() == true)
 	{
-		Upnp = new UPnP;
+		// Show the ports that are currently forwarded on the router
+		Upnp = new UPnP(CLI.getVerboseOutput());
 		Upnp->standaloneGetListOfPortForwards();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
 	else if (CLI.getDeleteThisSpecificPortForward() == true)
 	{
-		Upnp = new UPnP;
+		// Delete the specified port forward rule on the router.
+		Upnp = new UPnP(CLI.getVerboseOutput());
 		Upnp->standaloneDeleteThisSpecificPortForward(
 				CLI.getDeleteThisSpecificPortForwardPort().c_str(),
 				CLI.getDeleteThisSpecificPortForwardProtocol().c_str()
@@ -433,7 +426,7 @@ int32_t main(int32_t argc, char *argv[])
 			return EXIT_FAILURE;
 		}
 
-		// Give IP and port info to the ServerConnect and ServerConnect instance
+		// Give IP and port info to the ClientConnect and ServerConnect instance
 		cliGivesIPAndPortToChatProgram(&CLI, &ServerConnect, &ClientConnect);
 	}
 
@@ -477,7 +470,7 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Start up the ApplicationLayer, giving it the SocketClass
 	// instance which contains the socket that won the race.
-	AppLayer = new ApplicationLayer(WinningSocket);
+	AppLayer = new ApplicationLayer(WinningSocket, CLI.getVerboseOutput());
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer

@@ -30,8 +30,11 @@ class ApplicationLayer;
 class FileTransfer
 {
 public:
-	FileTransfer(ApplicationLayer* AppLayer, std::string file_name_and_path, bool send_file_bool);
+	FileTransfer(ApplicationLayer* AppLayer, std::string file_name_and_path, bool send_file_bool, bool turn_verbose_output_on = false);
 	virtual ~FileTransfer();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// Sends a file
 	int32_t sendFile(std::string file_name_and_path);

@@ -31,8 +31,11 @@
 
 const int32_t MAX_FILENAME_LENGTH = 255;
 
-FileTransfer::FileTransfer(ApplicationLayer* AppLayerInstance, std::string file_name_and_path, bool send_the_file)
+FileTransfer::FileTransfer(ApplicationLayer* AppLayerInstance, std::string file_name_and_path, bool send_the_file, bool turn_verbose_output_on)
 {
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
+
 	AppLayer = AppLayerInstance;
 	if (send_the_file == true)
 	{

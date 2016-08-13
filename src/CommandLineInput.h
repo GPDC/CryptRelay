@@ -25,10 +25,10 @@ private:
 	CommandLineInput(CommandLineInput& CommandLineInputInstance) = delete; // Delete copy operator
 	CommandLineInput& operator=(CommandLineInput& CommandLineInstance) = delete; // Delete assignment operator
 
-
-	bool show_info_upnp = false;
-	bool retrieve_list_of_port_forwards = false;
-	bool use_lan_only = false;
+	bool verbose_output = false; // -v 	        // Turn on and off verbose output for this class.
+	bool show_info_upnp = false; // -i
+	bool retrieve_list_of_port_forwards = false; // -s
+	bool use_lan_only = false; // --lan
 	bool use_upnp_to_connect_to_peer = true;	// Assume UPnP wants to be used unless the user makes this false.
 	std::string target_ip_address;
 	std::string target_port;
@@ -61,6 +61,8 @@ public:
 	const bool& getDeleteThisSpecificPortForward() { return delete_this_specific_port_forward; }
 	const std::string& getDeleteThisSpecificPortForwardPort() { return delete_this_specific_port_forward_port; }
 	const std::string& getDeleteThisSpecificPortForwardProtocol() { return delete_this_specific_port_forward_protocol; }
+	// Specific to -v
+	const bool& getVerboseOutput() { return verbose_output; }
 };
 
 #endif// CommandLineInput_h__

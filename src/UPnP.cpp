@@ -39,8 +39,11 @@
 #endif//_WIN32
 
 
-UPnP::UPnP()
+UPnP::UPnP(bool turn_verbose_output_on)
 {
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
+
 	// Enable socket use on windows.
 	WSAStartup();
 
@@ -57,7 +60,7 @@ UPnP::~UPnP()
 		autoDeletePortForwardRule();
 
 	// Free everything because we are done with them
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Freeing allocated UPnP memory.\n";
 	freeUPNPDevlist(UpnpDevicesList);
 	FreeUPNPUrls(&Urls);
@@ -141,7 +144,7 @@ void UPnP::findUPnPDevices()
 
 	if (UpnpDevicesList)
 	{
-		if (global_verbose == true)
+		if (verbose_output == true)
 		{
 			// Output to console the list of devices found. It is a linked list.
 			for (UPNPDev* Device = UpnpDevicesList; Device != nullptr; Device = Device->pNext)
@@ -180,7 +183,7 @@ int32_t UPnP::findValidIGD()
 	}
 	else
 	{
-		if (global_verbose == true)
+		if (verbose_output == true)
 		{
 			switch (errchk)
 			{
@@ -476,7 +479,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				{
 					// This case will be tried a maximum of try_again_count_limit times.
 					// The port will add +1 to itself every time it encounters this case.
-					if (global_verbose == true)
+					if (verbose_output == true)
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
@@ -499,7 +502,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					// Convert it back to string
 					upnp_my_internal_port = std::to_string(i_internal_port);
 					upnp_my_external_port = std::to_string(i_external_port);
-					if (global_verbose == true)
+					if (verbose_output == true)
 					{
 						std::cout << "Now trying with: upnp_my_external_port == " << upnp_my_external_port << "\n";
 					}
@@ -522,7 +525,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				{
 					// This case will be tried a maximum of try_again_count_limit times.
 					// The port will add +1 to itself every time it encounters this case.
-					if (global_verbose == true)
+					if (verbose_output == true)
 						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
@@ -546,7 +549,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					upnp_my_internal_port = std::to_string(i_internal_port);
 					upnp_my_external_port = std::to_string(i_external_port);
 
-					if (global_verbose == true)
+					if (verbose_output == true)
 					{
 						std::cout << "Now trying with: upnp_my_external_port == " << upnp_my_external_port << "\n";
 					}
@@ -566,7 +569,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				}
 				case 724:	// External and internal ports must match
 				{
-					if (global_verbose == true)
+					if (verbose_output == true)
 						std::cout << "External and internal ports must match. Improvising...\n";
 
 					upnp_my_external_port = upnp_my_internal_port;
@@ -578,7 +581,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				}
 				case 725:	// lease_duration is only supported as "0", aka infinite, on this NAT
 				{
-					if (global_verbose == true)
+					if (verbose_output == true)
 						std::cout << "A timed lease duration is not supported on this NAT. Trying with an infinite duration instead.\n";
 					lease_duration = "0";
 
@@ -620,7 +623,7 @@ int32_t UPnP::autoAddPortForwardRule()
 
 	// Display the port forwarding entry that was just added
 	// This should probably be its own function...
-	if (global_verbose == true)
+	if (verbose_output == true)
 	{
 		// Things necessary for UPNP_GetSpecific_portMappingEntry() to output information to
 		char intClient[40];
@@ -660,7 +663,7 @@ int32_t UPnP::autoAddPortForwardRule()
 }
 
 // Adds a new port forwarding rule.
-// Displays extra information if global_verbose == true.
+// Displays extra information if verbose_output == true.
 int32_t UPnP::standaloneAutoAddPortForwardRule()
 {
 
@@ -675,11 +678,11 @@ int32_t UPnP::standaloneAutoAddPortForwardRule()
 		return -1;
 
 	// Displays various extra information gathered through UPnP
-	if (global_verbose == true)
+	if (verbose_output == true)
 		showInformation();
 
 	// Get list of currently mapped ports for the IGD and output to console.
-	if (global_verbose == true)
+	if (verbose_output == true)
 		getListOfPortForwards();
 
 	// Add the port forward rule

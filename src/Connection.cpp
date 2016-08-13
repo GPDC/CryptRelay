@@ -64,8 +64,11 @@ const int32_t Connection::NOBODY_WON = -25;
 int32_t Connection::global_winner = NOBODY_WON;
 
 
-Connection::Connection(SocketClass* SocketClassInstance)
+Connection::Connection(SocketClass* SocketClassInstance, bool turn_verbose_output_on)
 {
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
+
 	Socket = SocketClassInstance;
 }
 Connection::~Connection()
@@ -79,7 +82,7 @@ Connection::~Connection()
 // /*optional*/ my_internal_port    default value will be assumed
 void Connection::setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
 {
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Giving IP and Port information to the chat program.\n";
 
 	// If empty == false
@@ -220,7 +223,7 @@ void Connection::serverThread()
 		{
 			// Close the socket because the client thread won the race.
 			Socket->closesocket(Socket->fd_socket);
-			if (global_verbose == true)
+			if (verbose_output == true)
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
 			if (ServerConnectionInfo != nullptr)
 				Socket->freeaddrinfo(&ServerConnectionInfo);
@@ -228,7 +231,7 @@ void Connection::serverThread()
 		}
 		else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
 		{
-			if (global_verbose == true)
+			if (verbose_output == true)
 				std::cout << "Attempting to accept a client now that select() returned a readable socket\n";
 
 			SOCKET errchk_socket;
@@ -245,7 +248,7 @@ void Connection::serverThread()
 				return;
 			}
 
-			if (global_verbose == true)
+			if (verbose_output == true)
 				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
 
 			// Assigning global values to let the client thread know it should stop trying.
@@ -435,7 +438,7 @@ void Connection::clientThread()
 				{
 					// Close the socket because the server thread won the race.
 					Socket->closesocket(Socket->fd_socket);
-					if (global_verbose == true)
+					if (verbose_output == true)
 						std::cout << "Closed connect socket, because the winner is: " << global_winner << ". Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
 						Socket->freeaddrinfo(&ClientConnectionInfo);
@@ -448,7 +451,7 @@ void Connection::clientThread()
 					{
 						// Server thread must have won the race
 						Socket->closesocket(Socket->fd_socket);
-						if (global_verbose == true)
+						if (verbose_output == true)
 							std::cout << "Exiting client thread because the server thread won the race.\n";
 						if (ClientConnectionInfo != nullptr)
 							Socket->freeaddrinfo(&ClientConnectionInfo);

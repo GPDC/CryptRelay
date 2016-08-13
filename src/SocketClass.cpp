@@ -42,9 +42,10 @@
 #endif//__linux__
 
 
-SocketClass::SocketClass()
+SocketClass::SocketClass(bool turn_verbose_output_on)
 {
-
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
 }
 SocketClass::~SocketClass()
 {
@@ -106,7 +107,7 @@ void SocketClass::closesocket(SOCKET socket)
 	::closesocket(socket);
 #endif
 
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Closed the socket.\n";
 }
 
@@ -128,7 +129,7 @@ void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
 	*ppAddrInfo = nullptr;	// Set the structure address to nullptr
 							// That will just tell us it is no longer in use
 							// and it is not available to be freed (because it already has been).
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Freed addr info.\n";
 }
 

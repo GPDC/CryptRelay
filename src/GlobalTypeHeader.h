@@ -1,4 +1,13 @@
 // GlobalTypeHeader.h
+
+/***********************************************************/
+// THIS CLASS IS SCHEDULED FOR DELETION ETA: v1_0_0 release.
+// A logging class will be implemented instead, and anything
+// that wants to do logging will use that logging class.
+// It will be functions that will be called; not macros.
+/***********************************************************/
+
+
 #ifndef GlobalTypeHeader_h__
 #define GlobalTypeHeader_h__
 
@@ -19,10 +28,6 @@
 #	define DBG_TXT(x)
 
 #endif//_DEBUG
-
-
-extern bool global_verbose;
-extern bool global_debug;
 
 // if the user wants to exit the program, exit_now == true;
 extern bool exit_now;

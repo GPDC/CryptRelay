@@ -31,9 +31,10 @@
 #endif//_WIN32
 
 
-PortKnock::PortKnock()
+PortKnock::PortKnock(bool turn_verbose_output_on)
 {
-
+	if (turn_verbose_output_on == true)
+		verbose_output = true;
 }
 PortKnock::~PortKnock()
 {
@@ -133,7 +134,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 // return -1, error
 int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 {
-	if (global_verbose == true)
+	if (verbose_output == true)
 		std::cout << "Checking to see if port is open...\n";
 
 	const int32_t IN_USE = 1;

@@ -11,7 +11,7 @@
 // these new features in order to reduce clutter in the rest of the program:
 // 1. Cross platform windows, linux.
 // 2. 
-// 3. if global_verbose == true, cout extra info to command prompt
+// 3. if verbose_output == true, cout extra info to command prompt
 // 4. WSAStartup() is called in the constructor
 // 5. WSACleanup() is called in the deconstructor
 // Please note that means freeaddrinfo() is not being called for you.
@@ -55,8 +55,11 @@ typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Window
 class SocketClass
 {
 public:
-	SocketClass();
+	SocketClass(bool turn_verbose_output_on = false);
 	virtual ~SocketClass();
+
+	// Turn on and off verbose output for this class.
+	bool verbose_output = false;
 
 	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
 	// during specific situations, and if additional information is needed about the current socket it can be accessed.
