@@ -254,10 +254,9 @@ void SocketClass::coutPeerIPAndPort()
 	}
 
 
-
 	// If we are here, we must be connected to someone.
-	char remote_host[NI_MAXHOST];
-	char remote_hosts_port[NI_MAXSERV];
+	char * remote_host = new char[NI_MAXHOST];
+	char * remote_hosts_port = new char[NI_MAXSERV];
 
 	// Let us see the IP:Port we are connecting to. the flag NI_NUMERICSERV
 	// will make it return the port instead of the service name.
@@ -271,6 +270,9 @@ void SocketClass::coutPeerIPAndPort()
 	}
 	else
 		std::cout << "\n\n\n\n\n\n# Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
+
+	delete(remote_host);
+	delete(remote_hosts_port);
 }
 
 // With this method you can enable or disable blocking for a given socket.
