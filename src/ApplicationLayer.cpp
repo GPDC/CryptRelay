@@ -68,8 +68,6 @@ const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_SIZE = 34;
 const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_DATA = 35;
 const int8_t ApplicationLayer::MsgFlags::FILE_TRANSFER_COMPLETE = 36;
 
-
-//
 const int32_t ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND = USHRT_MAX;
 
 //mutex for the send() method.
