@@ -96,8 +96,6 @@ void XBerkeleySockets::freeaddrinfo(addrinfo** ppAddrInfo)
 	*ppAddrInfo = nullptr;	// Set the structure address to nullptr
 							// That will just tell us it is no longer in use
 							// and it is not available to be freed (because it already has been).
-	if (verbose_output == true)
-		std::cout << "Freed addr info.\n";
 }
 
 
