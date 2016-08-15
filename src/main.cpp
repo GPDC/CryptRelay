@@ -62,18 +62,16 @@
 #include "UPnP.h"
 #endif//_WIN32
 
-
+// If the user wants to exit the program, exit_now == true;
 bool exit_now = false;
-
 
 UPnP* Upnp = nullptr;
 FileTransfer* FileXfer = nullptr;
 ApplicationLayer* AppLayer = nullptr;
 CommandLineInput CLI;
 XBerkeleySockets BerkeleySockets;
-Connection ServerConnect(&BerkeleySockets, CLI.getVerboseOutput());
-Connection ClientConnect(&BerkeleySockets, CLI.getVerboseOutput());
-
+Connection * ServerConnect;
+Connection * ClientConnect;
 
 
 // Give Port information, supplied by the user, to the UPnP Class.
@@ -286,7 +284,7 @@ int32_t portForwardUsingUPnP()
 	{
 		// Give IP and port info gathered from the command line and from
 		// the UPnP class to the ServerConnect and ServerConnect instance
-		upnpGivesIPAndPortToChatProgram(&CLI, Upnp, &ServerConnect, &ClientConnect);
+		upnpGivesIPAndPortToChatProgram(&CLI, Upnp, ServerConnect, ClientConnect);
 		return 0; // successful port forward
 	}
 	else
@@ -374,9 +372,25 @@ int32_t endConnection()
 		return -1;
 }
 
+// Callback to set the exit_now variable.
+void setExitNow(bool value)
+{
+	exit_now = value;
+}
+
+// Callback to view the exit_now variable.
+bool& getExitNow()
+{
+	return exit_now;
+}
+
+
 
 int32_t main(int32_t argc, char *argv[])
 {
+	ClientConnect = new Connection(&BerkeleySockets, &getExitNow, &setExitNow, CLI.getVerboseOutput());
+	ServerConnect = new Connection(&BerkeleySockets, &getExitNow, &setExitNow, CLI.getVerboseOutput());
+
 	int32_t errchk = 0;
 
 	// Check what the user wants to do via command line input
@@ -426,7 +440,7 @@ int32_t main(int32_t argc, char *argv[])
 		}
 
 		// Give IP and port info to the ClientConnect and ServerConnect instance
-		cliGivesIPAndPortToChatProgram(&CLI, &ServerConnect, &ClientConnect);
+		cliGivesIPAndPortToChatProgram(&CLI, ServerConnect, ClientConnect);
 	}
 
 	if (CLI.getUseUpnpToConnectToPeer() == true)
@@ -439,8 +453,8 @@ int32_t main(int32_t argc, char *argv[])
 	// Being thread race to attempt a connection with the peer.
 	std::cout << "Attempting to connect to peer...\n";
 
-	std::thread ServerThread = std::thread(&Connection::serverThread, &ServerConnect);
-	std::thread ClientThread = std::thread(&Connection::clientThread, &ClientConnect);
+	std::thread ServerThread = std::thread(&Connection::serverThread, ServerConnect);
+	std::thread ClientThread = std::thread(&Connection::clientThread, ClientConnect);
 
 	// Wait for the Server and Client threads to finish.
 	if (ServerThread.joinable() == true)
@@ -454,11 +468,11 @@ int32_t main(int32_t argc, char *argv[])
 	Connection * WinningConnectionClass = nullptr;
 	if (Connection::global_winner == Connection::CLIENT_WON)
 	{
-		WinningConnectionClass = &ClientConnect;
+		WinningConnectionClass = ClientConnect;
 	}
 	else if (Connection::global_winner == Connection::SERVER_WON)
 	{
-		WinningConnectionClass = &ServerConnect;
+		WinningConnectionClass = ServerConnect;
 	}
 	else
 	{
@@ -467,9 +481,11 @@ int32_t main(int32_t argc, char *argv[])
 		return 1;
 	}
 
-	// Start up the ApplicationLayer, giving it the the SOCKET
+	// Start up the ApplicationLayer, giving it the SOCKET
 	// from the Connection class that won the race.
 	AppLayer = new ApplicationLayer(&BerkeleySockets, WinningConnectionClass->getFdSocket(), CLI.getVerboseOutput());
+	AppLayer->setCallbackGetExitNow(&getExitNow);
+	AppLayer->setCallbackSetExitNow(&setExitNow);
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer
@@ -478,6 +494,8 @@ int32_t main(int32_t argc, char *argv[])
 	UserInput_o.setCallbackStartFileXfer(&startThreadedFileXfer);
 	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
 	UserInput_o.setCallbackEndConnection(&endConnection);
+	UserInput_o.setCallbackGetExitNow(&getExitNow);
+	UserInput_o.setCallbackSetExitNow(&setExitNow);
 
 	// Start getting the user's input.
 	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, &UserInput_o);

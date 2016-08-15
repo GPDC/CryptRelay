@@ -52,12 +52,18 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		{
 		case CHECK_IF_USER_WANTS_TO_EXIT:
 		{
-			if (user_input == "exit()")
+			// Checking if the user or the program wants to exit.
+			if (callbackGetExitNow() == true)
+			{
 				state = EXIT_GRACEFULLY;
-			else if (exit_now == true)
+			}
+			else if (user_input == "exit()")
 				state = EXIT_GRACEFULLY;
 			else
+			{
+				// Neither the user nor the program want to exit.
 				state = CHECK_IF_USER_WANTS_TO_SEND_FILE;
+			}
 
 			break;
 		}
@@ -139,7 +145,16 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 				std::cout << "ERROR: callbackEndConnection == nullptr.\n";
 				DBG_DISPLAY_ERROR_LOCATION();
 			}
-			exit_now = true;
+
+			// Tell the rest of the program that it wants to exit.
+			if (callbackSetExitNow != nullptr)
+				callbackSetExitNow(true);
+			else
+			{
+				std::cout << "Programmer error: callbackSetExitNow == nullptr.\n";
+				DBG_DISPLAY_ERROR_LOCATION();
+			}
+
 			state = BEGINNING_STATE;
 			return GRACEFUL_EXIT;
 		}

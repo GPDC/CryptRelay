@@ -33,8 +33,14 @@ class XBerkeleySockets;
 class Connection
 {
 public:
+	// Typedefs for callbacks
+	typedef void callback_fn_set_exit_now(bool value);
+	typedef bool& callback_fn_get_exit_now();
+
 	Connection(
 		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		callback_fn_get_exit_now * get_exit_now_ptr,
+		callback_fn_set_exit_now * set_exit_now_ptr,
 		bool turn_verbose_output_on = false
 	);
 	virtual ~Connection();
@@ -97,10 +103,17 @@ private:
 	// mutex for use with server and client threads to prevent a race condition.
 	static std::mutex RaceMutex;
 
+
+private:
+	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
+	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
+
 public:
 
 	// Accessors
-	SOCKET getFdSocket() { return fd_socket; } 
+	SOCKET getFdSocket() { return fd_socket; }
+	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
+	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
 };
 
 #endif//Connection_h__

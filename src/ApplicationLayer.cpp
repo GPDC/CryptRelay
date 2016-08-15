@@ -422,7 +422,15 @@ void ApplicationLayer::loopedReceiveMessages()
 			break;
 		}
 	}
-	exit_now = true;
+
+	// Checking if the user or the program wants to exit.
+	if (callbackSetExitNow != nullptr)
+		callbackSetExitNow(true);
+	else
+	{
+		std::cout << "Programmer error: callbackSetExitNow == nullptr.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
 	std::cout << "\n";
 	std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 

@@ -29,7 +29,5 @@
 
 #endif//_DEBUG
 
-// if the user wants to exit the program, exit_now == true;
-extern bool exit_now;
 
 #endif// GlobalTypeHeader_h__

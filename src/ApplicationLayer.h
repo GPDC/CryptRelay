@@ -161,6 +161,27 @@ private:
 
 
 
+public:
+	// Typedefs for callbacks
+	typedef void callback_fn_set_exit_now(bool value);
+	typedef bool& callback_fn_get_exit_now();
+
+private:
+	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
+	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
+
+public:
+
+	// Accessors
+	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
+	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
+
+
+
+
+
+
+
 
 	// ******************************************************************
 	// *             Things related to Recv state machine               *

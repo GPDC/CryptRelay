@@ -59,6 +59,9 @@ public:
 	typedef int64_t callback_fn_send_chat(std::string& user_input); // Send a chat message to the peer.
 	typedef int32_t callback_fn_end_connection();// close() and shutdown() the connected socket.
 
+	typedef void callback_fn_set_exit_now(bool value);
+	typedef bool& callback_fn_get_exit_now();
+
 
 protected:
 private:
@@ -75,6 +78,9 @@ private:
 	callback_fn_send_chat * callbackSendChatMsg = nullptr; // Send a chat message to the peer.
 	callback_fn_end_connection * callbackEndConnection = nullptr; // close() and shutdown() the connected socket.
 
+	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
+	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
+
 
 public:
 
@@ -82,6 +88,9 @@ public:
 	void setCallbackStartFileXfer(callback_fn_start_file_transfer * ptr) { callback_StartThreadedFileXfer = ptr; }
 	void setCallbackSendChatMessage(callback_fn_send_chat * ptr) { callbackSendChatMsg = ptr; }
 	void setCallbackEndConnection(callback_fn_end_connection * ptr) { callbackEndConnection = ptr; }
+
+	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
+	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
 };
 
 #endif//UserInput_h__

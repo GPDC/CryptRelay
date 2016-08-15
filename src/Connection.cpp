@@ -57,8 +57,23 @@ const int32_t Connection::NOBODY_WON = -25;
 int32_t Connection::global_winner = NOBODY_WON;
 
 
-Connection::Connection(XBerkeleySockets* SocketClassInstance, bool turn_verbose_output_on)
+Connection::Connection(XBerkeleySockets* SocketClassInstance,
+						callback_fn_get_exit_now * get_exit_now_ptr,
+						callback_fn_set_exit_now * set_exit_now_ptr,
+						bool turn_verbose_output_on)
 {
+	// Set the callbacks
+	callbackGetExitNow = get_exit_now_ptr;
+	callbackSetExitNow = set_exit_now_ptr;
+
+	// Checking all callbacks for nullptr
+	if (callbackGetExitNow == nullptr
+		|| callbackSetExitNow == nullptr)
+	{
+		std::cout << "callback nullptr, Connection class.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
@@ -357,7 +372,8 @@ void Connection::clientThread()
 		// Attempt to connect to target
 		errno = 0;
 		int32_t conn_return_val = connect(client_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
-		if (exit_now == true)
+		// Checking if the user or the program wants to exit.
+		if (callbackGetExitNow() == true)
 		{
 			Socket->closesocket(client_socket);
 			if (ClientConnectionInfo != nullptr)
@@ -395,7 +411,8 @@ void Connection::clientThread()
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errno = 0;
 				errchk = select(client_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
-				if (exit_now == true)
+				// Checking if the user or the program wants to exit.
+				if (callbackGetExitNow() == true)
 				{
 					Socket->closesocket(client_socket);
 					if (ClientConnectionInfo != nullptr)
