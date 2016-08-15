@@ -86,6 +86,7 @@ public:
 		static const int8_t ENCRYPTED_FILE_DATA;
 		static const int8_t ENCRYPTED_FILE_NAME;
 		static const int8_t ENCRYPTED_FILE_SIZE;
+		static const int8_t FILE_TRANSFER_COMPLETE;
 	};
 
 	// These functions are for doing specific actions with the send() method.
@@ -100,8 +101,9 @@ public:
 	//int64_t sendChat(char * buf, const int32_t BUF_LEN, int32_t message_length);
 	int64_t sendChatStr(std::string& buf);
 	int64_t sendFileName(std::string name_of_file);
-	int32_t sendFileSize(char * buf, const int32_t buf_len, int64_t file_size);
-	int32_t sendFileData(char * buf, const int32_t buf_len, int32_t message_length);
+	int32_t sendFileSize(char * buf, const int32_t BUF_LEN, int64_t file_size);
+	int32_t sendFileData(char * buf, const int32_t BUF_LEN, int32_t message_length);
+	int32_t sendFileTransferComplete(char * buf, const int32_t BUF_LEN);
 
 	// SHOULD THIS BE PUBLIC OR PRIVATE?
 	// Used for copying a host byte order LongLong into the given buffer as a network byte order.
@@ -208,6 +210,7 @@ private:
 		WRITE_FILE_FROM_PEER,
 		TAKE_FILE_NAME_FROM_PEER,
 		TAKE_FILE_SIZE_FROM_PEER,
+		FILE_TRANSFER_COMPLETE,
 		OUTPUT_CHAT_FROM_PEER,
 
 		OPEN_FILE_FOR_WRITE,

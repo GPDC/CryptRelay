@@ -66,6 +66,8 @@ const int8_t ApplicationLayer::MsgFlags::FILE_DATA = 32;
 const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_NAME = 33;
 const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_SIZE = 34;
 const int8_t ApplicationLayer::MsgFlags::ENCRYPTED_FILE_DATA = 35;
+const int8_t ApplicationLayer::MsgFlags::FILE_TRANSFER_COMPLETE = 36;
+
 
 //
 const int32_t ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND = USHRT_MAX;
@@ -317,6 +319,34 @@ int32_t ApplicationLayer::sendFileData(char * buf, const int32_t BUF_LEN, int32_
 	return total_bytes_sent;
 }
 
+// returns -1, error
+// returns 0, success
+int32_t ApplicationLayer::sendFileTransferComplete(char * buf, const int32_t BUF_LEN)
+{
+	if (buf == nullptr)
+	{
+		std::cout << "Error: sendFileSize() given nullptr.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+		return -1;
+	}
+
+	// The peer will know that the file transfer is complete based purely off of the
+	// flag we are giving it, so there is no point in sending a message also.
+	const int32_t FILE_TRANSFER_COMPLETE_MESSAGE_LENGTH = 0;
+	int32_t message_length = FILE_TRANSFER_COMPLETE_MESSAGE_LENGTH;
+
+	// Put the flag and size of the message into the buffer.
+	if (setFlagsAndMsgSize(buf, BUF_LEN, message_length, ApplicationLayer::MsgFlags::FILE_TRANSFER_COMPLETE) == -1)
+	{
+		DBG_DISPLAY_ERROR_LOCATION();
+		return -1;
+	}
+
+	// Send it
+	int32_t total_bytes_sent = sendCharBuf(buf, BUF_LEN, message_length);
+	return total_bytes_sent;
+}
+
 // Using the given variable, it will convert it to network long long and place it into the given buffer.
 int32_t ApplicationLayer::intoBufferHostToNetworkLongLong(char * buf, const int64_t BUF_LEN, int64_t variable_to_convert)
 {
@@ -560,6 +590,8 @@ int64_t ApplicationLayer::sendStrBuf(std::string& str_buf, int64_t message_lengt
 
 
 
+
+
 // ******************************************************************
 // *             Things related to Recv state machine               *
 // ******************************************************************
@@ -569,13 +601,17 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 {
 	position_in_recv_buf = 0;	// the current cursor position inside the buffer.
 
-								// RecvStateMachine
+	// RecvStateMachine
 	while (1)
 	{
 		switch (state)
 		{
 		case WRITE_FILE_FROM_PEER:
 		{
+			if (position_in_recv_buf >= received_bytes)
+			{
+				return 0; // go recv() again to get more bytes
+			}
 			if (position_in_message < message_size)
 			{
 				int64_t amount_to_write = message_size - position_in_message;
@@ -609,17 +645,6 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 					total_bytes_written_to_file += bytes_written;
 					position_in_message += bytes_written;
 					position_in_recv_buf += bytes_written;
-
-					if (total_bytes_written_to_file >= incoming_file_size_from_peer)
-					{
-						std::cout << "Finished receiving file from peer.\n";
-						std::cout << "Expected " << incoming_file_size_from_peer << ".\n";
-						std::cout << "Wrote " << total_bytes_written_to_file << "\n";
-						std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
-						state = CLOSE_FILE_FOR_WRITE;
-						is_file_done_being_written = true;
-						break;
-					}
 				}
 			}
 
@@ -646,7 +671,8 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// Print out the message to terminal
 			std::cout << "\n";
 			std::cout << "Peer: ";
-			for (; (position_in_recv_buf < received_bytes) && (position_in_message < message_size);
+			for (;
+				(position_in_recv_buf < received_bytes) && (position_in_message < message_size);
 				++position_in_recv_buf, ++position_in_message)
 			{
 				std::cout << recv_buf[position_in_recv_buf];
@@ -682,6 +708,10 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			{
 				incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
 			}
+
+			if (position_in_recv_buf >= received_bytes)
+				return 0;
+
 			// If the file name was too big, then say so, but don't error.
 			if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
 			{
@@ -737,6 +767,28 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 
 			state = OPEN_FILE_FOR_WRITE;
+			break;
+		}
+		case FILE_TRANSFER_COMPLETE:
+		{
+			// Finished receiving the file.
+			std::cout << "Finished receiving file from peer.\n";
+			std::cout << "Expected " << incoming_file_size_from_peer << ".\n";
+			std::cout << "Wrote " << total_bytes_written_to_file << "\n";
+			std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
+
+			// If it didn't write as many bytes as it thought it should
+			if (incoming_file_size_from_peer - total_bytes_written_to_file != 0)
+			{
+				std::cout << "# File transfer from peer is INCOMPLETE and will not recover: " << incoming_file_name_from_peer << "\n";
+			}
+			else
+			{
+				// Everything is fine, tell the user it is complete.
+				std::cout << "# File transfer from peer is complete: " << incoming_file_name_from_peer << "\n";
+			}
+
+			state = CLOSE_FILE_FOR_WRITE;
 			break;
 		}
 		case CHECK_FOR_FLAG:
@@ -796,6 +848,8 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 					state = TAKE_FILE_NAME_FROM_PEER;
 				else if (message_flag == ApplicationLayer::MsgFlags::FILE_SIZE)
 					state = TAKE_FILE_SIZE_FROM_PEER;
+				else if (message_flag == ApplicationLayer::MsgFlags::FILE_TRANSFER_COMPLETE)
+					state = FILE_TRANSFER_COMPLETE;
 				else if (message_flag == ApplicationLayer::MsgFlags::CHAT)
 					state = OUTPUT_CHAT_FROM_PEER;
 				else
@@ -805,10 +859,6 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 					break;
 				}
 
-				if (position_in_recv_buf >= received_bytes)
-				{
-					return 0;
-				}
 				break;
 			}
 
@@ -831,6 +881,9 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 
 			is_file_done_being_written = false;
+
+			// Set it back to default value
+			total_bytes_written_to_file = 0;
 
 			// must have a new message from the peer if this is true
 			if (position_in_message == message_size)
@@ -857,6 +910,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// Set it back to default value
 			total_bytes_written_to_file = 0;
 
+			is_file_done_being_written = true;
 
 			if (position_in_message < message_size)
 			{
@@ -865,7 +919,6 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			if (position_in_message == message_size)
 			{
 				DBG_TXT("position_in_message == message_size, everything A OK closefileforwrite");
-				std::cout << "# File transfer from peer is complete: " << incoming_file_name_from_peer << "\n";
 			}
 			if (position_in_message > message_size)
 			{

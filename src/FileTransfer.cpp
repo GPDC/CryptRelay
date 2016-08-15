@@ -195,6 +195,13 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 		// then it didn't write as much as it read for some reason.
 	} while (bytes_read > 0 && bytes_sent > 0);
 
+	// Tell the peer that the file transfer has been completed.
+	if (AppLayer->sendFileTransferComplete(buf, BUF_LEN) == -1)
+	{
+		std::cout << "Failed to tell the peer that the file transfer has completed.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+
 	// Please implement sha hash checking here to make sure the file is legit.
 
 	std::cout << "Total bytes of the file sent: " << total_file_bytes_sent << "\n";
@@ -204,8 +211,8 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	// Check if it errored while reading from the file.
 	if (ferror(ReadFile))
 	{
-		DBG_DISPLAY_ERROR_LOCATION();
 		perror("Read error copying file");
+		DBG_DISPLAY_ERROR_LOCATION();
 	}
 	else // successful transfer
 	{
