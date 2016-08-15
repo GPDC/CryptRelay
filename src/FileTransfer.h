@@ -29,6 +29,15 @@ class ApplicationLayer;
 
 class FileTransfer
 {
+	// Typedef section
+private:
+#ifdef _WIN32
+	typedef struct _stat64 xplatform_struct_stat;
+#endif//WIN32
+#ifdef __linux__
+	typedef struct stat xplatform_struct_stat;
+#endif//__linux__
+
 public:
 	FileTransfer(ApplicationLayer* AppLayer, std::string file_name_and_path, bool send_file_bool, bool turn_verbose_output_on = false);
 	virtual ~FileTransfer();
@@ -50,13 +59,6 @@ private:
 	// Prevent anyone from copying this class.
 	FileTransfer(FileTransfer& FileTransferInstance) = delete;			   // disable copy operator
 	FileTransfer& operator=(FileTransfer& FileTransferInstance) = delete;  // disable assignment operator
-
-#ifdef _WIN32
-	typedef struct _stat64 xplatform_struct_stat;
-#endif//WIN32
-#ifdef __linux__
-	typedef struct stat xplatform_struct_stat;
-#endif//__linux__
 
 	const int32_t MAX_FILENAME_LENGTH = 255;
 

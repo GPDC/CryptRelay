@@ -32,11 +32,23 @@ class XBerkeleySockets;
 
 class Connection
 {
+	// Typedef section
 public:
-	// Typedefs for callbacks
+	// Callback typedefs
 	typedef void callback_fn_set_exit_now(bool value);
 	typedef bool& callback_fn_get_exit_now();
 
+private:
+//#ifdef _WIN32
+//	typedef struct _stat64 xplatform_struct_stat;
+//#endif//WIN32
+//#ifdef __linux__
+//	typedef struct stat xplatform_struct_stat;
+//#endif//__linux__
+
+
+
+public:
 	Connection(
 		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		callback_fn_get_exit_now * get_exit_now_ptr,
@@ -76,14 +88,6 @@ private:
 	// Prevent anyone from copying this class.
 	Connection(Connection& ConnectionInstance) = delete;			 // disable copy operator
 	Connection& operator=(Connection& ConnectionInstance) = delete;  // disable assignment operator
-
-
-#ifdef _WIN32
-	typedef struct _stat64 xplatform_struct_stat;
-#endif//WIN32
-#ifdef __linux__
-	typedef struct stat xplatform_struct_stat;
-#endif//__linux__
 
 	XBerkeleySockets * Socket;
 

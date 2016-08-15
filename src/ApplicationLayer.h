@@ -33,6 +33,12 @@ class XBerkeleySockets;
 // ApplicationLayer class is for sending and receiving things to the peer.
 class ApplicationLayer
 {
+	// Typedef section
+public:
+	// Typedefs for callbacks
+	typedef void callback_fn_set_exit_now(bool value);
+	typedef bool& callback_fn_get_exit_now();
+
 public:
 	
 	ApplicationLayer(
@@ -159,12 +165,6 @@ private:
 	WSADATA wsaData;	// for WSAStartup();
 #endif//_WIN32
 
-
-
-public:
-	// Typedefs for callbacks
-	typedef void callback_fn_set_exit_now(bool value);
-	typedef bool& callback_fn_get_exit_now();
 
 private:
 	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
