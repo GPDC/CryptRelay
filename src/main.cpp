@@ -240,7 +240,7 @@ int32_t portForwardUsingUPnP()
 	// that the Connection will use.
 	if (CLI.getMyHostPort().empty() == true)
 	{
-		PortKnock PortTest(CLI.getVerboseOutput());
+		PortKnock PortTest(&BerkeleySockets, CLI.getVerboseOutput());
 		const int32_t IN_USE = 1;
 		int32_t my_port_int = 0;
 		const int32_t ATTEMPT_COUNT = 20;

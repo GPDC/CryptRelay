@@ -10,10 +10,13 @@
 
 #include "CommandLineInput.h"
 
+// Forward declaration
+class XBerkeleySockets;
+
 class PortKnock
 {
 public:
-	PortKnock(bool turn_verbose_output_on = false);
+	PortKnock(XBerkeleySockets * XBerkeleySocketsInstance, bool turn_verbose_output_on = false);
 	virtual ~PortKnock();
 
 	// Turn on and off verbose output for this class.
@@ -31,6 +34,8 @@ private:
 	// Prevent anyone from copying this class
 	PortKnock(PortKnock& PortKnockInstance) = delete; // Delete copy operator
 	PortKnock& operator=(PortKnock& PortKnockInstance) = delete; // Delete assignment operator
+
+	XBerkeleySockets * BerkeleySockets = nullptr;
 };
 
 #endif//PortKnock_h__
