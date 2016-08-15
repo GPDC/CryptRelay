@@ -16,7 +16,10 @@ class XBerkeleySockets;
 class PortKnock
 {
 public:
-	PortKnock(XBerkeleySockets * XBerkeleySocketsInstance, bool turn_verbose_output_on = false);
+	PortKnock(
+		XBerkeleySockets * XBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		bool turn_verbose_output_on = false
+	);
 	virtual ~PortKnock();
 
 	// Turn on and off verbose output for this class.

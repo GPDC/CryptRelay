@@ -33,7 +33,10 @@ class XBerkeleySockets;
 class Connection
 {
 public:
-	Connection(XBerkeleySockets* SocketClassInstance, bool turn_verbose_output_on = false);
+	Connection(
+		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		bool turn_verbose_output_on = false
+	);
 	virtual ~Connection();
 
 	// Turn on and off verbose output for this class.
