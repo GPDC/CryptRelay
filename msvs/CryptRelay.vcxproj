@@ -28,7 +28,7 @@
     <ClInclude Include="..\src\ApplicationLayer.h" />
     <ClInclude Include="..\src\StringManip.h" />
     <ClInclude Include="..\src\PortKnock.h" />
-    <ClInclude Include="..\src\SocketClass.h" />
+    <ClInclude Include="..\src\XBerkeleySockets.h" />
     <ClInclude Include="..\src\UPnP.h" />
   </ItemGroup>
   <ItemGroup>
@@ -40,7 +40,7 @@
     <ClCompile Include="..\src\main.cpp" />
     <ClCompile Include="..\src\PortKnock.cpp" />
     <ClCompile Include="..\src\ApplicationLayer.cpp" />
-    <ClCompile Include="..\src\SocketClass.cpp" />
+    <ClCompile Include="..\src\XBerkeleySockets.cpp" />
     <ClCompile Include="..\src\StringManip.cpp" />
     <ClCompile Include="..\src\UPnP.cpp" />
   </ItemGroup>

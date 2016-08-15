@@ -100,7 +100,7 @@ void UPnP::standaloneGetListOfPortForwards()
 void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* internet_protocol)
 {
 	// Enable socket use on Windows
-	// This is already done in the SocketClass constructor.
+	// This is already done in the XBerkeleySockets constructor.
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();
@@ -668,7 +668,7 @@ int32_t UPnP::standaloneAutoAddPortForwardRule()
 {
 
 	// Enable socket use on Windows
-	// this is already done in SocketClass constructor
+	// this is already done in XBerkeleySockets constructor
 
 	// Find UPnP devices on the local network
 	findUPnPDevices();

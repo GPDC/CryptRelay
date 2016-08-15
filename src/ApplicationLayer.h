@@ -28,15 +28,15 @@
 
 
 // Forward declaration
-class SocketClass;
+class XBerkeleySockets;
 
 // ApplicationLayer class is for sending and receiving things to the peer.
 class ApplicationLayer
 {
 public:
 
-	// SocketClass in the constructor because
-	ApplicationLayer(SocketClass* SocketClassInstance, bool turn_verbose_output_on = false);
+	// XBerkeleySockets in the constructor because
+	ApplicationLayer(XBerkeleySockets* SocketClassInstance, SOCKET socket, bool turn_verbose_output_on = false);
 	~ApplicationLayer();
 
 	// Turn on and off verbose output for this class.
@@ -136,7 +136,9 @@ private:
 	int32_t bytes_sent = 0;
 	static std::mutex SendMutex;
 
-	SocketClass * Socket;
+	XBerkeleySockets * Socket;
+
+	SOCKET fd_socket;
 
 
 	// It puts the flag and size of the message into the given buffer.

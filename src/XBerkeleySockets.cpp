@@ -1,4 +1,4 @@
-// SocketClass.cpp
+// XBerkeleySockets.cpp
 
 #ifdef __linux__
 #include <iostream>
@@ -17,7 +17,7 @@
 #include <signal.h>
 #include <sys/fcntl.h>
 
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
 
@@ -27,7 +27,7 @@
 #include <stdio.h>
 #include <iostream>
 
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
@@ -37,54 +37,22 @@
 #pragma comment(lib, "AdvApi32.lib")
 #endif//_WIN32
 
-#ifdef __linux__
-#define WSAETIMEDOUT 10060	// possibly temporary... recvfrom() isn't being used?
-#endif//__linux__
 
-
-SocketClass::SocketClass(bool turn_verbose_output_on)
+XBerkeleySockets::XBerkeleySockets(bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 }
-SocketClass::~SocketClass()
+XBerkeleySockets::~XBerkeleySockets()
 {
 
 }
 
-// TCP use, not UDP
-SOCKET SocketClass::accept()
-{
-#ifdef __linux__
-	socklen_t addr_size;
-#endif//__linux__
-#ifdef _WIN32
-	int32_t addr_size;
-#endif//_WIN32
-	sockaddr_storage incomingAddr;
-	memset(&incomingAddr, 0, sizeof(incomingAddr));
-
-	addr_size = sizeof(incomingAddr);
-
-	// Accept a client socket by listening on a socket
-	SOCKET accepted_socket = ::accept(fd_socket, (sockaddr*)&incomingAddr, &addr_size);
-	if (accepted_socket == INVALID_SOCKET)
-	{
-		return INVALID_SOCKET;
-	}
-
-	// Now close the old listening SOCKET
-	closesocket(fd_socket);
-	// Assign fd_socket the newly accepted SOCKET
-	fd_socket = accepted_socket;
-
-	return fd_socket;
-}
 
 // Shuts down the current connection that is active on the given socket.
 // The shutdown operation is one of three macros.
 // SD_RECEIVE, SD_SEND, SD_BOTH.
-int32_t SocketClass::shutdown(SOCKET socket, int32_t operation)
+int32_t XBerkeleySockets::shutdown(SOCKET socket, int32_t operation)
 {
 	std::cout << "Shutting down the connection... ";
 	// shutdown the connection since we're done
@@ -97,7 +65,7 @@ int32_t SocketClass::shutdown(SOCKET socket, int32_t operation)
 	return 0;
 }
 
-void SocketClass::closesocket(SOCKET socket)
+void XBerkeleySockets::closesocket(SOCKET socket)
 {
 #ifdef __linux__
 	::close(socket);
@@ -120,9 +88,8 @@ void SocketClass::closesocket(SOCKET socket)
 // getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
 // 	if (ServerConnectionInfo != nullptr)
 //		Socket->freeaddrinfo(&ServerConnectionInfo);
-//
 // Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
-void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
+void XBerkeleySockets::freeaddrinfo(addrinfo** ppAddrInfo)
 {
 	::freeaddrinfo(*ppAddrInfo);
 
@@ -141,7 +108,7 @@ void SocketClass::freeaddrinfo(addrinfo** ppAddrInfo)
 // On linux, this function returns errno codes.
 // getError() will output the error code + description unless
 // output_to_console arg is given false.
-int32_t SocketClass::getError(bool output_to_console)
+int32_t XBerkeleySockets::getError(bool output_to_console)
 {
 	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
 	// that WSAStartup() has been performed. WSAGetLastError() doesn't work unless you start WSAStartup();
@@ -169,9 +136,10 @@ int32_t SocketClass::getError(bool output_to_console)
 #endif//_WIN32
 }
 
+// Attempts to output a description for the error code.
 // On windows it expects a WSAERROR code.
 // On linux it expects an errno code.
-void SocketClass::outputSocketErrorToConsole(int32_t error_code)
+void XBerkeleySockets::outputSocketErrorToConsole(int32_t error_code)
 {
 #ifdef __linux__
 	// Buffer for strerror_r() to put text into.
@@ -232,7 +200,7 @@ void SocketClass::outputSocketErrorToConsole(int32_t error_code)
 }
 
 // Output to console the the peer's IP and port that you have connected to the peer with.
-void SocketClass::coutPeerIPAndPort()
+void XBerkeleySockets::coutPeerIPAndPort(SOCKET connection_with_peer)
 {
 	sockaddr PeerIPAndPortStorage;
 #ifdef _WIN32
@@ -244,7 +212,7 @@ void SocketClass::coutPeerIPAndPort()
 	memset(&PeerIPAndPortStorage, 0, peer_ip_and_port_storage_len);
 
 	// getting the peer's ip and port info and placing it into the PeerIPAndPortStorage sockaddr structure
-	int32_t errchk = getpeername(fd_socket, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
+	int32_t errchk = getpeername(connection_with_peer, &PeerIPAndPortStorage, &peer_ip_and_port_storage_len);
 	if (errchk == -1)
 	{
 		getError();
@@ -278,7 +246,9 @@ void SocketClass::coutPeerIPAndPort()
 // With this method you can enable or disable blocking for a given socket.
 // DISABLE_BLOCKING == 1;
 // ENABLE_BLOCKING == 0;
-int32_t SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
+// returns 0, success
+// returns -1, error
+int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 {
 
 #ifdef _WIN32
@@ -361,7 +331,7 @@ int32_t SocketClass::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 }
 
 // Get error information from the socket.
-int32_t SocketClass::getSockOptError(SOCKET fd_socket)
+int32_t XBerkeleySockets::getSockOptError(SOCKET fd_socket)
 {
 #ifdef _WIN32
 	char errorz = 0;

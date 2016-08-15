@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "ApplicationLayer.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
 
@@ -20,7 +20,7 @@
 #include <limits.h>
 
 #include "ApplicationLayer.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
@@ -74,7 +74,7 @@ const int32_t ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND = USHRT_MAX;
 std::mutex ApplicationLayer::SendMutex;
 
 
-ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance, bool turn_verbose_output_on)
+ApplicationLayer::ApplicationLayer(XBerkeleySockets* SocketClassInstance, SOCKET socket_z, bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
@@ -83,6 +83,8 @@ ApplicationLayer::ApplicationLayer(SocketClass* SocketClassInstance, bool turn_v
 	WSAStartup();
 
 	Socket = SocketClassInstance;
+
+	fd_socket = socket_z;
 
 	// Specific to the ProcessRecvBuf state machine
 	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
@@ -193,13 +195,13 @@ int32_t ApplicationLayer::send(const char * sendbuf, int32_t amount_to_send)
 	
 	do
 	{
-		bytes_sent = ::send(Socket->fd_socket, sendbuf, amount_to_send, 0);
+		bytes_sent = ::send(fd_socket, sendbuf, amount_to_send, 0);
 		if (bytes_sent == SOCKET_ERROR)
 		{
 			Socket->getError();
 			perror("ERROR: send() failed.");
 			DBG_DISPLAY_ERROR_LOCATION();
-			Socket->closesocket(Socket->fd_socket);
+			Socket->closesocket(fd_socket);
 			SendMutex.unlock();
 			return SOCKET_ERROR;
 		}
@@ -365,7 +367,7 @@ void ApplicationLayer::loopedReceiveMessages()
 	int32_t bytes = 0;
 	while (1)
 	{
-		bytes = recv(Socket->fd_socket, (char *)recv_buf, recv_buf_len, 0);
+		bytes = recv(fd_socket, (char *)recv_buf, recv_buf_len, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
@@ -433,15 +435,15 @@ int32_t ApplicationLayer::endConnection()
 	// This will shutdown the connection on the socket.
 	// closesocket() will interrupt recv() if it is currently blocking.
 	// Done communicating with peer. Proceeding to exit.
-	if (Socket->shutdown(Socket->fd_socket, SD_BOTH) == -1)	// SD_BOTH == shutdown both send and receive on the socket.
+	if (Socket->shutdown(fd_socket, SD_BOTH) == -1)	// SD_BOTH == shutdown both send and receive on the socket.
 	{
 		Socket->getError();
 		std::cout << "Error: shutdown() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(Socket->fd_socket);
+		Socket->closesocket(fd_socket);
 		return -1;
 	}
-	Socket->closesocket(Socket->fd_socket);
+	Socket->closesocket(fd_socket);
 
 	return 0;
 }

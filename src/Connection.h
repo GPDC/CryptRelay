@@ -2,10 +2,7 @@
 
 // Overview:
 // This is where the program will make a connection with the peer.
-// It uses SocketClass to store SOCKET information.
-
-// Warnings:
-// This source file does not do any input validation.
+// It uses XBerkeleySockets to store SOCKET information.
 
 // Terminology:
 // Socket is an end-point that is defined by an IP-address and port.
@@ -31,12 +28,12 @@
 
 
 // Forward declaration
-class SocketClass;
+class XBerkeleySockets;
 
 class Connection
 {
 public:
-	Connection(SocketClass* SocketClassInstance, bool turn_verbose_output_on = false);
+	Connection(XBerkeleySockets* SocketClassInstance, bool turn_verbose_output_on = false);
 	virtual ~Connection();
 
 	// Turn on and off verbose output for this class.
@@ -58,8 +55,8 @@ public:
 	static const int32_t NOBODY_WON;
 
 	// IP and port information can be given to the Connection class through these variables.
-	std::string target_external_ip;						// If the option to use LAN only == true, this is target's local ip
-	std::string target_external_port = DEFAULT_PORT;	// If the option to use LAN only == true, this is target's local port
+	std::string target_external_ip;
+	std::string target_external_port = DEFAULT_PORT;
 	std::string my_external_ip;
 	std::string my_local_ip;
 	std::string my_local_port = DEFAULT_PORT;
@@ -79,8 +76,13 @@ private:
 	typedef struct stat xplatform_struct_stat;
 #endif//__linux__
 
-	SocketClass * Socket;
+	XBerkeleySockets * Socket;
 
+	// If a connection has successfully been established, this socket will
+	// be the one that it is established on. If it isn't, it will be INVALID_SOCKET.
+	SOCKET fd_socket = INVALID_SOCKET;
+
+	// This is the default port for the Connection class.
 	static const std::string DEFAULT_PORT;
 
 	// Server and Client thread must use this function to prevent
@@ -91,6 +93,11 @@ private:
 	static std::mutex SendMutex;
 	// mutex for use with server and client threads to prevent a race condition.
 	static std::mutex RaceMutex;
+
+public:
+
+	// Accessors
+	SOCKET getFdSocket() { return fd_socket; } 
 };
 
 #endif//Connection_h__

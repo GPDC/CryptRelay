@@ -1,30 +1,17 @@
-// SocketClass.h
-
-// I'm really doubting the usefuless of a class like this.
-// I mean it does make the code smaller in chat_program
-// and therefore easier to skim over and see what is going on.
+// XBerkeleySockets.h
 
 // Overview:
-// Purpose of this class is to place all sockets related things here, and take
-// the normal socket API (winsock, linux sockets) and provide
-// a slightly higher level function to replace them. The functions will include
-// these new features in order to reduce clutter in the rest of the program:
-// 1. Cross platform windows, linux.
-// 2. 
-// 3. if verbose_output == true, cout extra info to command prompt
-// 4. WSAStartup() is called in the constructor
-// 5. WSACleanup() is called in the deconstructor
-// Please note that means freeaddrinfo() is not being called for you.
-// Whoever is using this class will need to
-// call freeaddrinfo(addrinfo* ) when they need to.
+// Purpose of this class is to make cross platform versions of
+// the Berkeley Sockets API. The 'X' in the class name stands
+// for X-platform, or cross-platform.
 
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
 // fd stands for File Descriptor. It is linux's version of a SOCKET.
 
 
-#ifndef SocketClass_h__
-#define SocketClass_h__
+#ifndef XBerkeleySockets_h__
+#define XBerkeleySockets_h__
 
 
 #ifdef __linux__
@@ -52,22 +39,14 @@ typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Window
 #endif//__linux__
 
 
-class SocketClass
+class XBerkeleySockets
 {
 public:
-	SocketClass(bool turn_verbose_output_on = false);
-	virtual ~SocketClass();
+	XBerkeleySockets(bool turn_verbose_output_on = false);
+	virtual ~XBerkeleySockets();
 
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;
-
-	// Currently, the only time something from outside this class will use fd_socket will be to closesocket()
-	// during specific situations, and if additional information is needed about the current socket it can be accessed.
-	SOCKET fd_socket = INVALID_SOCKET;
-
-
-	// Cross-platform accept(), and assigns fd_socket to the newly accept()ed socket.
-	SOCKET accept();
 
 	// Outputs to console that the connection is being shutdown
 	// in addition to the normal shutdown() behavior.
@@ -89,7 +68,7 @@ public:
 	// In order to avoid doing that, check for a nullptr first.
 	// If nullptr, it has already been freed.
 	void freeaddrinfo(addrinfo** ppAddrInfo);
-	void coutPeerIPAndPort();
+	void coutPeerIPAndPort(SOCKET connection_with_peer);
 
 
 	// getError() 99% of cases you won't need to do anything with the return value.
@@ -106,8 +85,8 @@ public:
 	// Enable or disable the blocking socket option.
 	// By default, blocking is enabled.
 	int32_t setBlockingSocketOpt(SOCKET socket, const u_long* option);
-	const u_long DISABLE_BLOCKING = 1;
-	const u_long ENABLE_BLOCKING = 0;
+	const unsigned long DISABLE_BLOCKING = 1;
+	const unsigned long ENABLE_BLOCKING = 0;
 
 	// Get error information from the socket.
 	int32_t getSockOptError(SOCKET fd_socket);
@@ -117,8 +96,8 @@ protected:
 private:
 
 	// Prevent anyone from copying this class.
-	SocketClass(SocketClass& SocketClassInstance) = delete;			   // disable copy operator
-	SocketClass& operator=(SocketClass& SocketClassInstance) = delete; // disable assignment operator
+	XBerkeleySockets(XBerkeleySockets& SocketClassInstance) = delete;			   // disable copy operator
+	XBerkeleySockets& operator=(XBerkeleySockets& SocketClassInstance) = delete; // disable assignment operator
 };
 
-#endif//SocketClass_h__
+#endif//XBerkeleySockets_h__

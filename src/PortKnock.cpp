@@ -15,7 +15,7 @@
 #include <signal.h>
 
 #include "PortKnock.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
 
@@ -26,7 +26,7 @@
 #include <iostream>
 
 #include "PortKnock.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
@@ -46,7 +46,7 @@ PortKnock::~PortKnock()
 // returns 1 if port is in use
 int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_local_ip)
 {
-	SocketClass Socket;
+	XBerkeleySockets Socket;
 	const int32_t IN_USE = 1;
 	const int32_t AVAILABLE = 0;
 	addrinfo ServerHints;
@@ -73,8 +73,8 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		
 
 	// Create socket
-	Socket.fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
-	if (Socket.fd_socket == INVALID_SOCKET || Socket.fd_socket == SOCKET_ERROR)
+	SOCKET fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
+	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
 		Socket.getError();
 		std::cout << "socket() failed.\n";
@@ -88,7 +88,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int32_t errchk = bind(Socket.fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen);
+	int32_t errchk = bind(fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 
@@ -96,7 +96,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = errno;		//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)
 		{
-			Socket.closesocket(Socket.fd_socket);
+			Socket.closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -110,7 +110,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			Socket.closesocket(Socket.fd_socket);
+			Socket.closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -124,7 +124,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	}
 
 	// No errors, must be available
-	Socket.closesocket(Socket.fd_socket);
+	Socket.closesocket(fd_socket);
 	return AVAILABLE;
 }
 
@@ -139,7 +139,7 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 
 	const int32_t IN_USE = 1;
 	const int32_t AVAILABLE = 0;
-	SocketClass Socket;
+	XBerkeleySockets Socket;
 	addrinfo ClientHints;
 	addrinfo* ClientConnectionInfo = nullptr;
 	memset(&ClientHints, 0, sizeof(ClientHints));
@@ -161,8 +161,8 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 
 	// Create socket
-	Socket.fd_socket = socket(ClientHints.ai_family, ClientHints.ai_socktype, ClientHints.ai_protocol);
-	if (Socket.fd_socket == INVALID_SOCKET || Socket.fd_socket == SOCKET_ERROR)
+	SOCKET fd_socket = socket(ClientHints.ai_family, ClientHints.ai_socktype, ClientHints.ai_protocol);
+	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
 		Socket.getError();
 		std::cout << "socket() failed. isPortOpen() failed.\n";
@@ -173,18 +173,18 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 
 	// If connection is successful, it must be an open port
-	int32_t errchk = connect(Socket.fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+	int32_t errchk = connect(fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
-		Socket.closesocket(Socket.fd_socket);
+		Socket.closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
 			Socket.freeaddrinfo(&ClientConnectionInfo);
 		return 0;
 	}
 	else // connected
 	{
-		Socket.shutdown(Socket.fd_socket, SD_BOTH);
-		Socket.closesocket(Socket.fd_socket);
+		Socket.shutdown(fd_socket, SD_BOTH);
+		Socket.closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
 			Socket.freeaddrinfo(&ClientConnectionInfo);
 		return 1;

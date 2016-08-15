@@ -31,7 +31,7 @@
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "Connection.h"
 #include "PortKnock.h"
 #include "UserInput.h"
@@ -52,7 +52,7 @@
 
 #include "GlobalTypeHeader.h"
 #include "CommandLineInput.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #include "Connection.h"
 #include "PortKnock.h"
 #include "UserInput.h"
@@ -70,10 +70,9 @@ UPnP* Upnp = nullptr;
 FileTransfer* FileXfer = nullptr;
 ApplicationLayer* AppLayer = nullptr;
 CommandLineInput CLI;
-SocketClass ServerSocket(CLI.getVerboseOutput());
-SocketClass ClientSocket(CLI.getVerboseOutput());
-Connection ServerConnect(&ServerSocket, CLI.getVerboseOutput());
-Connection ClientConnect(&ClientSocket, CLI.getVerboseOutput());
+XBerkeleySockets BerkeleySockets(CLI.getVerboseOutput());
+Connection ServerConnect(&BerkeleySockets, CLI.getVerboseOutput());
+Connection ClientConnect(&BerkeleySockets, CLI.getVerboseOutput());
 
 
 
@@ -452,14 +451,14 @@ int32_t main(int32_t argc, char *argv[])
 	// Server and Client thread must have finished and set the
 	// global_winner variable. Let's see which one won the race.
 	// From now on we use the winner's socket that they are connected on.
-	SocketClass* WinningSocket = nullptr;
+	Connection * WinningConnectionClass = nullptr;
 	if (Connection::global_winner == Connection::CLIENT_WON)
 	{
-		WinningSocket = &ClientSocket;
+		WinningConnectionClass = &ClientConnect;
 	}
 	else if (Connection::global_winner == Connection::SERVER_WON)
 	{
-		WinningSocket = &ServerSocket;
+		WinningConnectionClass = &ServerConnect;
 	}
 	else
 	{
@@ -468,9 +467,9 @@ int32_t main(int32_t argc, char *argv[])
 		return 1;
 	}
 
-	// Start up the ApplicationLayer, giving it the SocketClass
-	// instance which contains the socket that won the race.
-	AppLayer = new ApplicationLayer(WinningSocket, CLI.getVerboseOutput());
+	// Start up the ApplicationLayer, giving it the the SOCKET
+	// from the Connection class that won the race.
+	AppLayer = new ApplicationLayer(&BerkeleySockets, WinningConnectionClass->getFdSocket(), CLI.getVerboseOutput());
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer

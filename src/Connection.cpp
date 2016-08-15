@@ -15,9 +15,7 @@
 
 #include "Connection.h"
 #include "GlobalTypeHeader.h"
-#include "StringManip.h"
-#include "UPnP.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #endif //__linux__
 
 #ifdef _WIN32
@@ -30,9 +28,7 @@
 
 #include "Connection.h"
 #include "GlobalTypeHeader.h"
-#include "StringManip.h"
-#include "UPnP.h"
-#include "SocketClass.h"
+#include "XBerkeleySockets.h"
 #endif //_WIN32
 
 
@@ -51,10 +47,7 @@ std::mutex Connection::SendMutex;
 std::mutex Connection::RaceMutex;
 
 
-// This is the default port for the Connection as long as
-// Connection isn't given any port from the UPnP class,
-// which has its own default port, or given any port from the
-// command line.
+// This is the default port for the Connection class.
 const std::string Connection::DEFAULT_PORT = "30248";
 
 // Variables necessary for determining who won the connection race
@@ -64,7 +57,7 @@ const int32_t Connection::NOBODY_WON = -25;
 int32_t Connection::global_winner = NOBODY_WON;
 
 
-Connection::Connection(SocketClass* SocketClassInstance, bool turn_verbose_output_on)
+Connection::Connection(XBerkeleySockets* SocketClassInstance, bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
@@ -136,9 +129,9 @@ void Connection::serverThread()
 	}
 
 
-	// Create socket
-	Socket->fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
-	if (Socket->fd_socket == INVALID_SOCKET || Socket->fd_socket == SOCKET_ERROR)
+	// Create a socket
+	SOCKET listening_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
+	if (listening_socket == INVALID_SOCKET || listening_socket == SOCKET_ERROR)
 	{
 		Socket->getError();
 		std::cout << "socket() failed.\n";
@@ -150,13 +143,14 @@ void Connection::serverThread()
 
 
 	// Assign the socket to an address:port
-	// Binding the socket to the user's local address
-	if (bind(Socket->fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
+	// Since it is a socket that we are going to be listening for
+	// a connection on, we shall bind the socket to the user's local address
+	if (bind(listening_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
 	{
 		Socket->getError();
 		std::cout << "bind() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(Socket->fd_socket);
+		Socket->closesocket(listening_socket);
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
 		std::cout << "Exiting server thread.\n";
@@ -167,12 +161,12 @@ void Connection::serverThread()
 	// SOMAXCONN == max length of queue of pending connections.
 	// It means that the underlying service provider responsible for the socket
 	// will set it to a reasonable value.
-	if (listen(Socket->fd_socket, SOMAXCONN) == SOCKET_ERROR)
+	if (listen(listening_socket, SOMAXCONN) == SOCKET_ERROR)
 	{
 		Socket->getError();
 		std::cout << "listen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(Socket->fd_socket);
+		Socket->closesocket(listening_socket);
 		if (ServerConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ServerConnectionInfo);
 		return;
@@ -198,7 +192,7 @@ void Connection::serverThread()
 		FD_ZERO(&ReadSet);
 		// Put specified socket into the socket array located in ReadSet
 		// Format is:  FD_SET(int32_t fd, fd_set *ReadSet);
-		FD_SET(Socket->fd_socket, &ReadSet);
+		FD_SET(listening_socket, &ReadSet);
 
 		// Used by select(). It makes it wait for x amount of time to wait for a readable socket to appear.
 		// This has to be in this loop! Linux resets this value every time select() times out.
@@ -207,13 +201,13 @@ void Connection::serverThread()
 
 		// select() returns the number of handles that are ready and contained in the fd_set structure
 		errno = 0;
-		errchk = select(Socket->fd_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
+		errchk = select(listening_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 		if (errchk == SOCKET_ERROR)
 		{
 			Socket->getError();
 			std::cout << "serverThread() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
-			Socket->closesocket(Socket->fd_socket);
+			Socket->closesocket(listening_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			if (ServerConnectionInfo != nullptr)
 				Socket->freeaddrinfo(&ServerConnectionInfo);
@@ -222,7 +216,7 @@ void Connection::serverThread()
 		else if (global_winner == CLIENT_WON)
 		{
 			// Close the socket because the client thread won the race.
-			Socket->closesocket(Socket->fd_socket);
+			Socket->closesocket(listening_socket);
 			if (verbose_output == true)
 				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
 			if (ServerConnectionInfo != nullptr)
@@ -234,14 +228,13 @@ void Connection::serverThread()
 			if (verbose_output == true)
 				std::cout << "Attempting to accept a client now that select() returned a readable socket\n";
 
-			SOCKET errchk_socket;
 			// Accept the connection and create a new socket to communicate on.
-			errchk_socket = Socket->accept();
-			if (errchk_socket == INVALID_SOCKET)
+			fd_socket = accept(listening_socket, nullptr, nullptr);
+			if (fd_socket == INVALID_SOCKET)
 			{
 				Socket->getError();
 				std::cout << "accept() failed.\n";
-				Socket->closesocket(Socket->fd_socket);
+				Socket->closesocket(fd_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				if (ServerConnectionInfo != nullptr)
 					Socket->freeaddrinfo(&ServerConnectionInfo);
@@ -254,7 +247,8 @@ void Connection::serverThread()
 			// Assigning global values to let the client thread know it should stop trying.
 			if (setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
-				Socket->closesocket(Socket->fd_socket);
+				Socket->closesocket(listening_socket);
+				Socket->closesocket(fd_socket);
 				if (ServerConnectionInfo != nullptr)
 					Socket->freeaddrinfo(&ServerConnectionInfo);
 				return;
@@ -265,7 +259,7 @@ void Connection::serverThread()
 	}
 
 	// Display who the user has connected to.
-	Socket->coutPeerIPAndPort();
+	Socket->coutPeerIPAndPort(fd_socket);
 	std::cout << "Acting as the server.\n\n\n\n\n\n\n\n\n\n";
 
 	if (ServerConnectionInfo != nullptr)
@@ -307,8 +301,8 @@ void Connection::clientThread()
 	}
 
 	// Create socket
-	Socket->fd_socket = socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
-	if (Socket->fd_socket == INVALID_SOCKET || Socket->fd_socket == SOCKET_ERROR)
+	SOCKET client_socket = socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
+	if (client_socket == INVALID_SOCKET || client_socket == SOCKET_ERROR)
 	{
 		Socket->getError();
 		std::cout << "socket() failed.\n";
@@ -319,7 +313,7 @@ void Connection::clientThread()
 	}
 
 	// Disable blocking on the socket
-	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->DISABLE_BLOCKING) == -1)
+	if (Socket->setBlockingSocketOpt(client_socket, &Socket->DISABLE_BLOCKING) == -1)
 	{
 		std::cout << "Exiting client thread due to error.\n";
 		if (ClientConnectionInfo != nullptr)
@@ -362,10 +356,10 @@ void Connection::clientThread()
 
 		// Attempt to connect to target
 		errno = 0;
-		int32_t conn_return_val = connect(Socket->fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		int32_t conn_return_val = connect(client_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 		if (exit_now == true)
 		{
-			Socket->closesocket(Socket->fd_socket);
+			Socket->closesocket(client_socket);
 			if (ClientConnectionInfo != nullptr)
 				Socket->freeaddrinfo(&ClientConnectionInfo);
 			return;
@@ -384,11 +378,11 @@ void Connection::clientThread()
 				// Let us move on to select() to see if we have completed the connection.
 
 				// If fd_socket isn't set in the WriteSet struct, set it.
-				if (FD_ISSET(Socket->fd_socket, &WriteSet) == false)
+				if (FD_ISSET(client_socket, &WriteSet) == false)
 				{
 					// Put specified socket into the socket array located in WriteSet
 					// Format is:  FD_SET(int32_t fd, fd_set *WriteSet);
-					FD_SET(Socket->fd_socket, &WriteSet);
+					FD_SET(client_socket, &WriteSet);
 				}
 
 				// Used by select(). It makes it wait for x amount of time to wait for a readable socket to appear.
@@ -400,10 +394,10 @@ void Connection::clientThread()
 				// select() returns the number of socket handles that are ready and contained in the fd_set structure
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errno = 0;
-				errchk = select(Socket->fd_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
+				errchk = select(client_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
 				if (exit_now == true)
 				{
-					Socket->closesocket(Socket->fd_socket);
+					Socket->closesocket(client_socket);
 					if (ClientConnectionInfo != nullptr)
 						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
@@ -416,7 +410,7 @@ void Connection::clientThread()
 
 					// Get error information from the socket, not just from select()
 					// The effectiveness of this is untested so far as I haven't seen select error yet.
-					int32_t errorz = Socket->getSockOptError(Socket->fd_socket);
+					int32_t errorz = Socket->getSockOptError(client_socket);
 					if (errorz == SOCKET_ERROR)
 					{
 						std::cout << "getsockopt() failed.\n";
@@ -428,7 +422,7 @@ void Connection::clientThread()
 						std::cout << "getsockopt() returned: " << errorz << "\n";
 					}
 
-					Socket->closesocket(Socket->fd_socket);
+					Socket->closesocket(client_socket);
 					std::cout << "Closing connect socket b/c of the error. Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
 						Socket->freeaddrinfo(&ClientConnectionInfo);
@@ -437,7 +431,7 @@ void Connection::clientThread()
 				else if (global_winner == SERVER_WON)
 				{
 					// Close the socket because the server thread won the race.
-					Socket->closesocket(Socket->fd_socket);
+					Socket->closesocket(client_socket);
 					if (verbose_output == true)
 						std::cout << "Closed connect socket, because the winner is: " << global_winner << ". Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
@@ -450,7 +444,7 @@ void Connection::clientThread()
 					if (setWinnerMutex(CLIENT_WON) != CLIENT_WON)
 					{
 						// Server thread must have won the race
-						Socket->closesocket(Socket->fd_socket);
+						Socket->closesocket(client_socket);
 						if (verbose_output == true)
 							std::cout << "Exiting client thread because the server thread won the race.\n";
 						if (ClientConnectionInfo != nullptr)
@@ -476,7 +470,7 @@ void Connection::clientThread()
 			else
 			{
 				Socket->outputSocketErrorToConsole(errchk);
-				Socket->closesocket(Socket->fd_socket);
+				Socket->closesocket(client_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Exiting client thread.\n";
 				if (ClientConnectionInfo != nullptr)
@@ -485,21 +479,26 @@ void Connection::clientThread()
 			}
 		}
 	}
-
-	// Display who the user is connected with.
-	Socket->coutPeerIPAndPort();
-	std::cout << "Acting as the client.\n\n\n\n\n\n\n\n\n\n";
-
+	
+	// Since fd_socket is the one that will be checked / used by things outside
+	// this class, assign fd_socket the connected socket.
+	fd_socket = client_socket;
 	// Re-enable blocking for the socket.
-	if (Socket->setBlockingSocketOpt(Socket->fd_socket, &Socket->ENABLE_BLOCKING) == -1)
+	if (Socket->setBlockingSocketOpt(fd_socket, &Socket->ENABLE_BLOCKING) == -1)
 	{
 		Socket->getError();
+		std::cout << "Fatal error: failed to change the socket blocking option.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
+		Socket->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
 			Socket->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
+	// Display who the user is connected with.
+	Socket->coutPeerIPAndPort(fd_socket);
+	std::cout << "Acting as the client.\n\n\n\n\n\n\n\n\n\n";
+	
 	if (ClientConnectionInfo != nullptr)
 		Socket->freeaddrinfo(&ClientConnectionInfo);
 	return;
