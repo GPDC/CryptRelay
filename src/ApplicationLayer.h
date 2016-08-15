@@ -34,9 +34,11 @@ class XBerkeleySockets;
 class ApplicationLayer
 {
 public:
-
-	// XBerkeleySockets in the constructor because
-	ApplicationLayer(XBerkeleySockets* SocketClassInstance, SOCKET socket, bool turn_verbose_output_on = false);
+	
+	ApplicationLayer(
+		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		SOCKET socket, // A socket with an active connection.
+		bool turn_verbose_output_on = false); // turn on and off verbose output for this class.
 	~ApplicationLayer();
 
 	// Turn on and off verbose output for this class.
