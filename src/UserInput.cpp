@@ -15,10 +15,35 @@
 #include "StringManip.h"
 #endif//_WIN32
 
-UserInput::UserInput(bool turn_verbose_output_on)
+UserInput::UserInput(
+	callback_fn_start_file_transfer * start_threaded_file_xfer_ptr,
+	callback_fn_send_chat * send_chat_ptr,
+	callback_fn_end_connection * end_conn_ptr,
+	callback_fn_set_exit_now * set_exit_now_ptr,
+	callback_fn_get_exit_now * get_exit_now_ptr,
+	bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
+
+	// Setting the callbacks
+	callbackStartThreadedFileXfer = start_threaded_file_xfer_ptr;
+	callbackSendChatMsg = send_chat_ptr;
+	callbackEndConnection = end_conn_ptr;
+	callbackSetExitNow = set_exit_now_ptr;
+	callbackGetExitNow = get_exit_now_ptr;
+
+	// Make sure the callbacks haven't been given any nullptrs
+	if (callbackStartThreadedFileXfer == nullptr
+		|| callbackSendChatMsg == nullptr
+		|| callbackEndConnection == nullptr
+		|| callbackSetExitNow == nullptr
+		|| callbackGetExitNow == nullptr)
+	{
+		// This could be replaced with a throw
+		std::cout << "ERROR: callback == nullptr. UserInput class.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
 }
 UserInput::~UserInput()
 {
@@ -84,24 +109,15 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		case SEND_CHAT_MESSAGE:
 		{
 			// Send the message
-			if (callbackSendChatMsg != nullptr)
+			if (callbackSendChatMsg(user_input) < 0)
 			{
-				if (callbackSendChatMsg(user_input) < 0)
-				{
-					state = ERROR_STATE;
-					break;
-				}
-				else // success
-				{
-					state = BEGINNING_STATE;
-					return 0;
-				}
-			}
-			else
-			{
-				std::cout << "Error: Programmer error. callbackSendChatMsg == nullptr.\n";
 				state = ERROR_STATE;
 				break;
+			}
+			else // success
+			{
+				state = BEGINNING_STATE;
+				return 0;
 			}
 		}
 		case SEND_FILE:
@@ -118,18 +134,10 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 			}
 
 			// Try to start the file transfer.
-			if (callback_StartThreadedFileXfer != nullptr)
+			if (callbackStartThreadedFileXfer(file_name_and_path) == -1)
 			{
-				if (callback_StartThreadedFileXfer(file_name_and_path) == -1)
-				{
-					// Couldn't start the file transfer
-					std::cout << "Error: A file transfer is already in progress. Please wait until it is finished.\n";
-				}
-			}
-			else // Programmer error, never set the callback
-			{
-				std::cout << "Error: File transfer never started. Programmer error. callback_StartThreadedFileXfer == nullptr.\n";
-				DBG_DISPLAY_ERROR_LOCATION();
+				// Couldn't start the file transfer
+				std::cout << "Error: A file transfer is already in progress. Please wait until it is finished.\n";
 			}
 
 			state = BEGINNING_STATE;
@@ -138,22 +146,10 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		case EXIT_GRACEFULLY:
 		{
 			// Proceeding to exit program. shutdown() and close() the socket.
-			if (callbackEndConnection != nullptr)
-				callbackEndConnection();
-			else
-			{
-				std::cout << "ERROR: callbackEndConnection == nullptr.\n";
-				DBG_DISPLAY_ERROR_LOCATION();
-			}
+			callbackEndConnection();
 
 			// Tell the rest of the program that it wants to exit.
-			if (callbackSetExitNow != nullptr)
-				callbackSetExitNow(true);
-			else
-			{
-				std::cout << "Programmer error: callbackSetExitNow == nullptr.\n";
-				DBG_DISPLAY_ERROR_LOCATION();
-			}
+			callbackSetExitNow(true);
 
 			state = BEGINNING_STATE;
 			return GRACEFUL_EXIT;

@@ -70,7 +70,8 @@ Connection::Connection(XBerkeleySockets* SocketClassInstance,
 	if (callbackGetExitNow == nullptr
 		|| callbackSetExitNow == nullptr)
 	{
-		std::cout << "callback nullptr, Connection class.\n";
+		// This could be replaced with a throw
+		std::cout << "ERROR: callback == nullptr. Connection class.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 	}
 

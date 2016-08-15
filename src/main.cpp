@@ -70,8 +70,8 @@ FileTransfer* FileXfer = nullptr;
 ApplicationLayer* AppLayer = nullptr;
 CommandLineInput CLI;
 XBerkeleySockets BerkeleySockets;
-Connection * ServerConnect;
-Connection * ClientConnect;
+Connection * ServerConnect = nullptr;
+Connection * ClientConnect = nullptr;
 
 
 // Give Port information, supplied by the user, to the UPnP Class.
@@ -483,19 +483,25 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Start up the ApplicationLayer, giving it the SOCKET
 	// from the Connection class that won the race.
-	AppLayer = new ApplicationLayer(&BerkeleySockets, WinningConnectionClass->getFdSocket(), CLI.getVerboseOutput());
-	AppLayer->setCallbackGetExitNow(&getExitNow);
-	AppLayer->setCallbackSetExitNow(&setExitNow);
+	AppLayer = new ApplicationLayer(
+		&BerkeleySockets,
+		WinningConnectionClass->getFdSocket(),
+		&setExitNow,
+		&getExitNow,
+		CLI.getVerboseOutput()
+	);
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer
 	// using these callbacks in order to have data arrive (correctly) at the peer.
-	UserInput UserInput_o;
-	UserInput_o.setCallbackStartFileXfer(&startThreadedFileXfer);
-	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
-	UserInput_o.setCallbackEndConnection(&endConnection);
-	UserInput_o.setCallbackGetExitNow(&getExitNow);
-	UserInput_o.setCallbackSetExitNow(&setExitNow);
+	UserInput UserInput_o(
+		&startThreadedFileXfer,
+		&sendChatMessage,
+		&endConnection,
+		&setExitNow,
+		&getExitNow,
+		CLI.getVerboseOutput()
+	);
 
 	// Start getting the user's input.
 	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, &UserInput_o);
@@ -517,6 +523,8 @@ int32_t main(int32_t argc, char *argv[])
 
 	delete(FileXfer);
 	delete(AppLayer);
+	delete(ServerConnect);
+	delete(ClientConnect);
 	delete(Upnp);
 
 	return 0;

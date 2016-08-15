@@ -74,7 +74,12 @@ const int32_t ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND = USHRT_MAX;
 std::mutex ApplicationLayer::SendMutex;
 
 
-ApplicationLayer::ApplicationLayer(XBerkeleySockets* SocketClassInstance, SOCKET socket_z, bool turn_verbose_output_on)
+ApplicationLayer::ApplicationLayer(
+	XBerkeleySockets* SocketClassInstance,
+	SOCKET socket_z,
+	callback_fn_set_exit_now * set_exit_now_ptr,
+	callback_fn_get_exit_now * get_exit_now_ptr,
+	bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
@@ -85,6 +90,19 @@ ApplicationLayer::ApplicationLayer(XBerkeleySockets* SocketClassInstance, SOCKET
 	Socket = SocketClassInstance;
 
 	fd_socket = socket_z;
+
+	// Setting the callbacks
+	callbackSetExitNow = set_exit_now_ptr;
+	callbackGetExitNow = get_exit_now_ptr;
+
+	// Checking for nullptrs on callbacks
+	if (callbackSetExitNow == nullptr
+		|| callbackGetExitNow == nullptr)
+	{
+		// This could be replaced with a throw
+		std::cout << "ERROR: callback == nullptr. ApplicationLayer class.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
 
 	// Specific to the ProcessRecvBuf state machine
 	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
@@ -452,13 +470,8 @@ void ApplicationLayer::loopedReceiveMessages()
 	}
 
 	// Checking if the user or the program wants to exit.
-	if (callbackSetExitNow != nullptr)
-		callbackSetExitNow(true);
-	else
-	{
-		std::cout << "Programmer error: callbackSetExitNow == nullptr.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
-	}
+	callbackSetExitNow(true);
+
 	std::cout << "\n";
 	std::cout << "# Press 'Enter' to exit CryptRelay.\n";
 

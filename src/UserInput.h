@@ -24,7 +24,14 @@ public:
 	typedef bool& callback_fn_get_exit_now();
 
 public:
-	UserInput(bool turn_verbose_output_on = false);
+	UserInput(
+		callback_fn_start_file_transfer * file_xfer_ptr,
+		callback_fn_send_chat * chat_ptr,
+		callback_fn_end_connection * end_conn_ptr,
+		callback_fn_set_exit_now * set_exit_now_ptr,
+		callback_fn_get_exit_now * get_exit_now_ptr,
+		bool turn_verbose_output_on = false
+	);
 	~UserInput();
 
 	// Turn on and off verbose output for this class.
@@ -78,23 +85,12 @@ private:
 	int32_t prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input);
 
 	// Callbacks
-	callback_fn_start_file_transfer * callback_StartThreadedFileXfer = nullptr; // Start the filetransfer.
+	callback_fn_start_file_transfer * callbackStartThreadedFileXfer = nullptr; // Start the filetransfer.
 	callback_fn_send_chat * callbackSendChatMsg = nullptr; // Send a chat message to the peer.
 	callback_fn_end_connection * callbackEndConnection = nullptr; // close() and shutdown() the connected socket.
 
 	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
 	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
-
-
-public:
-
-	// Accessors
-	void setCallbackStartFileXfer(callback_fn_start_file_transfer * ptr) { callback_StartThreadedFileXfer = ptr; }
-	void setCallbackSendChatMessage(callback_fn_send_chat * ptr) { callbackSendChatMsg = ptr; }
-	void setCallbackEndConnection(callback_fn_end_connection * ptr) { callbackEndConnection = ptr; }
-
-	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
-	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
 };
 
 #endif//UserInput_h__

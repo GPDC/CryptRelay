@@ -116,8 +116,6 @@ public:
 
 	// Accessors
 	SOCKET getFdSocket() { return fd_socket; }
-	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
-	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
 };
 
 #endif//Connection_h__

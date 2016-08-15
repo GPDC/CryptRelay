@@ -44,6 +44,8 @@ public:
 	ApplicationLayer(
 		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		SOCKET socket, // A socket with an active connection.
+		callback_fn_set_exit_now * set_exit_now_ptr,
+		callback_fn_get_exit_now * get_exit_now_ptr,
 		bool turn_verbose_output_on = false // turn on and off verbose output for this class.
 	);
 	~ApplicationLayer();
@@ -171,12 +173,6 @@ private:
 private:
 	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
 	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
-
-public:
-
-	// Accessors
-	void setCallbackGetExitNow(callback_fn_get_exit_now * ptr) { callbackGetExitNow = ptr; }
-	void setCallbackSetExitNow(callback_fn_set_exit_now * ptr) { callbackSetExitNow = ptr; }
 
 
 

@@ -18,7 +18,7 @@
 
 -prevent incompatible symbols from being used with files.
 
--localtime_r is erroring (linux). // super low priority. Might even remove it.
+-localtime_r is erroring (linux) in displayTimeStarted(). // super low priority. Might even remove it.
 
 -Sequence diagram.
 
@@ -27,6 +27,24 @@
 -Update state machine design so the control flow is better
 
 -separate the upnp function that retrieves the external IP address into its own UPnP class method. It is stored in showInformation() atm.
+
+-Progress indicator for file transfer. Maybe only display progress if the user typed something like: progress()
+
+
+
+# Todo for v1_1_0 release:
+-Make it easier to use with scripting, grep.
+
+-Make it easier to transfer many files at once.
+
+-Make an option to disable output to console during file transfer.
+-To add to that, something should be made where the user can turn off output to console, but still get
+ a summary of all items transferred at the end, and their individual success / fail status.
+
+
+
+# Todo for v1_1_1
+- Make all couts go through a mutex so that it doesn't end up garbled and mixed up in the console when multiple threads cout at same time.
 
 
 
@@ -42,8 +60,6 @@
 
 
 # Think about possibly doing these:
--Make it easier for scripts to operate the program.
-
 -GetAdapterAddresses() on windows, getifaddrs() on linux, should be implemented so when the user
  decides to turn off upnp they won't have to type in their local ip addr.
 -might want to get the username by (windows)getusername()  and linux  getlogin_r()
@@ -51,18 +67,6 @@
 -In the FormatCheck.cpp, the port is already changed from string to a number. Change code everywhere
  to stop taking strings,and to stop changing strings to numbers for ports. Also minor change must be
  made in FormatCheck to return the port instead of bool.
-
--implement a progress indicator for the file copy or file transfer. It would preferably be something
- like this due to using a terminal: in the getuserinput section that does getline(), check to see if
- the user typed out "progress()", and if the user did, then display the current progress of the file
- transfer, or file copy, whatever. This would be done by giving a displayProgress() function the
- args: total_bytes_sent, file_size.  It would just do a simple divide calculation and turn it into
- a % and display that. OR could just have getuserinput() set a global variable that
- be: display_progress = true; , and any function like copyFile() would check
- if(display_progress ==  true), then displayProgress(total_bytes_sent, file_size); and inside the 
- displayProgress() it would make sure to set display_progress = false; at the end.
-
--adding / fixing displayTimeStarted() in the UpnP class
 
 -Wish the library had an implementation to delete port forwards based off of the description. Maybe I should make one.
  Should check list of all current port forwards and then basically grep out the ones that have
