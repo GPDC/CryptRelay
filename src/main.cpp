@@ -477,7 +477,7 @@ int32_t main(int32_t argc, char *argv[])
 	UserInput UserInput_o;
 	UserInput_o.setCallbackStartFileXfer(&startThreadedFileXfer);
 	UserInput_o.setCallbackSendChatMessage(&sendChatMessage);
-	UserInput_o.setCallbackEndConnection(endConnection);
+	UserInput_o.setCallbackEndConnection(&endConnection);
 
 	// Start getting the user's input.
 	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, &UserInput_o);
