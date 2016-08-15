@@ -37,11 +37,14 @@
 #pragma comment(lib, "AdvApi32.lib")
 #endif//_WIN32
 
+const bool XBerkeleySockets::DISABLE_CONSOLE_OUTPUT = false;
+const unsigned long XBerkeleySockets::DISABLE_BLOCKING = 1;
+const unsigned long XBerkeleySockets::ENABLE_BLOCKING = 0;
 
-XBerkeleySockets::XBerkeleySockets(bool turn_verbose_output_on)
+
+XBerkeleySockets::XBerkeleySockets()
 {
-	if (turn_verbose_output_on == true)
-		verbose_output = true;
+
 }
 XBerkeleySockets::~XBerkeleySockets()
 {
@@ -59,6 +62,7 @@ int32_t XBerkeleySockets::shutdown(SOCKET socket, int32_t operation)
 	int32_t errchk = ::shutdown(socket, operation);
 	if (errchk == SOCKET_ERROR)
 	{
+		std::cout << "Failed.\n";
 		return -1;
 	}
 	std::cout << "Success\n";
@@ -74,9 +78,6 @@ void XBerkeleySockets::closesocket(SOCKET socket)
 #ifdef _WIN32
 	::closesocket(socket);
 #endif
-
-	if (verbose_output == true)
-		std::cout << "Closed the socket.\n";
 }
 
 

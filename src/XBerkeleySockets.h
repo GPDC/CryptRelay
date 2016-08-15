@@ -42,18 +42,15 @@ typedef int32_t SOCKET;	// Linux doesn't come with SOCKET defined, unlike Window
 class XBerkeleySockets
 {
 public:
-	XBerkeleySockets(bool turn_verbose_output_on = false);
+	XBerkeleySockets();
 	virtual ~XBerkeleySockets();
-
-	// Turn on and off verbose output for this class.
-	bool verbose_output = false;
 
 	// Outputs to console that the connection is being shutdown
 	// in addition to the normal shutdown() behavior.
-	int32_t shutdown(SOCKET socket, int32_t operation);
+	static int32_t shutdown(SOCKET socket, int32_t operation);
 	
 	// Cross-platform closing of a socket / fd.
-	void closesocket(SOCKET socket);
+	static void closesocket(SOCKET socket);
 
 	// All addrinfo structures that have been allocated by the getaddrinfo()
 	// function must be freed once they are done being used. Since getaddrinfo()
@@ -67,29 +64,34 @@ public:
 	// Never freeaddrinfo() on something that has already been freed.
 	// In order to avoid doing that, check for a nullptr first.
 	// If nullptr, it has already been freed.
-	void freeaddrinfo(addrinfo** ppAddrInfo);
-	void coutPeerIPAndPort(SOCKET connection_with_peer);
+	// Example:
+	// if (&ClientConnectionInfo != nullptr)
+	// {
+	//      this->freeaddrinfo(&ClientConnectionInfo);
+	// }
+	static void freeaddrinfo(addrinfo** ppAddrInfo);
+	static void coutPeerIPAndPort(SOCKET connection_with_peer);
 
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real fatal error.
-	int32_t getError(bool output_to_console = true);
-	const bool DISABLE_CONSOLE_OUTPUT = false;
+	static int32_t getError(bool output_to_console = true);
+	static const bool DISABLE_CONSOLE_OUTPUT;
 
 	// Only intended for use with Socket errors.
 	// Windows outputs a WSAERROR code, linux outputs errno code.
-	void outputSocketErrorToConsole(int32_t error_code);
+	static void outputSocketErrorToConsole(int32_t error_code);
 
 	// Enable or disable the blocking socket option.
 	// By default, blocking is enabled.
-	int32_t setBlockingSocketOpt(SOCKET socket, const u_long* option);
-	const unsigned long DISABLE_BLOCKING = 1;
-	const unsigned long ENABLE_BLOCKING = 0;
+	static int32_t setBlockingSocketOpt(SOCKET fd_socket, const u_long* option);
+	static const unsigned long DISABLE_BLOCKING;
+	static const unsigned long ENABLE_BLOCKING;
 
 	// Get error information from the socket.
-	int32_t getSockOptError(SOCKET fd_socket);
+	static int32_t getSockOptError(SOCKET fd_socket);
 	
 
 protected:

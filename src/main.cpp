@@ -70,7 +70,7 @@ UPnP* Upnp = nullptr;
 FileTransfer* FileXfer = nullptr;
 ApplicationLayer* AppLayer = nullptr;
 CommandLineInput CLI;
-XBerkeleySockets BerkeleySockets(CLI.getVerboseOutput());
+XBerkeleySockets BerkeleySockets;
 Connection ServerConnect(&BerkeleySockets, CLI.getVerboseOutput());
 Connection ClientConnect(&BerkeleySockets, CLI.getVerboseOutput());
 
