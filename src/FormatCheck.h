@@ -1,5 +1,9 @@
 //FormatCheck.h
 
+// This class is highly coupled with the FormatCheck class.
+// I don't intend to reduce coupling as this class is very specific to CryptRelay
+// and I wouldn't drop it into some other program.
+
 // Overview:
 // Purpose is for checking for proper format on a given thing.
 //  Examples: checking for proper IPv4 format, IPv6, Port number

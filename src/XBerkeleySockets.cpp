@@ -37,6 +37,16 @@
 #pragma comment(lib, "AdvApi32.lib")
 #endif//_WIN32
 
+
+#ifdef __linux__
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#define SOCKET_ERROR	(-1)	// Linux doesn't have a SOCKET_ERROR macro.
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH         SHUT_RDWR//0x02			// ^
+#endif//__linux__
+
+
 const bool XBerkeleySockets::DISABLE_CONSOLE_OUTPUT = false;
 const unsigned long XBerkeleySockets::DISABLE_BLOCKING = 1;
 const unsigned long XBerkeleySockets::ENABLE_BLOCKING = 0;

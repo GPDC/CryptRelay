@@ -39,6 +39,10 @@ public:
 	typedef void callback_fn_set_exit_now(bool value);
 	typedef bool& callback_fn_get_exit_now();
 
+#ifdef __linux__
+	typedef int32_t SOCKET;
+#endif//__linux__
+
 public:
 	
 	ApplicationLayer(

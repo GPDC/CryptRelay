@@ -33,17 +33,13 @@
 
 
 #ifdef __linux__
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#define SOCKET_ERROR	(-1)	// Linux doesn't have a SOCKET_ERROR macro.
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH         SHUT_RDWR//0x02			// ^
+#endif//__linux__
 
-#ifndef INVALID_SOCKET
-#define INVALID_SOCKET	((SOCKET)(~0))	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
-#endif//INVALID_SOCKET
-
-#ifndef SOCKET_ERROR
-#define SOCKET_ERROR	(-1)			// To indicate SOCKET_ERROR, Windows returns -1 from socket functions, and linux returns -1.
-										// Linux doesn't distinguish between INVALID_SOCKET and SOCKET_ERROR. It just returns -1 on error.
-#endif//SOCKET_ERROR
-
-#endif // __linux__
 
 #ifdef _WIN32
 #pragma warning(disable:4996)			// disable deprecated warning for fopen()
@@ -170,10 +166,13 @@ int32_t ApplicationLayer::setFlagsAndMsgSize(char * buf, const int32_t BUF_LEN, 
 // Returns 0 on success, -1 on error
 int32_t ApplicationLayer::setFlagsAndMsgSize(std::string& buf, const int64_t BUF_LEN, int64_t length_of_msg, int8_t flag)
 {
+	const int64_t MAX_STRING_LENGTH = buf.max_size();
+
 	// Making sure length_of_msg is not too big.
-	if (length_of_msg > ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND - CR_RESERVED_BUFFER_SPACE)
+	if (length_of_msg > ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND - CR_RESERVED_BUFFER_SPACE
+		|| length_of_msg >= MAX_STRING_LENGTH - CR_RESERVED_BUFFER_SPACE)
 	{
-		std::cout << "Error: setFlagsAndMsgSize()'s message_size was > ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND - RESERVED_BUFFER_SPACE.\n";
+		std::cout << "Error: Message too long: setFlagsAndMsgSize()'s message_size was > ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND - RESERVED_BUFFER_SPACE.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
 	}
@@ -241,6 +240,7 @@ int32_t ApplicationLayer::send(const char * sendbuf, int32_t amount_to_send)
 int64_t ApplicationLayer::sendChatStr(std::string& buf)
 {
 	int64_t message_length = buf.length();
+
 	if (setFlagsAndMsgSize(buf, message_length, message_length, ApplicationLayer::MsgFlags::CHAT) == -1)
 	{
 		DBG_DISPLAY_ERROR_LOCATION();
@@ -783,10 +783,9 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		case FILE_TRANSFER_COMPLETE:
 		{
 			// Finished receiving the file.
-			std::cout << "Finished receiving file from peer.\n";
-			std::cout << "Expected " << incoming_file_size_from_peer << ".\n";
-			std::cout << "Wrote " << total_bytes_written_to_file << "\n";
-			std::cout << "Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
+			std::cout << "# Expected " << incoming_file_size_from_peer << ".\n";
+			std::cout << "# Wrote " << total_bytes_written_to_file << "\n";
+			std::cout << "# Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
 
 			// If it didn't write as many bytes as it thought it should
 			if (incoming_file_size_from_peer - total_bytes_written_to_file != 0)

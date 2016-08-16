@@ -1,38 +1,20 @@
-// XBerkeleySockets.h
-
-// Overview:
-// Purpose of this class is to make cross platform versions of
-// the Berkeley Sockets API. The 'X' in the class name stands
-// for X-platform, or cross-platform.
-
-// Terminology:
-// Below is terminology with simple descriptions for anyone new to socket programming:
-// fd stands for File Descriptor. It is linux's version of a SOCKET.
-
-
-#ifndef XBerkeleySockets_h__
-#define XBerkeleySockets_h__
-
+// IXBerkeleySockets.h
+#ifndef IXBerkeleySockets_h__
+#define IXBerkeleySockets_h__
 
 #ifdef __linux__
 #include <sys/types.h>
 #include <sys/socket.h>	// <Winsock2.h>
 #include <netdb.h>
 #include <string>
-
-#include "IXBerkeleySockets.h"
 #endif//__linux__
-
 #ifdef _WIN32
 #include <WS2tcpip.h>
-#include <WinSock2.h>	// <sys/socket.h>
 #include <string>
-
-#include "IXBerkeleySockets.h"
 #endif//_WIN32
 
-
-class XBerkeleySockets : public IXBerkeleySockets
+// Interface class for XBerkeleySockets
+class IXBerkeleySockets
 {
 	// Typedefs
 public:
@@ -41,15 +23,14 @@ public:
 #endif//__linux__
 
 public:
-	XBerkeleySockets();
-	virtual ~XBerkeleySockets();
+	virtual ~IXBerkeleySockets() {};
 
 	// Outputs to console that the connection is being shutdown
 	// in addition to the normal shutdown() behavior.
-	int32_t shutdown(SOCKET socket, int32_t operation);
-	
+	virtual int32_t shutdown(SOCKET socket, int32_t operation) = 0;
+
 	// Cross-platform closing of a socket / fd.
-	void closesocket(SOCKET socket);
+	virtual void closesocket(SOCKET socket) = 0;
 
 	// All addrinfo structures that have been allocated by the getaddrinfo()
 	// function must be freed once they are done being used. Since getaddrinfo()
@@ -68,37 +49,18 @@ public:
 	// {
 	//      this->freeaddrinfo(&ClientConnectionInfo);
 	// }
-	void freeaddrinfo(addrinfo** ppAddrInfo);
-	void coutPeerIPAndPort(SOCKET connection_with_peer);
+	virtual void freeaddrinfo(addrinfo** ppAddrInfo) = 0;
 
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
 	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real fatal error.
-	int32_t getError(bool output_to_console = true);
-	static const bool DISABLE_CONSOLE_OUTPUT;
+	virtual int32_t getError(bool output_to_console = true) = 0;
 
 	// Only intended for use with Socket errors.
 	// Windows outputs a WSAERROR code, linux outputs errno code.
-	void outputSocketErrorToConsole(int32_t error_code);
-
-	// Enable or disable the blocking socket option.
-	// By default, blocking is enabled.
-	int32_t setBlockingSocketOpt(SOCKET fd_socket, const u_long* option);
-	static const unsigned long DISABLE_BLOCKING;
-	static const unsigned long ENABLE_BLOCKING;
-
-	// Get error information from the socket.
-	int32_t getSockOptError(SOCKET fd_socket);
-	
-
-protected:
-private:
-
-	// Prevent anyone from copying this class.
-	XBerkeleySockets(XBerkeleySockets& SocketClassInstance) = delete;			   // disable copy operator
-	XBerkeleySockets& operator=(XBerkeleySockets& SocketClassInstance) = delete; // disable assignment operator
+	virtual void outputSocketErrorToConsole(int32_t error_code) = 0;
 };
 
-#endif//XBerkeleySockets_h__
+#endif//IXBerkeleySockets_h__

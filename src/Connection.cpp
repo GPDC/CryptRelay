@@ -41,6 +41,16 @@
 #pragma warning(disable:4996)		// disable deprecated warning for fopen()
 #endif//_WIN32
 
+
+#ifdef __linux__
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#define SOCKET_ERROR	(-1)	// Linux doesn't have a SOCKET_ERROR macro.
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH         SHUT_RDWR//0x02			// ^
+#endif//__linux__
+
+
 //mutex for use in this class' send()
 std::mutex Connection::SendMutex;
 // mutex for use with server and client threads to prevent a race condition.

@@ -23,6 +23,7 @@
     <ClInclude Include="..\src\CommandLineInput.h" />
     <ClInclude Include="..\src\FileTransfer.h" />
     <ClInclude Include="..\src\FormatCheck.h" />
+    <ClInclude Include="..\src\IXBerkeleySockets.h" />
     <ClInclude Include="..\src\UserInput.h" />
     <ClInclude Include="..\src\GlobalTypeHeader.h" />
     <ClInclude Include="..\src\ApplicationLayer.h" />

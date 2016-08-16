@@ -8,16 +8,14 @@
 #ifndef PortKnock_h__
 #define PortKnock_h__
 
-#include "CommandLineInput.h"
-
 // Forward declaration
-class XBerkeleySockets;
+class IXBerkeleySockets;
 
 class PortKnock
 {
 public:
 	PortKnock(
-		XBerkeleySockets * XBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		IXBerkeleySockets * IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		bool turn_verbose_output_on = false
 	);
 	virtual ~PortKnock();
@@ -38,7 +36,7 @@ private:
 	PortKnock(PortKnock& PortKnockInstance) = delete; // Delete copy operator
 	PortKnock& operator=(PortKnock& PortKnockInstance) = delete; // Delete assignment operator
 
-	XBerkeleySockets * BerkeleySockets = nullptr;
+	IXBerkeleySockets * IBerkeleySockets = nullptr;
 };
 
 #endif//PortKnock_h__

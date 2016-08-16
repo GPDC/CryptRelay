@@ -1,7 +1,7 @@
 // GlobalTypeHeader.h
 
 /***********************************************************/
-// THIS CLASS IS SCHEDULED FOR DELETION ETA: v1_0_0 release.
+// THIS FILE IS SCHEDULED FOR DELETION ETA: v1_0_0 release.
 // A logging class will be implemented instead, and anything
 // that wants to do logging will use that logging class.
 // It will be functions that will be called; not macros.

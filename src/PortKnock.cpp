@@ -15,7 +15,7 @@
 #include <signal.h>
 
 #include "PortKnock.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
 
@@ -26,16 +26,23 @@
 #include <iostream>
 
 #include "PortKnock.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
+#ifdef __linux__
+#define INVALID_SOCKET	(-1)	// To indicate INVALID_SOCKET, Windows returns (~0) from socket functions, and linux returns -1.
+#define SOCKET_ERROR	(-1)	// Linux doesn't have a SOCKET_ERROR macro.
+#define SD_RECEIVE      SHUT_RD//0x00			// This is for shutdown(); SD_RECEIVE is the code to shutdown receive operations.
+#define SD_SEND         SHUT_WR//0x01			// ^
+#define SD_BOTH         SHUT_RDWR//0x02			// ^
+#endif//__linux__
 
-PortKnock::PortKnock(XBerkeleySockets * XBerkeleySocketsInstance, bool turn_verbose_output_on)
+PortKnock::PortKnock(IXBerkeleySockets * IXBerkeleySocketsInstance, bool turn_verbose_output_on)
 {
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
-	BerkeleySockets = XBerkeleySocketsInstance;
+	IBerkeleySockets = IXBerkeleySocketsInstance;
 }
 PortKnock::~PortKnock()
 {
@@ -63,11 +70,11 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	// We are only listening as the server, so put in local IP:port
 	if (getaddrinfo(my_local_ip.c_str(), my_local_port.c_str(), &ServerHints, &ServerConnectionInfo) != 0)
 	{	
-		BerkeleySockets->getError();
+		IBerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return -1;
 	}
 		
@@ -76,11 +83,11 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	SOCKET fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
 	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
-		BerkeleySockets->getError();
+		IBerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return -1;
 	}
 
@@ -96,7 +103,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = errno;		//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)
 		{
-			BerkeleySockets->closesocket(fd_socket);
+			IBerkeleySockets->closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -110,7 +117,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			BerkeleySockets->closesocket(fd_socket);
+			IBerkeleySockets->closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -124,7 +131,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	}
 
 	// No errors, must be available
-	BerkeleySockets->closesocket(fd_socket);
+	IBerkeleySockets->closesocket(fd_socket);
 	return AVAILABLE;
 }
 
@@ -151,11 +158,11 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	// Now we use ClientConnectionInfo instead of ClientHints to access the information.
 	if (getaddrinfo(ip.c_str(), port.c_str(), &ClientHints, &ClientConnectionInfo) != 0)
 	{
-		BerkeleySockets->getError();
+		IBerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed. isPortOpen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return -1;
 	}
 
@@ -163,11 +170,11 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	SOCKET fd_socket = socket(ClientHints.ai_family, ClientHints.ai_socktype, ClientHints.ai_protocol);
 	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
-		BerkeleySockets->getError();
+		IBerkeleySockets->getError();
 		std::cout << "socket() failed. isPortOpen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return -1;
 	}
 
@@ -175,17 +182,17 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	int32_t errchk = connect(fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
-		BerkeleySockets->closesocket(fd_socket);
+		IBerkeleySockets->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return 0;
 	}
 	else // connected
 	{
-		BerkeleySockets->shutdown(fd_socket, SD_BOTH);
-		BerkeleySockets->closesocket(fd_socket);
+		IBerkeleySockets->shutdown(fd_socket, SD_BOTH);
+		IBerkeleySockets->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return 1;
 	}
 }
