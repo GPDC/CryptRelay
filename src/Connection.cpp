@@ -399,7 +399,7 @@ void Connection::clientThread()
 		if (conn_return_val != 0)
 		{
 			const int32_t NO_SOCKET_ERROR = 0;
-			int32_t err_chk = Socket->getError(Socket->DISABLE_CONSOLE_OUTPUT);
+			int32_t err_chk = Socket->getError(Socket->getDisableConsoleOutput());
 			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK || err_chk == NO_SOCKET_ERROR)
 			{
 				// Let us move on to select() to see if we have completed the connection.

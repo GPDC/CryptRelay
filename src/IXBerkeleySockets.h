@@ -58,6 +58,11 @@ public:
 	//	recvfrom() errored because of a timeout, not because of a real fatal error.
 	virtual int32_t getError(bool output_to_console = true) = 0;
 
+	// Accessor for the const DISABLE_CONSOLE_OUTPUT.
+	// For use as an arg for getError().
+	virtual bool getDisableConsoleOutput() = 0;
+
+
 	// Only intended for use with Socket errors.
 	// Windows outputs a WSAERROR code, linux outputs errno code.
 	virtual void outputSocketErrorToConsole(int32_t error_code) = 0;

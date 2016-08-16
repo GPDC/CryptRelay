@@ -28,7 +28,7 @@
 
 
 // Forward declaration
-class XBerkeleySockets;
+class IXBerkeleySockets;
 
 // ApplicationLayer class is for sending and receiving things to the peer.
 class ApplicationLayer
@@ -46,7 +46,7 @@ public:
 public:
 	
 	ApplicationLayer(
-		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		IXBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		SOCKET socket, // A socket with an active connection.
 		callback_fn_set_exit_now * set_exit_now_ptr,
 		callback_fn_get_exit_now * get_exit_now_ptr,
@@ -153,7 +153,7 @@ private:
 	int32_t bytes_sent = 0;
 	static std::mutex SendMutex;
 
-	XBerkeleySockets * Socket;
+	IXBerkeleySockets * Socket;
 
 	SOCKET fd_socket;
 

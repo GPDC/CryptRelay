@@ -9,7 +9,7 @@
 #include <string.h>
 
 #include "ApplicationLayer.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//__linux__
 
@@ -20,7 +20,7 @@
 #include <limits.h>
 
 #include "ApplicationLayer.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #include "GlobalTypeHeader.h"
 #endif//_WIN32
 
@@ -71,7 +71,7 @@ std::mutex ApplicationLayer::SendMutex;
 
 
 ApplicationLayer::ApplicationLayer(
-	XBerkeleySockets* SocketClassInstance,
+	IXBerkeleySockets* SocketClassInstance,
 	SOCKET socket_z,
 	callback_fn_set_exit_now * set_exit_now_ptr,
 	callback_fn_get_exit_now * get_exit_now_ptr,
@@ -432,7 +432,7 @@ void ApplicationLayer::loopedReceiveMessages()
 			const int32_t BLOCKING_OPERATION_CANCELED = WSAEINTR;
 #endif// _WIN32
 
-			int32_t errchk = Socket->getError(Socket->DISABLE_CONSOLE_OUTPUT);
+			int32_t errchk = Socket->getError(Socket->getDisableConsoleOutput());
 
 			// If errchk == BLOCKING_OPERATION_CANCELED, don't report the error.
 			// else, report whatever error happened.
