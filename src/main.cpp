@@ -537,14 +537,12 @@ int32_t main(int32_t argc, char *argv[])
 
 +++++++++++++++++++++++++++++++++++++ Formatting Guide +++++++++++++++++++++++++++++++++++++
 
-Classes:		ThisIsAnExample();		# Capitalize the first letter of every word.
-Structures:		ThisIsAnExample();		# Capitalize the first letter of every word.
+Classes:		ThisIsAnExample;		# Capitalize the first letter of every word.
+Structures:		ThisIsAnExample;		# Capitalize the first letter of every word.
 Functions:		thisIsAnExample();		# Capitalize the first letter of every word except the first.
 Variables:		this_is_an_example;		# No capitalization. Underscores to separate words.
 Macros:         THIS_IS_AN_EXAMPLE;		# All capitalization. Underscores to separate words.
-Globals:								# Put the word global in front of it like so:
-	ex variable:	global_this_is_an_example;
-	ex function:	globalThisIsAnExample;
+Constants:      THIS_IS_AN_EXAMPLE;		# All capitalization. Underscores to separate words.
 
 ifdefs must always comment the endif with what it is endifing.
 #ifdef _WIN32
@@ -552,32 +550,32 @@ ifdefs must always comment the endif with what it is endifing.
 
 
 
-Curly braces:	bool thisIsAnExample()			// It is up to you to decide what looks better;
+Curly braces:	int32_t thisIsAnExample()		// It is up to you to decide what looks better;
 				{								// Single lines with curly braces, or
-					int32_t i = 5;					// Single lines with no curly braces.
+					int32_t i = 5;				// Single lines with no curly braces.
 					int32_t truth = 1;
 					int32_t lie = 0;
-					bool onepptheory = false;
+					bool onepp_theory = false;
 					bool bear = true;
 					bool big = false;
-
-					if (i == 70)
-					{
-						return true;
-					}
-					else
-					{
-						return false;
-					}
 
 					if (i == 5)
 					{
 						if(1 + 1 == 2)
-							onepptheory = true;
+							onepp_theory = true;
 						if(truth == lie)
-							return false;
+							return -1;
 						if(bear == big)
 							std::cout << "Oh my!\n";
+					}
+
+					if (i == 70)
+					{
+						return 0; // Success
+					}
+					else
+					{
+						return -1; // Failure
 					}
 				}
 
