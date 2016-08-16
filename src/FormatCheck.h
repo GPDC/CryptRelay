@@ -36,7 +36,7 @@ private:
 	const int32_t MAX_PORT_LENGTH = 5;
 	const int32_t MAX_PORT_NUMBER = 65535;		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
 
-	const int32_t INET_ADDR_STR_LEN = 15;			// max size of ipv4 address / ipv6 is 45
+	const int32_t INET_ADDR_STR_LEN = 15;		// max size of ipv4 address 15 / ipv6 is 45
 
 	bool checkSubnetRange(std::string target_ipaddress, int32_t start, int32_t end);
 	int32_t findNextPeriod(std::string target_ipaddress, int32_t start);

@@ -774,7 +774,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 			else
 			{
-				std::cout << "Size of Peer's file: " << incoming_file_size_from_peer << "\n";
+				std::cout << "# Size of Peer's file: " << incoming_file_size_from_peer << "\n";
 			}
 
 			state = OPEN_FILE_FOR_WRITE;

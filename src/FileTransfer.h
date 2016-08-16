@@ -60,7 +60,7 @@ private:
 	FileTransfer(FileTransfer& FileTransferInstance) = delete;			   // disable copy operator
 	FileTransfer& operator=(FileTransfer& FileTransferInstance) = delete;  // disable assignment operator
 
-	const int32_t MAX_FILENAME_LENGTH = 255;
+	static const int32_t MAX_FILENAME_LENGTH;
 
 	ApplicationLayer* AppLayer;
 
@@ -69,13 +69,13 @@ private:
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 
 	// For use with anything file related
-	int32_t getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
-	bool displayFileSize(const char* file_name_and_path, xplatform_struct_stat * FileStatBuf);
+	static int32_t getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
+	static bool displayFileSize(const char* file_name_and_path, xplatform_struct_stat * FileStatBuf);
 
 	// If given a direct path to a file, it will return the file name.
 	// Ex: c:\users\me\storage\my_file.txt
 	// will return: my_file.txt
-	std::string retrieveFileNameFromPath(std::string file_name_and_path);
+	static std::string retrieveFileNameFromPath(std::string file_name_and_path);
 };
 
 #endif//FileTransfer_h__
