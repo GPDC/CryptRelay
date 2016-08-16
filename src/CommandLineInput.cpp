@@ -146,7 +146,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-tP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == true)
+				if (err_chk_bool == false)
 					return true;
 				else
 				{

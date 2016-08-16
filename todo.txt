@@ -22,7 +22,7 @@
 
 -Sequence diagram.
 
--create a logging class.
+-create a logging class. Have all classes take a constructor arg as a logging class. Make an interface for it too.
 
 -Update state machine design so the control flow is better
 

@@ -182,7 +182,7 @@ bool FormatCheck::isPortFormatCorrect(char* port)
 	if (length_of_port > MAX_PORT_LENGTH)
 	{
 		std::cout << "ERROR: Port number is too high\n";
-		return true;
+		return false;
 	}
 	for (int32_t i = 0; i < length_of_port; ++i)	
 	{
@@ -190,7 +190,7 @@ bool FormatCheck::isPortFormatCorrect(char* port)
 		if (port[i] < 48 || port[i] > 57)
 		{
 			std::cout << "Please enter a valid port number.\n";
-			return true;
+			return false;
 		}
 	}
 
@@ -205,8 +205,8 @@ bool FormatCheck::isPortFormatCorrect(char* port)
 	if (total > MAX_PORT_NUMBER)
 	{
 		std::cout << "Port number is too large. Exiting.\n";
-		return true;
+		return false;
 	}
 
-	return false;
+	return true;
 }
