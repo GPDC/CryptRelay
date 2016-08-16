@@ -37,7 +37,13 @@ FormatCheck::~FormatCheck()
 bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 {
 	std::string ipaddress = ipaddr;
-	int32_t ipaddress_size = ipaddress.size();
+	int32_t ipaddress_size;
+	if (ipaddress.length() < INT_MAX)
+		ipaddress_size = (int32_t)ipaddress.length();
+	else
+	{
+		return false;
+	}
 
 	// If the string is too big to be an IPV4 address
 	if (ipaddress_size > INET_ADDR_STR_LEN)
@@ -104,7 +110,10 @@ bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 
 int32_t FormatCheck::findNextPeriod(std::string ipaddress, int32_t start)
 {
-	int32_t size_of_ip_address = ipaddress.size();
+	int32_t size_of_ip_address;
+	if (ipaddress.length() < INT_MAX)
+		size_of_ip_address = (int32_t)ipaddress.length();
+
 	int32_t period_location = -1;
 
 	// If it isn't the starting subnet, then give it a +1 or else it
@@ -177,7 +186,9 @@ bool FormatCheck::checkSubnetRange(std::string ipaddress, int32_t start, int32_t
 
 bool FormatCheck::isPortFormatCorrect(char* port)
 {
-	int32_t length_of_port = strlen(port);
+	int32_t length_of_port;
+	if (strlen(port) < INT_MAX)
+		length_of_port = (int32_t)strlen(port);
 
 	if (length_of_port > MAX_PORT_LENGTH)
 	{

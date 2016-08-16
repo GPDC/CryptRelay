@@ -170,10 +170,11 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 		// Making sure bytes_read can always accept the amount being given to it by fread().
 		static_assert(sizeof(bytes_read) >= sizeof(BUF_LEN),
 			"Error: sizeof(bytes_read) >= sizeof(BUF_LEN) == false");
-		bytes_read = fread(
+		bytes_read = (int32_t)fread(
 			buf + ApplicationLayer::CR_RESERVED_BUFFER_SPACE,
 			1,
-			BUF_LEN - ApplicationLayer::CR_RESERVED_BUFFER_SPACE, ReadFile
+			(BUF_LEN - ApplicationLayer::CR_RESERVED_BUFFER_SPACE),
+			ReadFile
 		);
 		if (bytes_read)
 		{

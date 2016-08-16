@@ -101,7 +101,12 @@ int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 	{
 		arg.push_back(argv[i]);
 	}
-	int32_t arg_size = arg.size();
+
+	int32_t arg_size;
+	if (arg.size() < INT_MAX)
+		arg_size = (int32_t)arg.size();
+	else
+		return -1;
 
 	// If no command line arguments supplied, show the ReadMe
 	if (argc <= 1)

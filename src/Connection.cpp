@@ -171,7 +171,7 @@ void Connection::serverThread()
 	// Assign the socket to an address:port
 	// Since it is a socket that we are going to be listening for
 	// a connection on, we shall bind the socket to the user's local address
-	if (bind(listening_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
+	if (bind(listening_socket, ServerConnectionInfo->ai_addr, (int)ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
 	{
 		Socket->getError();
 		std::cout << "bind() failed.\n";
@@ -227,7 +227,7 @@ void Connection::serverThread()
 
 		// select() returns the number of handles that are ready and contained in the fd_set structure
 		errno = 0;
-		errchk = select(listening_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
+		errchk = select((int)listening_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 		if (errchk == SOCKET_ERROR)
 		{
 			Socket->getError();
@@ -382,7 +382,7 @@ void Connection::clientThread()
 
 		// Attempt to connect to target
 		errno = 0;
-		int32_t conn_return_val = connect(client_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+		int32_t conn_return_val = connect(client_socket, ClientConnectionInfo->ai_addr, (int)ClientConnectionInfo->ai_addrlen);
 		// Checking if the user or the program wants to exit.
 		if (callbackGetExitNow() == true)
 		{
@@ -421,7 +421,7 @@ void Connection::clientThread()
 				// select() returns the number of socket handles that are ready and contained in the fd_set structure
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errno = 0;
-				errchk = select(client_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
+				errchk = select((int)client_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
 				// Checking if the user or the program wants to exit.
 				if (callbackGetExitNow() == true)
 				{

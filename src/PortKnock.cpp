@@ -95,7 +95,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	// Assign the socket to an address:port
 
 	// Binding the socket to the user's local address
-	int32_t errchk = bind(fd_socket, ServerConnectionInfo->ai_addr, ServerConnectionInfo->ai_addrlen);
+	int32_t errchk = bind(fd_socket, ServerConnectionInfo->ai_addr, (int)ServerConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 
@@ -179,7 +179,7 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	}
 
 	// If connection is successful, it must be an open port
-	int32_t errchk = connect(fd_socket, ClientConnectionInfo->ai_addr, ClientConnectionInfo->ai_addrlen);
+	int32_t errchk = connect(fd_socket, ClientConnectionInfo->ai_addr, (int)ClientConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
 		IBerkeleySockets->closesocket(fd_socket);
