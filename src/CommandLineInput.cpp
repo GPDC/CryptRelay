@@ -88,8 +88,7 @@ void CommandLineInput::displayExamples()
 	std::cout << "\n";
 }
 
-// Returns true if the program is intended to exit after calling this function.
-bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
+int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 {
 	// If necessary, a more thorough checking of command line input's individual chars is in my ParseText program.
 	// but for now this is simple and easy to read/understand, so its nice.
@@ -108,7 +107,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 	if (argc <= 1)
 	{
 		displayHelpAndReadMe();
-		return true;
+		return -1;
 	}
 	// Check all argv inputs to see what the user wants to do
 	bool err_chk_bool = 0;
@@ -126,7 +125,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 				|| arg[i] == "--Help")
 			{
 				displayHelpAndReadMe();
-				return true;
+				return -1;
 			}
 			else if (i < arg_size - 1 && arg[i] == "-t")
 			{
@@ -134,7 +133,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 				if (err_chk_bool == false)
 				{
 					std::cout << "Bad IP address format.\n\n";
-					return true;
+					return -1;
 				}
 				else
 				{
@@ -147,7 +146,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return true;
+					return -1;
 				else
 				{
 					target_port = argv[i + 1];
@@ -158,7 +157,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return true;
+					return -1;
 				else
 				{
 					my_ip_address = argv[i + 1];
@@ -169,7 +168,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
 				if (err_chk_bool == true)
-					return true;
+					return -1;
 				else
 				{
 					my_host_port = argv[i + 1];
@@ -180,7 +179,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			{
 				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
 				if (err_chk_bool == false)
-					return true;
+					return -1;
 				else
 				{
 					my_ext_ip_address = argv[i + 1];
@@ -190,7 +189,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (arg[i] == "--examples")
 			{
 				displayExamples();
-				return true;
+				return -1;
 			}
 			else if (arg[i] == "-v")
 			{
@@ -204,7 +203,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (arg[i] == "-s")
 			{
 				retrieve_list_of_port_forwards = true;
-				return false;
+				return 0;
 			}
 			else if (i < arg_size - 2 && arg[i] == "-d")
 			{
@@ -214,7 +213,7 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 
 				i += 2;	// Skipping the check for the next 2 argv's b/c we just used those as port and protocol.
 
-				return false;
+				return 0;
 			}
 			else if (arg[i] == "-i")
 			{
@@ -223,11 +222,11 @@ bool CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else
 			{
 				displayHelpAndReadMe();
-				return true;
+				return -1;
 			}
 		}
 	}
 
 	// Finished without errors, return success
-	return false;
+	return 0;
 }

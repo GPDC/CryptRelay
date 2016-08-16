@@ -15,7 +15,9 @@ public:
 	virtual ~CommandLineInput();
 
 	// Set the appropriate variables based on the user's argv[] input.
-	bool setVariablesFromArgv(int32_t argc, char* argv[]);
+	// Returns 0, success
+	// Returns -1, please exit the program.
+	int32_t setVariablesFromArgv(int32_t argc, char* argv[]);
 
 
 protected:

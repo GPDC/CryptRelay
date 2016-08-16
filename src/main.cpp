@@ -395,7 +395,7 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
-	if ( (errchk = CLI.setVariablesFromArgv(argc, argv)) == true)	
+	if ( (errchk = CLI.setVariablesFromArgv(argc, argv)) == -1)	
 		return EXIT_FAILURE;
 
 
@@ -527,7 +527,7 @@ int32_t main(int32_t argc, char *argv[])
 	delete(ClientConnect);
 	delete(Upnp);
 
-	return 0;
+	return EXIT_SUCCESS;
 //===================================== End Chat Program =====================================
 }
 
