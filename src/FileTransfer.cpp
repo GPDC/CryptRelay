@@ -154,6 +154,7 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	/*static_assert(BUF_LEN <= ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND,
 		"Buffer size must NOT be bigger than ApplicationLayer::ARTIFICIAL_LENGTH_LIMIT_FOR_SEND.");*/
 
+	std::cout << "\n";
 	std::cout << "# Sending file: " << file_name << "\n";
 	do
 	{
@@ -218,6 +219,7 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	else // successful transfer
 	{
 		std::cout << "# File transfer complete: " << file_name << "\n";
+		std::cout << "\n";
 	}
 
 	if (fclose(ReadFile))

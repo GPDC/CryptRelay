@@ -725,6 +725,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// Convert it to a std::string
 			std::string temporary_incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
 			incoming_file_name_from_peer = temporary_incoming_file_name_from_peer;
+			std::cout << "\n";
 			std::cout << "# Incoming file name: " << incoming_file_name_from_peer << "\n";
 
 
@@ -777,11 +778,13 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			if (incoming_file_size_from_peer - total_bytes_written_to_file != 0)
 			{
 				std::cout << "# File transfer from peer is INCOMPLETE and will not recover: " << incoming_file_name_from_peer << "\n";
+				std::cout << "\n";
 			}
 			else
 			{
 				// Everything is fine, tell the user it is complete.
 				std::cout << "# File transfer from peer is complete: " << incoming_file_name_from_peer << "\n";
+				std::cout << "\n";
 			}
 
 			state = CLOSE_FILE_FOR_WRITE;
