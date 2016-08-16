@@ -444,7 +444,7 @@ std::string FileTransfer::retrieveFileNameFromPath(std::string file_name_and_pat
 	// of the file can be separated from the path of the file.
 	if (file_name_and_path.back() == '\\' || file_name_and_path.back() == '/')
 	{
-		perror("ERROR: Found a '\\' or a '/' at the end of the file name.\n");
+		std::cout << "ERROR: Found a '\\' or a '/' at the end of the file name.\n";
 		std::cout << "Name and location of file that caused the error: " << file_name_and_path << "\n";
 		return error_empty_string; //exit please
 	}
@@ -467,7 +467,7 @@ std::string FileTransfer::retrieveFileNameFromPath(std::string file_name_and_pat
 
 		if (last_seen_slash_location == NO_SLASHES_DETECTED)
 		{
-			perror("File name and location is invalid. There was not a single \'\\\' or \'/\' found.\n");
+			std::cout << "File name and location is invalid. There was not a single \'\\\' or \'/\' found.\n";
 			return error_empty_string;
 		}
 		else if (last_seen_slash_location < name_and_location_of_file_length)
@@ -482,13 +482,13 @@ std::string FileTransfer::retrieveFileNameFromPath(std::string file_name_and_pat
 		}
 		else
 		{
-			perror("File name is invalid. Found \'/\' or \'\\\' at the end of the file name.\n");
+			std::cout << "File name is invalid. Found \'/\' or \'\\\' at the end of the file name.\n";
 			return error_empty_string; // exit please
 		}
 	}
 	else
 	{
-		perror("name_and_location_of_file_length is >= INT_MAX -1");
+		std::cout << "Error: name_and_location_of_file_length is >= INT_MAX -1\n";
 		return error_empty_string;
 	}
 

@@ -453,7 +453,7 @@ void ApplicationLayer::loopedReceiveMessages()
 						if (fclose(WriteFile) != 0)
 						{
 							DBG_DISPLAY_ERROR_LOCATION();
-							perror("Error closing file for writing in binary mode.\n");
+							perror("Error closing file for writing in binary mode.");
 						}
 					}
 					std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
@@ -885,7 +885,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			if (WriteFile == nullptr)
 			{
 				DBG_DISPLAY_ERROR_LOCATION();
-				perror("Error opening file for writing in binary mode.\n");
+				perror("Error opening file for writing in binary mode.");
 				state = ERROR_STATE;
 				break;
 			}
@@ -946,7 +946,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			{
 				if (fclose(WriteFile) != 0)		// 0 == successful close
 				{
-					perror("Error closing file for writing in binary mode.\n");
+					perror("Error closing file for writing in binary mode.");
 					std::cout << "Error occured in RecvStateMachine, case ERROR_STATE:\n";
 				}
 			}
