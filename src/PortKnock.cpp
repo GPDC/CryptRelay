@@ -40,13 +40,19 @@
 
 PortKnock::PortKnock(IXBerkeleySockets * IXBerkeleySocketsInstance, bool turn_verbose_output_on)
 {
+	// Enable socket use on windows.
+	WSAStartup();
+
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
-	IBerkeleySockets = IXBerkeleySocketsInstance;
+	BerkeleySockets = IXBerkeleySocketsInstance;
 }
 PortKnock::~PortKnock()
 {
-
+	// Done with sockets.
+#ifdef _WIN32
+	WSACleanup();
+#endif//_WIN32
 }
 
 // returns < 0 on error
@@ -70,11 +76,11 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	// We are only listening as the server, so put in local IP:port
 	if (getaddrinfo(my_local_ip.c_str(), my_local_port.c_str(), &ServerHints, &ServerConnectionInfo) != 0)
 	{	
-		IBerkeleySockets->getError();
+		BerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return -1;
 	}
 		
@@ -83,11 +89,11 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	SOCKET fd_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
 	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
-		IBerkeleySockets->getError();
+		BerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return -1;
 	}
 
@@ -103,7 +109,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = errno;		//saving the error so it isn't lost
 		if (errsv == EADDRINUSE)
 		{
-			IBerkeleySockets->closesocket(fd_socket);
+			BerkeleySockets->closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -117,7 +123,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 		int32_t errsv = WSAGetLastError();	//saving the error so it isn't lost
 		if (errsv == WSAEADDRINUSE)
 		{
-			IBerkeleySockets->closesocket(fd_socket);
+			BerkeleySockets->closesocket(fd_socket);
 			return IN_USE;
 		}
 		else     // Must have been a different error
@@ -131,7 +137,7 @@ int32_t PortKnock::isLocalPortInUse(std::string my_local_port, std::string my_lo
 	}
 
 	// No errors, must be available
-	IBerkeleySockets->closesocket(fd_socket);
+	BerkeleySockets->closesocket(fd_socket);
 	return AVAILABLE;
 }
 
@@ -158,11 +164,11 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	// Now we use ClientConnectionInfo instead of ClientHints to access the information.
 	if (getaddrinfo(ip.c_str(), port.c_str(), &ClientHints, &ClientConnectionInfo) != 0)
 	{
-		IBerkeleySockets->getError();
+		BerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed. isPortOpen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return -1;
 	}
 
@@ -170,11 +176,11 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	SOCKET fd_socket = socket(ClientHints.ai_family, ClientHints.ai_socktype, ClientHints.ai_protocol);
 	if (fd_socket == INVALID_SOCKET || fd_socket == SOCKET_ERROR)
 	{
-		IBerkeleySockets->getError();
+		BerkeleySockets->getError();
 		std::cout << "socket() failed. isPortOpen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return -1;
 	}
 
@@ -182,17 +188,33 @@ int32_t PortKnock::isPortOpen(std::string ip, std::string port)
 	int32_t errchk = connect(fd_socket, ClientConnectionInfo->ai_addr, (int)ClientConnectionInfo->ai_addrlen);
 	if (errchk == SOCKET_ERROR)
 	{
-		IBerkeleySockets->closesocket(fd_socket);
+		BerkeleySockets->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return 0;
 	}
 	else // connected
 	{
-		IBerkeleySockets->shutdown(fd_socket, SD_BOTH);
-		IBerkeleySockets->closesocket(fd_socket);
+		BerkeleySockets->shutdown(fd_socket, SD_BOTH);
+		BerkeleySockets->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
-			IBerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return 1;
 	}
+}
+
+// Necessary to do anything with sockets on Windows
+// Returns 0, success.
+// Returns a WSAERROR code if failed.
+int32_t PortKnock::WSAStartup()
+{
+#ifdef _WIN32
+	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errchk != 0)
+	{
+		std::cout << "WSAStartup failed, WSAERROR: " << errchk << "\n";
+		return errchk;
+	}
+#endif//_WIN32
+	return 0;
 }

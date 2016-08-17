@@ -47,7 +47,7 @@ public:
 public:
 	
 	ApplicationLayer(
-		IXBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
 		SOCKET socket, // A socket with an active connection.
 		callback_fn_set_exit_now * set_exit_now_ptr,
 		callback_fn_get_exit_now * get_exit_now_ptr,
@@ -159,7 +159,7 @@ private:
 	ApplicationLayer(ApplicationLayer& ApplicationLayerInstance) = delete;			  // disable copy operator
 	ApplicationLayer& operator=(ApplicationLayer& ApplicationLayerInstance) = delete; // disable assignment operator
 	
-	IXBerkeleySockets * Socket;
+	IXBerkeleySockets * BerkeleySockets;
 
 	// ApplicationLayer expects this socket to have an active connection with the peer.
 	SOCKET fd_socket;

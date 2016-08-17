@@ -85,7 +85,7 @@ Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
-	Socket = IXBerkeleySocketsInstance;
+	BerkeleySockets = IXBerkeleySocketsInstance;
 }
 Connection::~Connection()
 {
@@ -120,11 +120,11 @@ void Connection::server()
 	// Remember we are only listening as the server, so put in local IP:port
 	if (getaddrinfo(my_local_ip.c_str(), my_local_port.c_str(), &ServerHints, &ServerConnectionInfo) != 0)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return;
 	}
 
@@ -133,11 +133,11 @@ void Connection::server()
 	SOCKET listening_socket = socket(ServerConnectionInfo->ai_family, ServerConnectionInfo->ai_socktype, ServerConnectionInfo->ai_protocol);
 	if (listening_socket == INVALID_SOCKET || listening_socket == SOCKET_ERROR)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ServerConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return;
 	}
 
@@ -147,12 +147,12 @@ void Connection::server()
 	// a connection on, we shall bind the socket to the user's local address
 	if (bind(listening_socket, ServerConnectionInfo->ai_addr, (int)ServerConnectionInfo->ai_addrlen) == SOCKET_ERROR)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "bind() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(listening_socket);
+		BerkeleySockets->closesocket(listening_socket);
 		if (ServerConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		std::cout << "Exiting server thread.\n";
 		return;
 	}
@@ -163,12 +163,12 @@ void Connection::server()
 	// will set it to a reasonable value.
 	if (listen(listening_socket, SOMAXCONN) == SOCKET_ERROR)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "listen() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(listening_socket);
+		BerkeleySockets->closesocket(listening_socket);
 		if (ServerConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ServerConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return;
 	}
 
@@ -204,23 +204,23 @@ void Connection::server()
 		errchk = select((int)listening_socket + 1, &ReadSet, NULL, NULL, &TimeValue);
 		if (errchk == SOCKET_ERROR)
 		{
-			Socket->getError();
+			BerkeleySockets->getError();
 			std::cout << "server() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
-			Socket->closesocket(listening_socket);
+			BerkeleySockets->closesocket(listening_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
 			if (ServerConnectionInfo != nullptr)
-				Socket->freeaddrinfo(&ServerConnectionInfo);
+				BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 			return;
 		}
 		else if (connection_race_winner == CLIENT_WON)
 		{
 			// Close the socket because the client thread won the race.
-			Socket->closesocket(listening_socket);
+			BerkeleySockets->closesocket(listening_socket);
 			if (verbose_output == true)
 				std::cout << "Closed listening socket, because the winner is: " << connection_race_winner << ". Ending Server thread.\n";
 			if (ServerConnectionInfo != nullptr)
-				Socket->freeaddrinfo(&ServerConnectionInfo);
+				BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 			return;
 		}
 		else if (errchk > 0)	// select() told us that atleast 1 readable socket has appeared!
@@ -232,12 +232,12 @@ void Connection::server()
 			fd_socket = accept(listening_socket, nullptr, nullptr);
 			if (fd_socket == INVALID_SOCKET)
 			{
-				Socket->getError();
+				BerkeleySockets->getError();
 				std::cout << "accept() failed.\n";
-				Socket->closesocket(fd_socket);
+				BerkeleySockets->closesocket(fd_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				if (ServerConnectionInfo != nullptr)
-					Socket->freeaddrinfo(&ServerConnectionInfo);
+					BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 				return;
 			}
 
@@ -247,10 +247,10 @@ void Connection::server()
 			// Assigning global values to let the client thread know it should stop trying.
 			if (setWinnerMutex(SERVER_WON) != SERVER_WON)
 			{
-				Socket->closesocket(listening_socket);
-				Socket->closesocket(fd_socket);
+				BerkeleySockets->closesocket(listening_socket);
+				BerkeleySockets->closesocket(fd_socket);
 				if (ServerConnectionInfo != nullptr)
-					Socket->freeaddrinfo(&ServerConnectionInfo);
+					BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 				return;
 			}
 
@@ -259,11 +259,11 @@ void Connection::server()
 	}
 
 	// Display who the user has connected to.
-	Socket->coutPeerIPAndPort(fd_socket);
+	BerkeleySockets->coutPeerIPAndPort(fd_socket);
 	std::cout << "Acting as the server.\n\n\n\n\n\n\n\n\n\n";
 
 	if (ServerConnectionInfo != nullptr)
-		Socket->freeaddrinfo(&ServerConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 	return;
 }
 
@@ -292,11 +292,11 @@ void Connection::client()
 	// Now we use ClientConnectionInfo instead of ClientHints in order to access the information.
 	if (getaddrinfo(target_external_ip.c_str(), target_external_port.c_str(), &ClientHints, &ClientConnectionInfo) != 0)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
@@ -304,20 +304,20 @@ void Connection::client()
 	SOCKET client_socket = socket(ClientConnectionInfo->ai_family, ClientConnectionInfo->ai_socktype, ClientConnectionInfo->ai_protocol);
 	if (client_socket == INVALID_SOCKET || client_socket == SOCKET_ERROR)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		if (ClientConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
 	// Disable blocking on the socket
-	if (Socket->setBlockingSocketOpt(client_socket, &Socket->getDisableBlocking()) == -1)
+	if (BerkeleySockets->setBlockingSocketOpt(client_socket, &BerkeleySockets->getDisableBlocking()) == -1)
 	{
 		std::cout << "Exiting client thread due to error.\n";
 		if (ClientConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
@@ -360,9 +360,9 @@ void Connection::client()
 		// Checking if the user or the program wants to exit.
 		if (callbackGetExitNow() == true)
 		{
-			Socket->closesocket(client_socket);
+			BerkeleySockets->closesocket(client_socket);
 			if (ClientConnectionInfo != nullptr)
-				Socket->freeaddrinfo(&ClientConnectionInfo);
+				BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 			return;
 		}
 		if (conn_return_val == 0)
@@ -373,7 +373,7 @@ void Connection::client()
 		if (conn_return_val != 0)
 		{
 			const int32_t NO_SOCKET_ERROR = 0;
-			int32_t err_chk = Socket->getError(Socket->getDisableConsoleOutput());
+			int32_t err_chk = BerkeleySockets->getError(BerkeleySockets->getDisableConsoleOutput());
 			if (err_chk == OPERATION_ALREADY_IN_PROGRESS || err_chk == OPERATION_NOW_IN_PROGRESS || err_chk == WOULD_BLOCK || err_chk == NO_SOCKET_ERROR)
 			{
 				// Let us move on to select() to see if we have completed the connection.
@@ -399,24 +399,24 @@ void Connection::client()
 				// Checking if the user or the program wants to exit.
 				if (callbackGetExitNow() == true)
 				{
-					Socket->closesocket(client_socket);
+					BerkeleySockets->closesocket(client_socket);
 					if (ClientConnectionInfo != nullptr)
-						Socket->freeaddrinfo(&ClientConnectionInfo);
+						BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				if (errchk == SOCKET_ERROR)
 				{
-					Socket->getError();
+					BerkeleySockets->getError();
 					std::cout << "ClientThread() select Error.\n";
 					DBG_DISPLAY_ERROR_LOCATION();
 
 					// Get error information from the socket, not just from select()
 					// The effectiveness of this is untested so far as I haven't seen select error yet.
-					int32_t errorz = Socket->getSockOptError(client_socket);
+					int32_t errorz = BerkeleySockets->getSockOptError(client_socket);
 					if (errorz == SOCKET_ERROR)
 					{
 						std::cout << "getsockopt() failed.\n";
-						Socket->getError();
+						BerkeleySockets->getError();
 						DBG_DISPLAY_ERROR_LOCATION();
 					}
 					else
@@ -424,20 +424,20 @@ void Connection::client()
 						std::cout << "getsockopt() returned: " << errorz << "\n";
 					}
 
-					Socket->closesocket(client_socket);
+					BerkeleySockets->closesocket(client_socket);
 					std::cout << "Closing connect socket b/c of the error. Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
-						Socket->freeaddrinfo(&ClientConnectionInfo);
+						BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				else if (connection_race_winner == SERVER_WON)
 				{
 					// Close the socket because the server thread won the race.
-					Socket->closesocket(client_socket);
+					BerkeleySockets->closesocket(client_socket);
 					if (verbose_output == true)
 						std::cout << "Closed connect socket, because the winner is: " << connection_race_winner << ". Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
-						Socket->freeaddrinfo(&ClientConnectionInfo);
+						BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
 				else if (errchk > 0)	// select() told us that at least 1 readable socket has appeared
@@ -446,11 +446,11 @@ void Connection::client()
 					if (setWinnerMutex(CLIENT_WON) != CLIENT_WON)
 					{
 						// Server thread must have won the race
-						Socket->closesocket(client_socket);
+						BerkeleySockets->closesocket(client_socket);
 						if (verbose_output == true)
 							std::cout << "Exiting client thread because the server thread won the race.\n";
 						if (ClientConnectionInfo != nullptr)
-							Socket->freeaddrinfo(&ClientConnectionInfo);
+							BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 						return;
 					}
 					else// Client is confirmed as the winner of the race.
@@ -471,12 +471,12 @@ void Connection::client()
 			}
 			else
 			{
-				Socket->outputSocketErrorToConsole(errchk);
-				Socket->closesocket(client_socket);
+				BerkeleySockets->outputSocketErrorToConsole(errchk);
+				BerkeleySockets->closesocket(client_socket);
 				DBG_DISPLAY_ERROR_LOCATION();
 				std::cout << "Exiting client thread.\n";
 				if (ClientConnectionInfo != nullptr)
-					Socket->freeaddrinfo(&ClientConnectionInfo);
+					BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 				return;
 			}
 		}
@@ -486,23 +486,23 @@ void Connection::client()
 	// this class, assign fd_socket the connected socket.
 	fd_socket = client_socket;
 	// Re-enable blocking for the socket.
-	if (Socket->setBlockingSocketOpt(fd_socket, &Socket->getEnableBlocking()) == -1)
+	if (BerkeleySockets->setBlockingSocketOpt(fd_socket, &BerkeleySockets->getEnableBlocking()) == -1)
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "Fatal error: failed to change the socket blocking option.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(fd_socket);
+		BerkeleySockets->closesocket(fd_socket);
 		if (ClientConnectionInfo != nullptr)
-			Socket->freeaddrinfo(&ClientConnectionInfo);
+			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
 	// Display who the user is connected with.
-	Socket->coutPeerIPAndPort(fd_socket);
+	BerkeleySockets->coutPeerIPAndPort(fd_socket);
 	std::cout << "Acting as the client.\n\n\n\n\n\n\n\n\n\n";
 	
 	if (ClientConnectionInfo != nullptr)
-		Socket->freeaddrinfo(&ClientConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 	return;
 }
 

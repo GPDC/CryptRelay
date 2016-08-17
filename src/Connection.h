@@ -5,7 +5,7 @@
 // It uses XBerkeleySockets to store SOCKET information.
 
 // Terminology:
-// Socket is an end-point that is defined by an IP-address and port.
+// BerkeleySockets is an end-point that is defined by an IP-address and port.
 //   A socket is just an integer with a number assigned to it.
 //   That number can be thought of as a unique ID for the connection
 //   that may or may not be established.
@@ -54,7 +54,7 @@ private:
 
 public:
 	Connection(
-		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
 		callback_fn_get_exit_now * get_exit_now_ptr,
 		callback_fn_set_exit_now * set_exit_now_ptr,
 		bool turn_verbose_output_on = false
@@ -104,7 +104,7 @@ private:
 	std::string my_local_ip;
 	std::string my_local_port = DEFAULT_PORT;
 
-	IXBerkeleySockets * Socket;
+	IXBerkeleySockets * BerkeleySockets;
 
 	// If a connection has successfully been established, this socket will
 	// be the one that it is established on. If it isn't, it will be INVALID_SOCKET.

@@ -71,7 +71,7 @@ std::mutex ApplicationLayer::SendMutex;
 
 
 ApplicationLayer::ApplicationLayer(
-	IXBerkeleySockets* SocketClassInstance,
+	IXBerkeleySockets* IXBerkeleySocketsInstance,
 	SOCKET socket_z,
 	callback_fn_set_exit_now * set_exit_now_ptr,
 	callback_fn_get_exit_now * get_exit_now_ptr,
@@ -83,7 +83,7 @@ ApplicationLayer::ApplicationLayer(
 	// Enable socket use on windows.
 	WSAStartup();
 
-	Socket = SocketClassInstance;
+	BerkeleySockets = IXBerkeleySocketsInstance;
 
 	fd_socket = socket_z;
 
@@ -197,10 +197,10 @@ int32_t ApplicationLayer::send(const char * sendbuf, int32_t amount_to_send)
 		bytes_sent = ::send(fd_socket, sendbuf, amount_to_send, 0);
 		if (bytes_sent == SOCKET_ERROR)
 		{
-			Socket->getError();
+			BerkeleySockets->getError();
 			perror("ERROR: send() failed.");
 			DBG_DISPLAY_ERROR_LOCATION();
-			Socket->closesocket(fd_socket);
+			BerkeleySockets->closesocket(fd_socket);
 			SendMutex.unlock();
 			return SOCKET_ERROR;
 		}
@@ -415,14 +415,14 @@ void ApplicationLayer::loopedReceiveMessages()
 			const int32_t BLOCKING_OPERATION_CANCELED = WSAEINTR;
 #endif// _WIN32
 
-			int32_t errchk = Socket->getError(Socket->getDisableConsoleOutput());
+			int32_t errchk = BerkeleySockets->getError(BerkeleySockets->getDisableConsoleOutput());
 
 			// If errchk == BLOCKING_OPERATION_CANCELED, don't report the error.
 			// else, report whatever error happened.
 			if (errchk != BLOCKING_OPERATION_CANCELED)
 			{
 				std::cout << "recv() failed.\n";
-				Socket->outputSocketErrorToConsole(errchk);
+				BerkeleySockets->outputSocketErrorToConsole(errchk);
 				DBG_DISPLAY_ERROR_LOCATION();
 				if (errchk == CONNECTION_RESET)
 				{
@@ -468,15 +468,15 @@ int32_t ApplicationLayer::endConnection()
 	// This will shutdown the connection on the socket.
 	// closesocket() will interrupt recv() if it is currently blocking.
 	// Done communicating with peer. Proceeding to exit.
-	if (Socket->shutdown(fd_socket, SD_BOTH) == -1)	// SD_BOTH == shutdown both send and receive on the socket.
+	if (BerkeleySockets->shutdown(fd_socket, SD_BOTH) == -1)	// SD_BOTH == shutdown both send and receive on the socket.
 	{
-		Socket->getError();
+		BerkeleySockets->getError();
 		std::cout << "Error: shutdown() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		Socket->closesocket(fd_socket);
+		BerkeleySockets->closesocket(fd_socket);
 		return -1;
 	}
-	Socket->closesocket(fd_socket);
+	BerkeleySockets->closesocket(fd_socket);
 
 	return 0;
 }
@@ -524,7 +524,7 @@ int32_t ApplicationLayer::sendCharBuf(char * buf, const int32_t BUF_LEN, int32_t
 		bytes_sent = send(buf, send_this_amount);
 		if (bytes_sent == SOCKET_ERROR)
 		{
-			Socket->getError();
+			BerkeleySockets->getError();
 			return -1;
 		}
 		else
@@ -567,7 +567,7 @@ int64_t ApplicationLayer::sendStrBuf(std::string& str_buf, int64_t message_lengt
 		bytes_sent = send(str_buf.c_str(), send_this_amount);
 		if (bytes_sent == SOCKET_ERROR)
 		{
-			Socket->getError();
+			BerkeleySockets->getError();
 			return -1;
 		}
 		else

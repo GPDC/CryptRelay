@@ -36,7 +36,16 @@ private:
 	PortKnock(PortKnock& PortKnockInstance) = delete; // Delete copy operator
 	PortKnock& operator=(PortKnock& PortKnockInstance) = delete; // Delete assignment operator
 
-	IXBerkeleySockets * IBerkeleySockets = nullptr;
+	IXBerkeleySockets * BerkeleySockets = nullptr;
+
+	// Cross-platform WSAStartup();
+	// For every WSAStartup() that is called, a WSACleanup() must be called.
+	int32_t WSAStartup();
+
+#ifdef _WIN32
+	WSADATA wsaData;	// for WSAStartup();
+#endif//_WIN32
+
 };
 
 #endif//PortKnock_h__

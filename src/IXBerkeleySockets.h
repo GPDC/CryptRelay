@@ -39,7 +39,7 @@ public:
 	// addrinfo * ServerConnectionInfo = nullptr;
 	// getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
 	// 	if (ServerConnectionInfo != nullptr)
-	//		Socket->freeaddrinfo(&ServerConnectionInfo);
+	//		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 	//
 	// Never freeaddrinfo() on something that has already been freed.
 	// In order to avoid doing that, check for a nullptr first.

@@ -98,7 +98,7 @@ void XBerkeleySockets::closesocket(SOCKET socket)
 // addrinfo * ServerConnectionInfo = nullptr;
 // getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
 // 	if (ServerConnectionInfo != nullptr)
-//		Socket->freeaddrinfo(&ServerConnectionInfo);
+//		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 // Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 void XBerkeleySockets::freeaddrinfo(addrinfo** ppAddrInfo)
 {

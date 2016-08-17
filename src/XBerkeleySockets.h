@@ -98,8 +98,8 @@ protected:
 private:
 
 	// Prevent anyone from copying this class.
-	XBerkeleySockets(XBerkeleySockets& SocketClassInstance) = delete;			 // disable copy operator
-	XBerkeleySockets& operator=(XBerkeleySockets& SocketClassInstance) = delete; // disable assignment operator
+	XBerkeleySockets(XBerkeleySockets& XBerkeleySocketsInstance) = delete;			 // disable copy operator
+	XBerkeleySockets& operator=(XBerkeleySockets& XBerkeleySocketsInstance) = delete; // disable assignment operator
 
 public:
 	// Accessors
