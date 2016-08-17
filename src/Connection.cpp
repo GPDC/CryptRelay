@@ -75,10 +75,11 @@ Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
 
 	// Checking all callbacks for nullptr
 	if (callbackGetExitNow == nullptr
-		|| callbackSetExitNow == nullptr)
+		|| callbackSetExitNow == nullptr
+		|| IXBerkeleySocketsInstance == nullptr)
 	{
 		// This could be replaced with a throw
-		std::cout << "ERROR: callback == nullptr. Connection class.\n";
+		std::cout << "ERROR: nullptr passed as an arg. Connection class.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 	}
 
@@ -137,8 +138,7 @@ void Connection::server()
 		BerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		if (ServerConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		return;
 	}
 
@@ -152,8 +152,7 @@ void Connection::server()
 		std::cout << "bind() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		BerkeleySockets->closesocket(listening_socket);
-		if (ServerConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
 		std::cout << "Exiting server thread.\n";
 		return;
 	}
@@ -296,8 +295,7 @@ void Connection::client()
 		BerkeleySockets->getError();
 		std::cout << "getaddrinfo() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
@@ -308,8 +306,7 @@ void Connection::client()
 		BerkeleySockets->getError();
 		std::cout << "socket() failed.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		if (ClientConnectionInfo != nullptr)
-			BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
+		BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
 		return;
 	}
 
