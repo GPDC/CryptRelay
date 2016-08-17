@@ -15,12 +15,19 @@ class UserInput
 {
 	// Typedef section
 public:
-	// Callback typedefs
-	typedef int32_t callback_fn_start_file_transfer(const std::string& file_name_and_path); // Start the filetransfer.
-	typedef int64_t callback_fn_send_chat(std::string& user_input); // Send a chat message to the peer.
-	typedef int32_t callback_fn_end_connection();// close() and shutdown() the connected socket.
+	// Send this file to the peer.
+	typedef int32_t callback_fn_start_file_transfer(const std::string& file_name_and_path);
 
+	// Send a chat message to the peer.
+	typedef int64_t callback_fn_send_chat(std::string& user_input);
+
+	// end the connection with the peer
+	typedef int32_t callback_fn_end_connection();
+
+	// set variable that tells program that UserInput wants to exit the program.
 	typedef void callback_fn_set_exit_now(bool value);
+
+	// view the variable that tells program that UserInput wants to exit the program.
 	typedef bool& callback_fn_get_exit_now();
 
 public:

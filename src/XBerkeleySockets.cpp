@@ -62,9 +62,6 @@ XBerkeleySockets::~XBerkeleySockets()
 }
 
 
-// Shuts down the current connection that is active on the given socket.
-// The shutdown operation is one of three macros.
-// SD_RECEIVE, SD_SEND, SD_BOTH.
 int32_t XBerkeleySockets::shutdown(SOCKET socket, int32_t operation)
 {
 	std::cout << "Shutting down the connection... ";
@@ -91,15 +88,6 @@ void XBerkeleySockets::closesocket(SOCKET socket)
 }
 
 
-// All addrinfo structures that have been allocated by the getaddrinfo()
-// function must be freed once they are done being used. Since the function
-// gives you a pointer to the allocated addrinfo structure, you should
-// do something like this example:
-// addrinfo * ServerConnectionInfo = nullptr;
-// getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
-// 	if (ServerConnectionInfo != nullptr)
-//		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
-// Making sure we never freeaddrinfo twice. Ugly bugs otherwise.
 void XBerkeleySockets::freeaddrinfo(addrinfo** ppAddrInfo)
 {
 	::freeaddrinfo(*ppAddrInfo);
@@ -110,13 +98,6 @@ void XBerkeleySockets::freeaddrinfo(addrinfo** ppAddrInfo)
 }
 
 
-// For most consistent results, errno needs to be set to 0 before
-// every function call that can return an errno.
-// This method is only intended for use with things that deal with sockets.
-// On windows, this function returns WSAERROR codes.
-// On linux, this function returns errno codes.
-// getError() will output the error code + description unless
-// output_to_console arg is given false.
 int32_t XBerkeleySockets::getError(bool output_to_console)
 {
 	// If you are getting an error but WSAGetLastError() is saying there is no error, then make sure
@@ -145,9 +126,7 @@ int32_t XBerkeleySockets::getError(bool output_to_console)
 #endif//_WIN32
 }
 
-// Attempts to output a description for the error code.
-// On windows it expects a WSAERROR code.
-// On linux it expects an errno code.
+
 void XBerkeleySockets::outputSocketErrorToConsole(int32_t error_code)
 {
 #ifdef __linux__
@@ -208,7 +187,7 @@ void XBerkeleySockets::outputSocketErrorToConsole(int32_t error_code)
 	return;
 }
 
-// Output to console the the peer's IP and port that you have connected to the peer with.
+
 void XBerkeleySockets::coutPeerIPAndPort(SOCKET connection_with_peer)
 {
 	sockaddr PeerIPAndPortStorage;
@@ -252,11 +231,7 @@ void XBerkeleySockets::coutPeerIPAndPort(SOCKET connection_with_peer)
 	delete(remote_hosts_port);
 }
 
-// With this method you can enable or disable blocking for a given socket.
-// DISABLE_BLOCKING == 1;
-// ENABLE_BLOCKING == 0;
-// returns 0, success
-// returns -1, error
+
 int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* option)
 {
 
@@ -339,7 +314,7 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 	return -1;
 }
 
-// Get error information from the socket.
+
 int32_t XBerkeleySockets::getSockOptError(SOCKET fd_socket)
 {
 #ifdef _WIN32

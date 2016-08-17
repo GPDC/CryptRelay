@@ -72,7 +72,7 @@ bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 
 	for (int32_t i = 0; i < 4; i++)
 	{
-		end = findNextPeriod(ipaddress, start);
+		end = findNextIPv4Period(ipaddress, start);
 		if (end == BAD_FORMAT)
 		{
 			return false;
@@ -85,7 +85,7 @@ bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 		{
 			end = ipaddress_size;
 		}
-		if (checkSubnetRange(ipaddress, start, end) == true)
+		if (checkIPv4SubnetRange(ipaddress, start, end) == true)
 		{
 			return false;
 		}
@@ -108,7 +108,7 @@ bool FormatCheck::isIPV4FormatCorrect(char* ipaddr)
 }
 
 
-int32_t FormatCheck::findNextPeriod(std::string ipaddress, int32_t start)
+int32_t FormatCheck::findNextIPv4Period(std::string ipaddress, int32_t start)
 {
 	int32_t size_of_ip_address;
 	if (ipaddress.length() < INT_MAX)
@@ -144,7 +144,7 @@ int32_t FormatCheck::findNextPeriod(std::string ipaddress, int32_t start)
 	return period_location;
 }
 
-bool FormatCheck::checkSubnetRange(std::string ipaddress, int32_t start, int32_t end)
+bool FormatCheck::checkIPv4SubnetRange(std::string ipaddress, int32_t start, int32_t end)
 {
 	int32_t subnet_array_count = end - start;
 

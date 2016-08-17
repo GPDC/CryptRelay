@@ -66,15 +66,43 @@ public:
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;
 
-	void findUPnPDevices();					// core function for doing anything in upnp
-	int32_t findValidIGD();					// core function for doing anything in upnp
 
+
+	// ----------------- core functions for doing anything in UPnP class -----------------------------
+	//								aka the important steps
+
+	// Find UPnP devices on the local network
+	// If something responds, that must mean it is a UPnP device,
+	// and it stores discovered devices as a chained list inside UPNPDev * UpnpDevicesList.
+	void findUPnPDevices();
+
+	// Check for a valid IGD based off the list filled out by findUPnPDevices()
+	// After doing that it fills out struct UPNPUrls Urls and struct IGDdatas IGDDatas
+	// with information about the device and urls necessary to control it.
+	int32_t findValidIGD();
+
+	// =========================================================================================
+
+
+	// Display Information such as:
+	// External and local IP address
+	// Connection type
+	// Connection status, uptime, last connection error
+	// Time started
+	// Max bitrates
 	void standaloneShowInformation();
-	void standaloneGetListOfPortForwards();
+
+	// Get, then display a list of port forwards on the IGD.
+	void standaloneDisplayListOfPortForwards();
+
+	// Delete the specified port forward rule.
 	void standaloneDeleteThisSpecificPortForward(const char * extern_port, const char* protocol);
+
+	// Add a port forward rule. User does not get to specify anything about the rule.
 	int32_t autoAddPortForwardRule();
+	
+	// Delete the port forward rule that was added by autoAddPortForwardRule().
 	void autoDeletePortForwardRule();
-	int32_t standaloneAutoAddPortForwardRule();
 
 	// These are in public because connection class will
 	// want to know what the user's IP and ports are.
@@ -109,14 +137,28 @@ private:
 	// entry that was automatically added using autoAddPortForwardRule()
 	bool port_forward_automatically_added = false;
 
-	// Displays some router information like uptime, external ip && internal ip, max bitrate.
+	// Display Information such as:
+	// External and local IP address
+	// Connection type
+	// Connection status, uptime, last connection error
+	// Time started
+	// Max bitrates
 	void showInformation();
 
-	void getListOfPortForwards();
+	// Get, then display a list of port forwards on the IGD.
+	void displayListOfPortForwards();
+
+	// Get, then display when the connection(?) with the IGD has started.
 	void displayTimeStarted(uint32_t uptime);
+
+	// Add a port forward rule. User does not get to specify anything about the rule.
+	int32_t standaloneAutoAddPortForwardRule();
 
 	// Cross-platform WSAStartup();
 	// For every WSAStartup() that is called, a WSACleanup() must be called.
+	// Necessary to do anything with sockets on Windows
+	// Returns 0, success.
+	// Returns a WSAERROR code if failed.
 	int32_t WSAStartup();
 
 #ifdef _WIN32

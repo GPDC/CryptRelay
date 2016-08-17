@@ -25,8 +25,9 @@ public:
 public:
 	virtual ~IXBerkeleySockets() {};
 
-	// Outputs to console that the connection is being shutdown
-	// in addition to the normal shutdown() behavior.
+	// Shuts down the current connection that is active on the given socket.
+	// The shutdown operation is one of three macros.
+	// SD_RECEIVE, SD_SEND, SD_BOTH.
 	virtual int32_t shutdown(SOCKET socket, int32_t operation) = 0;
 
 	// Cross-platform closing of a socket / fd.
@@ -39,7 +40,7 @@ public:
 	// addrinfo * ServerConnectionInfo = nullptr;
 	// getaddrinfo(my_local_ip, my_local_port, &ServerHints, &ServerConnectionInfo)
 	// 	if (ServerConnectionInfo != nullptr)
-	//		BerkeleySockets->freeaddrinfo(&ServerConnectionInfo);
+	//		Socket->freeaddrinfo(&ServerConnectionInfo);
 	//
 	// Never freeaddrinfo() on something that has already been freed.
 	// In order to avoid doing that, check for a nullptr first.
@@ -51,13 +52,17 @@ public:
 	// }
 	virtual void freeaddrinfo(addrinfo** ppAddrInfo) = 0;
 
-	// Output to console the ip address and port of the peer that you are connect with.
+	// Display the IP and Port of the peer you have a connection with on the SOCKET.
 	virtual void coutPeerIPAndPort(SOCKET connection_with_peer) = 0;
 
-	// getError() 99% of cases you won't need to do anything with the return value.
-	//	the return value is just incase you want to do something specific with the
-	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
-	//	recvfrom() errored because of a timeout, not because of a real fatal error.
+	// For most consistent results, errno needs to be set to 0 before
+	// every function call that can return an errno.
+	// This method is only intended for use with things that deal with sockets.
+	// getError() will output the error code + description unless
+	// output_to_console arg is given false.
+	// The return value is just incase you want to do something specific with the error code.
+	// On windows, this function returns WSAERROR codes.
+	// On linux, this function returns errno codes.
 	virtual int32_t getError(bool output_to_console = true) = 0;
 
 	// Accessor for the const DISABLE_CONSOLE_OUTPUT.
@@ -66,11 +71,17 @@ public:
 
 
 	// Only intended for use with Socket errors.
-	// Windows outputs a WSAERROR code, linux outputs errno code.
+	// Attempts to output a description for the error code.
+	// On windows it expects a WSAERROR code.
+	// On linux it expects an errno code.
 	virtual void outputSocketErrorToConsole(int32_t error_code) = 0;
 
-	// Enable or disable the blocking socket option.
-	// By default, blocking is enabled.
+	// With this method you can enable or disable blocking for a given socket.
+	// FYI: SOCKETs are blocking by default
+	// DISABLE_BLOCKING == 1;
+	// ENABLE_BLOCKING == 0;
+	// returns 0, success
+	// returns -1, error
 	virtual int32_t setBlockingSocketOpt(SOCKET fd_socket, const u_long* option) = 0;
 
 	// Accessors for use an arg for setBlockingSocketOpt()
@@ -78,6 +89,8 @@ public:
 	virtual const unsigned long& getEnableBlocking() = 0;
 
 	// Get error information from the socket.
+	// Returns SOCKET_ERROR, error
+	// Returns the socket option error code, success
 	virtual int32_t getSockOptError(SOCKET fd_socket) = 0;
 };
 

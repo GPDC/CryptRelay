@@ -60,8 +60,6 @@ UPnP::~UPnP()
 		autoDeletePortForwardRule();
 
 	// Free everything because we are done with them
-	if (verbose_output == true)
-		std::cout << "Freeing allocated UPnP memory.\n";
 	freeUPNPDevlist(UpnpDevicesList);
 	FreeUPNPUrls(&Urls);
 
@@ -75,7 +73,7 @@ UPnP::~UPnP()
 // This is for when the user simply wants a list of all the
 // port forwards currently on his router, not starting 
 // the chat program or anything else.
-void UPnP::standaloneGetListOfPortForwards()
+void UPnP::standaloneDisplayListOfPortForwards()
 {
 	// Enable socket use on Windows
 	// This is already done in the constructor.
@@ -88,7 +86,7 @@ void UPnP::standaloneGetListOfPortForwards()
 		return;
 
 	// Display the list of port forwards
-	getListOfPortForwards();
+	displayListOfPortForwards();
 }
 
 
@@ -129,10 +127,6 @@ void UPnP::standaloneDeleteThisSpecificPortForward(const char * extern_port, con
 }
 
 
-// Finds all UPnP devices on the local network. This is generally the first
-// step you need to do for doing anything with UPnP since you need to find
-// UPnP enabled devices to do anything with them.
-// Stores found devices in struct UPNPDEV* UpnpDevicesList
 void UPnP::findUPnPDevices()
 {
 	int32_t miniupnp_error = 0;		// upnpDiscover() sends error info here.
@@ -161,11 +155,7 @@ void UPnP::findUPnPDevices()
 	}
 }
 
-// Looks at the list of UPnP devices inside struct UPNPDEV* UpnpDeviceList after
-// it has been filled out by findUPnPDevices() to determine if there is a valid IGD.
-// After doing that it fills out struct UPNPUrls Urls and struct IGDdatas IGDDatas
-// with information about the device and urls necessary to control it.
-// This is generally the second step of the 2 important steps. The first step is to findUPnPDevices().
+
 int32_t UPnP::findValidIGD()
 {
 	// Looks at the list of UPnP devices returned by upnpDiscover() to determine if one is a valid IGD
@@ -208,12 +198,7 @@ int32_t UPnP::findValidIGD()
 	return 0;
 }
 
-// Display Information such as:
-// External and local IP address
-// Connection type
-// Connection status, uptime, last connection error
-// Time started
-// Max bitrates
+
 void UPnP::showInformation()
 {
 	char connection_type[64];
@@ -225,7 +210,7 @@ void UPnP::showInformation()
 
 	std::cout << "# Displaying various information:\n";
 
-	// Display connection type
+	// Get, then display connection type
 	errchk = UPNP_GetConnectionTypeInfo(
 			Urls.controlURL,
 			IGDData.first.servicetype,
@@ -236,7 +221,7 @@ void UPnP::showInformation()
 	else
 		std::cout << "Connection Type : " << connection_type << "\n";
 
-	// Display status, uptime, last connection error
+	// Get, then display status, uptime, last connection error
 	errchk = UPNP_GetStatusInfo(
 			Urls.controlURL,
 			IGDData.first.servicetype,
@@ -254,7 +239,7 @@ void UPnP::showInformation()
 	displayTimeStarted(uptime);
 
 
-	// Display Max bit rates
+	// Get, then display Max bit rates
 	errchk = UPNP_GetLinkLayerMaxBitRates(
 			Urls.controlURL_CIF,
 			IGDData.CIF.servicetype,
@@ -280,7 +265,7 @@ void UPnP::showInformation()
 		std::cout << "\n";
 	}
 
-	// Get external IP address
+	// Get, then display external IP address
 	memset(my_external_ip, 0, sizeof(my_external_ip));
 	errchk = UPNP_GetExternalIPAddress(
 			Urls.controlURL,
@@ -307,12 +292,11 @@ void UPnP::standaloneShowInformation()
 	if (findValidIGD() == -1)
 		return;
 
-	// Output information to the console
+	// Output information to the console like external ip address, connection type.
 	showInformation();
 }
 
-// Given the amount of uptime, calculate the time at which
-// the connection(?) has started.
+
 void UPnP::displayTimeStarted(uint32_t uptime)
 {
 #ifdef commentout // disabling this for now
@@ -372,11 +356,8 @@ void UPnP::displayTimeStarted(uint32_t uptime)
 #endif
 }
 
-// Give it the struct IGDdatas IGDData because that is
-// where the data is stored for the IGD.
-// And give it struct UPNPUrls Urls because that is
-// where urls for controlling the IGD is.
-void UPnP::getListOfPortForwards()
+
+void UPnP::displayListOfPortForwards()
 {
 	int32_t errchk = 1;
 	int32_t i = 0;
@@ -434,9 +415,7 @@ void UPnP::getListOfPortForwards()
 
 }
 
-// Add a port forwarding rule.
-// Must have called findValidIGD() first to get
-// your internal IP address, and to have an IGD to talk to.
+
 int32_t UPnP::autoAddPortForwardRule()
 {
 	// Information necessary for UPNP_AddPortMapping()
@@ -662,8 +641,7 @@ int32_t UPnP::autoAddPortForwardRule()
 	return 0; // Success
 }
 
-// Adds a new port forwarding rule.
-// Displays extra information if verbose_output == true.
+
 int32_t UPnP::standaloneAutoAddPortForwardRule()
 {
 
@@ -683,7 +661,7 @@ int32_t UPnP::standaloneAutoAddPortForwardRule()
 
 	// Get list of currently mapped ports for the IGD and output to console.
 	if (verbose_output == true)
-		getListOfPortForwards();
+		displayListOfPortForwards();
 
 	// Add the port forward rule
 	if (autoAddPortForwardRule() == -1)
@@ -724,9 +702,7 @@ void UPnP::autoDeletePortForwardRule()
 	}
 }
 
-// Necessary to do anything with sockets on Windows
-// Returns 0, success.
-// Returns a WSAERROR code if failed.
+
 int32_t UPnP::WSAStartup()
 {
 #ifdef _WIN32

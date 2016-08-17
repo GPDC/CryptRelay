@@ -1,15 +1,9 @@
-// Connection.h  // pls rename to connection
+// Connection.h
 
 // Overview:
 // This is where the program will make a connection with the peer.
-// It uses XBerkeleySockets to store SOCKET information.
 
 // Terminology:
-// BerkeleySockets is an end-point that is defined by an IP-address and port.
-//   A socket is just an integer with a number assigned to it.
-//   That number can be thought of as a unique ID for the connection
-//   that may or may not be established.
-// fd is linux's term for a socket. == File Descriptor
 // Mutex - mutual exclusions. It is designed so that only 1 thread executes code
 // at any given time while inside the mutex.
 

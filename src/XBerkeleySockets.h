@@ -8,6 +8,10 @@
 // Terminology:
 // Below is terminology with simple descriptions for anyone new to socket programming:
 // fd stands for File Descriptor. It is linux's version of a SOCKET.
+// SOCKET is an end-point that is defined by an IP-address and port.
+//   A socket is just an integer with a number assigned to it.
+//   That number can be thought of as a unique ID for the connection
+//   that may or may not be established.
 
 
 #ifndef XBerkeleySockets_h__
@@ -44,8 +48,9 @@ public:
 	XBerkeleySockets();
 	virtual ~XBerkeleySockets();
 
-	// Outputs to console that the connection is being shutdown
-	// in addition to the normal shutdown() behavior.
+	// Shuts down the current connection that is active on the given socket.
+	// The shutdown operation is one of three macros.
+	// SD_RECEIVE, SD_SEND, SD_BOTH.
 	int32_t shutdown(SOCKET socket, int32_t operation);
 	
 	// Cross-platform closing of a socket / fd.
@@ -69,28 +74,42 @@ public:
 	//      this->freeaddrinfo(&ClientConnectionInfo);
 	// }
 	void freeaddrinfo(addrinfo** ppAddrInfo);
+
+	// Display the IP and Port of the peer you have a connection with on the SOCKET.
 	void coutPeerIPAndPort(SOCKET connection_with_peer);
 
 
-	// getError() 99% of cases you won't need to do anything with the return value.
-	//	the return value is just incase you want to do something specific with the
-	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
-	//	recvfrom() errored because of a timeout, not because of a real fatal error.
+	// For most consistent results, errno needs to be set to 0 before
+	// every function call that can return an errno.
+	// This method is only intended for use with things that deal with sockets.
+	// getError() will output the error code + description unless
+	// output_to_console arg is given false.
+	// The return value is just incase you want to do something specific with the error code.
+	// On windows, this function returns WSAERROR codes.
+	// On linux, this function returns errno codes.
 	int32_t getError(bool output_to_console = true);
 	static const bool DISABLE_CONSOLE_OUTPUT;
 
 
 	// Only intended for use with Socket errors.
-	// Windows outputs a WSAERROR code, linux outputs errno code.
+	// Attempts to output a description for the error code.
+	// On windows it expects a WSAERROR code.
+	// On linux it expects an errno code.
 	void outputSocketErrorToConsole(int32_t error_code);
 
-	// Enable or disable the blocking socket option.
-	// By default, blocking is enabled.
+	// With this method you can enable or disable blocking for a given socket.
+	// FYI: SOCKETs are blocking by default
+	// DISABLE_BLOCKING == 1;
+	// ENABLE_BLOCKING == 0;
+	// returns 0, success
+	// returns -1, error
 	int32_t setBlockingSocketOpt(SOCKET fd_socket, const u_long* option);
 	static const unsigned long DISABLE_BLOCKING;
 	static const unsigned long ENABLE_BLOCKING;
 
 	// Get error information from the socket.
+	// Returns SOCKET_ERROR, error
+	// Returns the socket option error code, success
 	int32_t getSockOptError(SOCKET fd_socket);
 	
 
@@ -103,10 +122,10 @@ private:
 
 public:
 	// Accessors
-	bool getDisableConsoleOutput() { return DISABLE_CONSOLE_OUTPUT; }
 
 	// Even though these constants are public, accessors were made so
 	// that ppl can access them through the interface.
+	bool getDisableConsoleOutput() { return DISABLE_CONSOLE_OUTPUT; }
 	const unsigned long& getDisableBlocking() { return DISABLE_BLOCKING; }
 	const unsigned long& getEnableBlocking() { return ENABLE_BLOCKING; }
 };

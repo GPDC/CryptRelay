@@ -1,9 +1,5 @@
 //FormatCheck.h
 
-// This class is highly coupled with the FormatCheck class.
-// I don't intend to reduce coupling as this class is very specific to CryptRelay
-// and I wouldn't drop it into some other program.
-
 // Overview:
 // Purpose is for checking for proper format on a given thing.
 //  Examples: checking for proper IPv4 format, IPv6, Port number
@@ -38,7 +34,10 @@ private:
 
 	const int32_t INET_ADDR_STR_LEN = 15;		// max size of ipv4 address 15 / ipv6 is 45
 
-	bool checkSubnetRange(std::string target_ipaddress, int32_t start, int32_t end);
-	int32_t findNextPeriod(std::string target_ipaddress, int32_t start);
+	// Make sure the IPv4 address octets stay between 0-255.
+	bool checkIPv4SubnetRange(std::string target_ipaddress, int32_t start, int32_t end);
+
+	// For finding the location of the next '.' in an IP address.
+	int32_t findNextIPv4Period(std::string target_ipaddress, int32_t start);
 };
 #endif

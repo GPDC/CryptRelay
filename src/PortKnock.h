@@ -1,9 +1,7 @@
 // PortKnock.h
-// ummmm not sure why I've put this inside CryptRelay... ******* PENDING DELETION *******
 
 // Overview:
 // This class deals with all checks for open ports and closed ports.
-// Class PortKnock does not do input validation.
 
 #ifndef PortKnock_h__
 #define PortKnock_h__
@@ -23,7 +21,7 @@ public:
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;
 
-	// Checks to see if the specified port is in use on the user's computer.
+	// Checks to see if the specified port is in use on the user's local computer.
 	int32_t isLocalPortInUse(std::string port, std::string my_local_ip);
 
 	// Very simple checking of 1 port. Not for checking many ports quickly.

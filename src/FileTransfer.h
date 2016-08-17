@@ -4,18 +4,11 @@
 
 // One instance of this class == 1 file transfer thread.
 
-
-// With regards to the current setup of the RecvBufStateMachine inside the ApplicationLayer,
+// With regards to the current setup of the RecvBufStateMachine inside the ApplicationLayer class,
 // it is only possible to send 1 file at a time, even if multiple instances of this class are used.
 // Multiple files can be sent, its just that one has to be completely done sending before the other
 // is to be sent.
 
-// Anything that is tagged as a '~CryptRelay specific methods~':
-// These methods are specific to CryptRelay as a program, sending data
-// to another CryptRelay program, and are not intended for use with any other program.
-// Basically, if you want to take this class and use it for some other program,
-// do not use any of the methods in this class with the tag '~CryptRelay specific methods~'
-// without modifying them first to work with whatever your new program is.
 #ifdef __linux__
 #include <string>
 #endif//__linux__

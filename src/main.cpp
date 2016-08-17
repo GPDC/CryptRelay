@@ -415,7 +415,7 @@ int32_t main(int32_t argc, char *argv[])
 	{
 		// Show the ports that are currently forwarded on the router
 		Upnp = new UPnP(CLI.getVerboseOutput());
-		Upnp->standaloneGetListOfPortForwards();
+		Upnp->standaloneDisplayListOfPortForwards();
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}

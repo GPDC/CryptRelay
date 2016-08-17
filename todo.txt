@@ -46,6 +46,9 @@
 # Todo for v1_1_1
 - Make all couts go through a mutex so that it doesn't end up garbled and mixed up in the console when multiple threads cout at same time.
 
+- Add options to either as a startup argument, or as .cfg file, to change some settings in the program like: upnpDiscover()'s WAIT_TIME,
+ which is the time in ms to wait for a response from a device.
+
 
 
 # Research:

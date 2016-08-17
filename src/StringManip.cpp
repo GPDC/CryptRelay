@@ -31,10 +31,7 @@ StringManip::~StringManip()
 
 }
 
-// The delimiter is the character that will signal when the string should be split.
-// a delimiter of a ' ' will create a new string every time it encounters a ' '.
-// For example: the quick brown fox
-// is turned into: str1 == the, str2 == quick, str3 == brown, str4 == fox
+
 int32_t StringManip::split(const std::string& string, char delimiter, std::vector<std::string> &elements)
 {
 	std::stringstream ss(string);
@@ -65,8 +62,7 @@ int32_t StringManip::split(const std::string& string, char delimiter, std::vecto
 	return 0;
 }
 
-// Finds the specified character (aka the delimiter), and
-// duplicates it by inserting another one next to it.
+
 std::string StringManip::duplicateCharacter(std::string& string, char duplicate_character)
 {
 	size_t string_length = string.length();
