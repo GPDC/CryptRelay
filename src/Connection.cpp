@@ -86,6 +86,7 @@ Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
 		verbose_output = true;
 
 	BerkeleySockets = IXBerkeleySocketsInstance;
+	fd_socket = INVALID_SOCKET;
 }
 Connection::~Connection()
 {

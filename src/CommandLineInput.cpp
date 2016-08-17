@@ -3,6 +3,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <climits>
 
 #include "CommandLineInput.h"
 #include "GlobalTypeHeader.h"
@@ -13,6 +14,7 @@
 #include <string>
 #include <iostream>
 #include <vector>
+#include <climits>
 
 #include "CommandLineInput.h"
 #include "GlobalTypeHeader.h"

@@ -12,6 +12,7 @@
 #include <netinet/in.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include <climits>
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
@@ -20,6 +21,7 @@
 #ifdef _WIN32
 #include <string>
 #include <iostream>
+#include <climits>
 
 #include "FormatCheck.h"
 #include "GlobalTypeHeader.h"
@@ -113,6 +115,10 @@ int32_t FormatCheck::findNextIPv4Period(std::string ipaddress, int32_t start)
 	int32_t size_of_ip_address;
 	if (ipaddress.length() < INT_MAX)
 		size_of_ip_address = (int32_t)ipaddress.length();
+	else
+	{
+		return BAD_FORMAT;
+	}
 
 	int32_t period_location = -1;
 
@@ -189,6 +195,10 @@ bool FormatCheck::isPortFormatCorrect(char* port)
 	int32_t length_of_port;
 	if (strlen(port) < INT_MAX)
 		length_of_port = (int32_t)strlen(port);
+	else
+	{
+		return false;
+	}
 
 	if (length_of_port > MAX_PORT_LENGTH)
 	{

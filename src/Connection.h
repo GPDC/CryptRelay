@@ -102,7 +102,7 @@ private:
 
 	// If a connection has successfully been established, this socket will
 	// be the one that it is established on. If it isn't, it will be INVALID_SOCKET.
-	SOCKET fd_socket = INVALID_SOCKET;
+	SOCKET fd_socket;
 	
 
 	// Server and Client thread must use this method, if they are ever

@@ -12,6 +12,12 @@ class IXBerkeleySockets;
 class PortKnock
 {
 public:
+	// Typedefs
+#ifdef __linux__
+	typedef int32_t SOCKET;
+#endif//__linux__
+
+public:
 	PortKnock(
 		IXBerkeleySockets * IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		bool turn_verbose_output_on = false
