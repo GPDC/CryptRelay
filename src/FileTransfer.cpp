@@ -47,6 +47,7 @@ FileTransfer::~FileTransfer()
 
 }
 
+
 int32_t FileTransfer::sendFile(std::string file_name_and_path)
 {
 	is_send_file_thread_in_use = true;
@@ -100,7 +101,7 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	// Get file statistics and display the size of the file
 	int64_t size_of_file = 0;
 	xplatform_struct_stat FileStats;
-	int32_t err_chk = getFileStats(file_name_and_path.c_str(), &FileStats);
+	int32_t err_chk = retrieveFileStats(file_name_and_path.c_str(), &FileStats);
 	if (err_chk == -1)
 	{
 		delete[]buf;
@@ -271,7 +272,7 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	// Get file stastics and cout the size of the file
 	int64_t size_of_file_to_be_copied = 0;
 	xplatform_struct_stat FileStats;
-	int32_t errchk = getFileStats(file_name_and_location_for_reading, &FileStats);
+	int32_t errchk = retrieveFileStats(file_name_and_location_for_reading, &FileStats);
 	if (errchk == -1)
 	{
 		std::cout << "Error retrieving file statistics. Abandoning file transfer.\n";
@@ -393,11 +394,11 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 // Error == -1
 // /* IN */ const char * file_name_and_path
 // /* OUT */ xplatform_struct_stat* FileStats
-int32_t FileTransfer::getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats)
+int32_t FileTransfer::retrieveFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats)
 {
 	if (FileStats == nullptr || file_name_and_path == nullptr)
 	{
-		std::cout << "Error: getFileStats() failed. NULL pointer.\n";
+		std::cout << "Error: retrieveFileStats() failed. NULL pointer.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
 		return -1;
 	}

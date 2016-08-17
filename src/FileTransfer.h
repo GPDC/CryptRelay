@@ -45,7 +45,9 @@ public:
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;
 
-	// Sends a file
+	// Sends a file to the connected peer.
+	// Returns -1, error
+	// Returns 0, success
 	int32_t sendFile(std::string file_name_and_path);
 	// This is only for use with sendFile()
 	bool is_send_file_thread_in_use = false;
@@ -66,10 +68,19 @@ private:
 
 
 	// Copies a file.
+	// This function expects the file name and location of the file
+	// to be properly formatted already. That means escape characters
+	// must be used to make a path valid '\\'.
 	bool copyFile(const char * read_file_name_and_location, const char * write_file_name_and_location);
 
-	// For use with anything file related
-	static int32_t getFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
+	// Gets some stats about the file. One stat, for example, is the size of the file.
+	// Returns 0, success
+	// Returns -1, error
+	// /* IN */ const char * file_name_and_path
+	// /* OUT */ xplatform_struct_stat* FileStats
+	static int32_t retrieveFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
+
+	// Displays to console the size of the file.
 	static bool displayFileSize(const char* file_name_and_path, xplatform_struct_stat * FileStatBuf);
 
 	// If given a direct path to a file, it will return the file name.
