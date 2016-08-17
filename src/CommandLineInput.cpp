@@ -172,7 +172,7 @@ int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 			else if (i < arg_size - 1 && arg[i] == "-mP")
 			{
 				err_chk_bool = IPAdressFormatCheck.isPortFormatCorrect(argv[i + 1]);
-				if (err_chk_bool == true)
+				if (err_chk_bool == false)
 					return -1;
 				else
 				{

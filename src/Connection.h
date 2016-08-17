@@ -86,12 +86,6 @@ public:
 	static const int32_t CLIENT_WON;
 	static const int32_t NOBODY_WON;
 
-	// IP and port information for theConnection class.
-	std::string target_external_ip;
-	std::string target_external_port = DEFAULT_PORT;
-	std::string my_external_ip;
-	std::string my_local_ip;
-	std::string my_local_port = DEFAULT_PORT;
 
 protected:
 private:
@@ -100,14 +94,22 @@ private:
 	Connection(Connection& ConnectionInstance) = delete;			 // disable copy operator
 	Connection& operator=(Connection& ConnectionInstance) = delete;  // disable assignment operator
 
+	// This is the default port for the Connection class.
+	static const std::string DEFAULT_PORT;
+
+	// IP and port information for theConnection class.
+	std::string target_external_ip;
+	std::string target_external_port = DEFAULT_PORT;
+	std::string my_external_ip;
+	std::string my_local_ip;
+	std::string my_local_port = DEFAULT_PORT;
+
 	XBerkeleySockets * Socket;
 
 	// If a connection has successfully been established, this socket will
 	// be the one that it is established on. If it isn't, it will be INVALID_SOCKET.
 	SOCKET fd_socket = INVALID_SOCKET;
-
-	// This is the default port for the Connection class.
-	static const std::string DEFAULT_PORT;
+	
 
 	// Server and Client thread must use this method, if they are ever
 	// running at the same time, to prevent a race condition.
@@ -116,6 +118,13 @@ private:
 	// mutex for use with server and client threads setting the
 	// connection_race_winner variable to prevent a race condition.
 	static std::mutex RaceMutex;
+
+	// For enabling SOCKET usage for windows.
+	int32_t WSAStartup();
+
+#ifdef _WIN32
+	WSADATA wsaData;	// for WSAStartup();
+#endif//_WIN32
 
 
 private:
@@ -126,6 +135,12 @@ public:
 
 	// Accessors
 	SOCKET getFdSocket() { return fd_socket; }
+
+	void setTargetExternalIP(std::string ip) { target_external_ip = ip; }
+	void setTargetExternalPort(std::string port) { target_external_port = port; }
+	void setMyExternalIP(std::string ip) { my_external_ip = ip; }
+	void setMyLocalIP(std::string ip) { my_local_ip = ip; }
+	void setMyLocalPort(std::string port) { my_local_port = port; }
 };
 
 #endif//Connection_h__

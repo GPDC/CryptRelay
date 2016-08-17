@@ -66,6 +66,9 @@ Connection::Connection(XBerkeleySockets* SocketClassInstance,
 						callback_fn_set_exit_now * set_exit_now_ptr,
 						bool turn_verbose_output_on)
 {
+	// Enable socket use on windows.
+	WSAStartup();
+
 	// Set the callbacks
 	callbackGetExitNow = get_exit_now_ptr;
 	callbackSetExitNow = set_exit_now_ptr;
@@ -86,7 +89,10 @@ Connection::Connection(XBerkeleySockets* SocketClassInstance,
 }
 Connection::~Connection()
 {
-
+	// Done with sockets.
+#ifdef _WIN32
+	WSACleanup();
+#endif//_WIN32
 }
 
 
@@ -513,4 +519,20 @@ int32_t Connection::setWinnerMutex(int32_t the_winner)
 
 	RaceMutex.unlock();
 	return connection_race_winner;
+}
+
+// Necessary to do anything with sockets on Windows
+// Returns 0, success.
+// Returns a WSAERROR code if failed.
+int32_t Connection::WSAStartup()
+{
+#ifdef _WIN32
+	int32_t errchk = ::WSAStartup(MAKEWORD(2, 2), &wsaData);
+	if (errchk != 0)
+	{
+		std::cout << "WSAStartup failed, WSAERROR: " << errchk << "\n";
+		return errchk;
+	}
+#endif//_WIN32
+	return 0;
 }

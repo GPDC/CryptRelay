@@ -118,36 +118,36 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerCon
 
 	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ServerConnectInstance->target_external_ip = CLI->getTargetIpAddress();
+		ServerConnectInstance->setTargetExternalIP(CLI->getTargetIpAddress());
 
 	if (CLI->getTargetPort().empty() == false)
-		ServerConnectInstance->target_external_port = CLI->getTargetPort();
+		ServerConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ServerConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ServerConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ServerConnectInstance->my_local_ip = CLI->getMyIpAddress();
+		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
 	if (CLI->getMyHostPort().empty() == false)
-		ServerConnectInstance->my_local_port = CLI->getMyHostPort();
+		ServerConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 
 
-	// Give IP and port info to the ServerConnect instance
+	// Give IP and port info to the ClientConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ClientConnectInstance->target_external_ip = CLI->getTargetIpAddress();
+		ClientConnectInstance->setTargetExternalIP(CLI->getTargetIpAddress());
 
 	if (CLI->getTargetPort().empty() == false)
-		ClientConnectInstance->target_external_port = CLI->getTargetPort();
+		ClientConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ClientConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ClientConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ClientConnectInstance->my_local_ip = CLI->getMyIpAddress();
+		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
 	if (CLI->getMyHostPort().empty() == false)
-		ClientConnectInstance->my_local_port = CLI->getMyHostPort();
+		ClientConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 }
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
@@ -162,48 +162,48 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 
 	// Give IP and port info to the ServerConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ServerConnectInstance->target_external_ip = CLI->getTargetIpAddress();
+		ServerConnectInstance->setTargetExternalIP(CLI->getTargetIpAddress());
 
 	if (CLI->getTargetPort().empty() == false)
-		ServerConnectInstance->target_external_port = CLI->getTargetPort();
+		ServerConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ServerConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ServerConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 	else
-		ServerConnectInstance->my_external_ip = UpnpInstance->my_external_ip;
+		ServerConnectInstance->setMyExternalIP(UpnpInstance->my_external_ip);
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ServerConnectInstance->my_local_ip = CLI->getMyIpAddress();
+		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 	else
-		ServerConnectInstance->my_local_ip = UpnpInstance->my_local_ip;
+		ServerConnectInstance->setMyLocalIP(UpnpInstance->my_local_ip);
 
 	if (CLI->getMyHostPort().empty() == false)
-		ServerConnectInstance->my_local_port = CLI->getMyHostPort();
+		ServerConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 	else
-		ServerConnectInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
+		ServerConnectInstance->setMyLocalPort(UpnpInstance->upnp_my_internal_port);
 
 
-	// Give IP and port info to the ServerConnect instance
+	// Give IP and port info to the ClientConnect instance
 	if (CLI->getTargetIpAddress().empty() == false)
-		ClientConnectInstance->target_external_ip = CLI->getTargetIpAddress();
+		ClientConnectInstance->setTargetExternalIP(CLI->getTargetIpAddress());
 
 	if (CLI->getTargetPort().empty() == false)
-		ClientConnectInstance->target_external_port = CLI->getTargetPort();
+		ClientConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
 	if (CLI->getMyExtIpAddress().empty() == false)
-		ClientConnectInstance->my_external_ip = CLI->getMyExtIpAddress();
+		ClientConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 	else
-		ClientConnectInstance->my_external_ip = UpnpInstance->my_external_ip;
+		ClientConnectInstance->setMyExternalIP(UpnpInstance->my_external_ip);
 
 	if (CLI->getMyIpAddress().empty() == false)
-		ClientConnectInstance->my_local_ip = CLI->getMyIpAddress();
+		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 	else
-		ClientConnectInstance->my_local_ip = UpnpInstance->my_local_ip;
+		ClientConnectInstance->setMyLocalIP(UpnpInstance->my_local_ip);
 
 	if (CLI->getMyHostPort().empty() == false)
-		ClientConnectInstance->my_local_port = CLI->getMyHostPort();
+		ClientConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 	else
-		ClientConnectInstance->my_local_port = UpnpInstance->upnp_my_internal_port;
+		ClientConnectInstance->setMyLocalPort(UpnpInstance->upnp_my_internal_port);
 }
 
 // Portforward the router using UPnP.
