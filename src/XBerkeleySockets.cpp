@@ -276,6 +276,8 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 				DBG_DISPLAY_ERROR_LOCATION();
 				return -1;
 			}
+			else
+				return 0;
 		}
 
 	}
@@ -307,11 +309,13 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 				DBG_DISPLAY_ERROR_LOCATION();
 				return -1;
 			}
+			else
+				return 0;
 		}
 	}
 #endif//__linux__
 
-	return -1;
+	return 0;
 }
 
 
