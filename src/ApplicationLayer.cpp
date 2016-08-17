@@ -932,7 +932,6 @@ void ApplicationLayer::assignFileNameFromPeerCStr(char * recv_buf, int64_t recei
 
 int32_t ApplicationLayer::openFileForWrite()
 {
-	WriteFile = new FILE;
 	WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
 	if (WriteFile == nullptr)
 	{
