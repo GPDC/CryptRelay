@@ -611,37 +611,10 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 			if (position_in_message < message_size)
 			{
-				int64_t amount_to_write = message_size - position_in_message;
-				if (amount_to_write > received_bytes - position_in_recv_buf)
-					amount_to_write = received_bytes - position_in_recv_buf;
-
-				if (WriteFile == nullptr)
+				if (writeFileFromPeer(recv_buf, received_bytes) == -1)
 				{
 					state = ERROR_STATE;
 					break;
-				}
-
-				bytes_written = fwrite(recv_buf + position_in_recv_buf, 1, (size_t)(amount_to_write), WriteFile);
-				if (!bytes_written)
-				{
-					perror("Error while writing the file from peer");
-					if (fclose(WriteFile))
-					{
-						perror("Error closing file for writing");
-					}
-					// delete file here? This could be dangerous, and should
-					// require user confirmation. Or check to make sure
-					// file didn't exist before trying to open it, then
-					// it would be safe to delete.
-
-					state = ERROR_STATE;
-					break;
-				}
-				else
-				{
-					total_bytes_written_to_file += bytes_written;
-					position_in_message += bytes_written;
-					position_in_recv_buf += bytes_written;
 				}
 			}
 
@@ -656,25 +629,13 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 
 			// this shouldn't be reached
-			std::cout << "Unrecognized message?\n";
-			std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
-			std::cout << "Catastrophic failure.\n";
 			state = ERROR_STATE;
-
 			break;
 		}
 		case OUTPUT_CHAT_FROM_PEER:
 		{
 			// Print out the message to terminal
-			std::cout << "\n";
-			std::cout << "Peer: ";
-			for (;
-				(position_in_recv_buf < received_bytes) && (position_in_message < message_size);
-				++position_in_recv_buf, ++position_in_message)
-			{
-				std::cout << recv_buf[position_in_recv_buf];
-			}
-			std::cout << "\n";
+			coutChatMsgFromPeer(recv_buf, received_bytes);
 
 			if (position_in_recv_buf >= received_bytes)
 			{
@@ -688,23 +649,15 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 				state = CHECK_FOR_FLAG;
 				break;
 			}
+
 			// this shouldn't be reached
-			std::cout << "Unreachable area, switchcase DECIDE_ACTION, recv() loop\n";
-			std::cout << "Catastrophic failure.\n";
 			state = ERROR_STATE;
 			break;
 		}
 		case TAKE_FILE_NAME_FROM_PEER:
 		{
 			// Set the file name variable.
-			for (;
-				(position_in_recv_buf < received_bytes)
-				&& (position_in_message < message_size)
-				&& (position_in_message < INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME);
-				++position_in_recv_buf, ++position_in_message)
-			{
-				incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
-			}
+			assignFileNameFromPeerCStr(recv_buf, received_bytes);
 
 			if (position_in_recv_buf >= received_bytes)
 				return 0;
@@ -729,15 +682,14 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			std::cout << "# Incoming file name: " << incoming_file_name_from_peer << "\n";
 
 
-			if (position_in_message == message_size)// must have a new message from the peer.
+			// Must have a new message from the peer if this is true
+			if (position_in_message == message_size)
 			{
 				state = CHECK_FOR_FLAG;
 				break;
 			}
+
 			// this shouldn't be reached
-			std::cout << "Unreachable area:";
-			DBG_DISPLAY_ERROR_LOCATION();
-			std::cout << "Catastrophic failure.\n";
 			state = ERROR_STATE;
 			break;
 			// Linux:
@@ -769,23 +721,8 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		}
 		case FILE_TRANSFER_COMPLETE:
 		{
-			// Finished receiving the file.
-			std::cout << "# Expected " << incoming_file_size_from_peer << ".\n";
-			std::cout << "# Wrote " << total_bytes_written_to_file << "\n";
-			std::cout << "# Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
-
-			// If it didn't write as many bytes as it thought it should
-			if (incoming_file_size_from_peer - total_bytes_written_to_file != 0)
-			{
-				std::cout << "# File transfer from peer is INCOMPLETE and will not recover: " << incoming_file_name_from_peer << "\n";
-				std::cout << "\n";
-			}
-			else
-			{
-				// Everything is fine, tell the user it is complete.
-				std::cout << "# File transfer from peer is complete: " << incoming_file_name_from_peer << "\n";
-				std::cout << "\n";
-			}
+			// Cout to console whether it completed successfully or unsuccessfully.
+			coutFileTransferSuccessOrFail();
 
 			state = CLOSE_FILE_FOR_WRITE;
 			break;
@@ -853,7 +790,6 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 					state = OUTPUT_CHAT_FROM_PEER;
 				else
 				{
-					std::cout << "Fatal Error: Unidentified message has been received.\n";
 					state = ERROR_STATE;
 					break;
 				}
@@ -866,23 +802,14 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		case OPEN_FILE_FOR_WRITE:
 		{
 			if (position_in_recv_buf >= received_bytes)
-			{
 				return 0;//recv again
-			}
-			WriteFile = new FILE;
-			WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
-			if (WriteFile == nullptr)
+
+			// Open the file for writing.
+			if (openFileForWrite() == -1)
 			{
-				DBG_DISPLAY_ERROR_LOCATION();
-				perror("Error opening file for writing in binary mode.");
 				state = ERROR_STATE;
 				break;
 			}
-
-			is_file_done_being_written = false;
-
-			// Set it back to default value
-			total_bytes_written_to_file = 0;
 
 			// must have a new message from the peer if this is true
 			if (position_in_message == message_size)
@@ -891,8 +818,6 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			}
 			else // shouldn't be possible if working correctly
 			{
-				DBG_DISPLAY_ERROR_LOCATION();
-				std::cout << "Catastrophic failure. RecvBuf statemachine. Unreachable area.\n";
 				state = ERROR_STATE;
 			}
 
@@ -900,30 +825,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		}
 		case CLOSE_FILE_FOR_WRITE:
 		{
-			if (fclose(WriteFile) != 0)		// 0 == successful close
-			{
-				DBG_DISPLAY_ERROR_LOCATION();
-				perror("Error closing file for writing in binary mode");
-			}
-
-			// Set it back to default value
-			total_bytes_written_to_file = 0;
-
-			is_file_done_being_written = true;
-
-			if (position_in_message < message_size)
-			{
-				DBG_TXT("position_in_message < message_size, closefileforwrite");
-			}
-			if (position_in_message == message_size)
-			{
-				DBG_TXT("position_in_message == message_size, everything A OK closefileforwrite");
-			}
-			if (position_in_message > message_size)
-			{
-				DBG_DISPLAY_ERROR_LOCATION();
-				std::cout << "ERROR: position_in_message > message_size , closefileforwrite\n";
-			}
+			closeFileForWrite();
 			state = CHECK_FOR_FLAG;
 			break;
 		}
@@ -1000,5 +902,136 @@ int32_t ApplicationLayer::WSAStartup()
 		return errchk;
 	}
 #endif//_WIN32
+	return 0;
+}
+
+void ApplicationLayer::coutChatMsgFromPeer(char * recv_buf, int64_t received_bytes)
+{
+	std::cout << "\n";
+	std::cout << "Peer: ";
+	for (;
+		(position_in_recv_buf < received_bytes) && (position_in_message < message_size);
+		++position_in_recv_buf, ++position_in_message)
+	{
+		std::cout << recv_buf[position_in_recv_buf];
+	}
+	std::cout << "\n";
+}
+
+void ApplicationLayer::assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes)
+{
+	for (;
+		(position_in_recv_buf < received_bytes)
+		&& (position_in_message < message_size)
+		&& (position_in_message < INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME);
+		++position_in_recv_buf, ++position_in_message)
+	{
+		incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
+	}
+}
+
+int32_t ApplicationLayer::openFileForWrite()
+{
+	WriteFile = new FILE;
+	WriteFile = fopen(incoming_file_name_from_peer.c_str(), "wb");
+	if (WriteFile == nullptr)
+	{
+		DBG_DISPLAY_ERROR_LOCATION();
+		perror("Error opening file for writing in binary mode.");
+		return -1;
+	}
+
+	is_file_done_being_written = false;
+
+	// Set it back to default value
+	total_bytes_written_to_file = 0;
+
+	return 0;
+}
+
+void ApplicationLayer::closeFileForWrite()
+{
+	if (fclose(WriteFile) != 0)		// 0 == successful close
+	{
+		DBG_DISPLAY_ERROR_LOCATION();
+		perror("Error closing file for writing in binary mode");
+	}
+
+	// Set it back to default value
+	total_bytes_written_to_file = 0;
+
+	is_file_done_being_written = true;
+
+#ifdef _DEBUG
+	if (position_in_message < message_size)
+	{
+		DBG_TXT("position_in_message < message_size, closefileforwrite");
+	}
+	if (position_in_message == message_size)
+	{
+		DBG_TXT("position_in_message == message_size, everything A OK closefileforwrite");
+	}
+	if (position_in_message > message_size)
+	{
+		DBG_DISPLAY_ERROR_LOCATION();
+		std::cout << "ERROR: position_in_message > message_size , closefileforwrite\n";
+	}
+#endif// _DEBUG
+}
+
+void ApplicationLayer::coutFileTransferSuccessOrFail()
+{
+	// Cout the difference in bytes written compared to what the file size should be.
+	std::cout << "# Expected " << incoming_file_size_from_peer << ".\n";
+	std::cout << "# Wrote " << total_bytes_written_to_file << "\n";
+	std::cout << "# Difference: " << incoming_file_size_from_peer - total_bytes_written_to_file << "\n";
+
+	// If it didn't write as many bytes as it thought it should
+	if (incoming_file_size_from_peer - total_bytes_written_to_file != 0)
+	{
+		std::cout << "# File transfer from peer is INCOMPLETE and will not recover: " << incoming_file_name_from_peer << "\n";
+		std::cout << "\n";
+	}
+	else
+	{
+		// Everything is fine, tell the user it is complete.
+		std::cout << "# File transfer from peer is complete: " << incoming_file_name_from_peer << "\n";
+		std::cout << "\n";
+	}
+}
+
+int32_t ApplicationLayer::writeFileFromPeer(char * recv_buf, int64_t received_bytes)
+{
+	int64_t amount_to_write = message_size - position_in_message;
+	if (amount_to_write > received_bytes - position_in_recv_buf)
+		amount_to_write = received_bytes - position_in_recv_buf;
+
+	if (WriteFile == nullptr)
+	{
+		return -1; // set error state please
+	}
+
+	bytes_written = fwrite(recv_buf + position_in_recv_buf, 1, (size_t)(amount_to_write), WriteFile);
+	if (!bytes_written)
+	{
+		perror("Error while writing the file from peer");
+		if (fclose(WriteFile))
+		{
+			perror("Error closing file for writing");
+		}
+		// delete file here? This could be dangerous, and should
+		// require user confirmation. Or check to make sure
+		// file didn't exist before trying to open it, then
+		// it would be safe to delete.
+
+		return -1; // set error state please
+	}
+	else
+	{
+		total_bytes_written_to_file += bytes_written;
+		position_in_message += bytes_written;
+		position_in_recv_buf += bytes_written;
+	}
+
 	return 0;
 }

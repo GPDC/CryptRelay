@@ -280,6 +280,28 @@ private:
 	// This is to let the program know that if an error occured while a file was still being written, then it should close the file.
 	bool is_file_done_being_written = true; 
 
+	// For use with decideActionBasedOnFlag()
+	// Open a file for writing
+	// Returns -1, error
+	// Returns 0, success
+	int32_t openFileForWrite();
+
+	// For use with decideActionBasedOnFlag()
+	// Close the file for writing
+	void closeFileForWrite();
+
+	// For use with decideActionBasedOnFlag()
+	// Write the incoming file from peer.
+	// Returns -1, error
+	// Returns 0, success
+	int32_t writeFileFromPeer(char * recv_buf, int64_t received_bytes);
+
+	// For use with decideActionBasedOnFlag()
+	// Assigns the incoming_file_name_from_peer_cstr.
+	void assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes);
+
+	// For use with decideActionBasedOnFlag()
+	void coutFileTransferSuccessOrFail();
 
 	// Variables for decideActionBasedOnFlag()
 	// Specifically for the cases that deal with writing an incoming file from the peer.
@@ -299,6 +321,10 @@ private:
 	int64_t incoming_file_size_from_peer = 0;
 	const int32_t RECV_AGAIN = 0;
 	const int32_t FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER = 1;
+
+	// For use with decideActionBasedOnFlag()
+	void coutChatMsgFromPeer(char * recv_buf, int64_t received_bytes);
+
 
 	// ******************************************************************
 	// *         End of things related to Recv state machine            *

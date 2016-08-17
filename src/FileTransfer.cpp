@@ -206,9 +206,9 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 
 	// Please implement sha hash checking here to make sure the file is legit.
 
-	std::cout << "Total bytes of the file sent: " << total_file_bytes_sent << "\n";
-	std::cout << "Expected to send: " << size_of_file << "\n";
-	std::cout << "Difference: " << total_file_bytes_sent - size_of_file << "\n";
+	std::cout << "# Total bytes of the file sent: " << total_file_bytes_sent << "\n";
+	std::cout << "# Expected to send: " << size_of_file << "\n";
+	std::cout << "# Difference: " << total_file_bytes_sent - size_of_file << "\n";
 
 	// Check if it errored while reading from the file.
 	if (ferror(ReadFile))
