@@ -51,20 +51,14 @@
 #endif//__linux__
 
 
-//mutex for use in this class' send()
-std::mutex Connection::SendMutex;
-// mutex for use with server and client threads to prevent a race condition.
 std::mutex Connection::RaceMutex;
 
-
-// This is the default port for the Connection class.
 const std::string Connection::DEFAULT_PORT = "30248";
 
-// Variables necessary for determining who won the connection race
 const int32_t Connection::SERVER_WON = -29;
 const int32_t Connection::CLIENT_WON = -30;
 const int32_t Connection::NOBODY_WON = -25;
-int32_t Connection::global_winner = NOBODY_WON;
+int32_t Connection::connection_race_winner = NOBODY_WON;
 
 
 Connection::Connection(XBerkeleySockets* SocketClassInstance,
@@ -96,33 +90,7 @@ Connection::~Connection()
 }
 
 
-// This is where the Connection class receives information about IPs and ports.
-// /*optional*/ target_port         default value will be assumed
-// /*optional*/ my_internal_port    default value will be assumed
-void Connection::setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port, std::string my_internal_port)
-{
-	if (verbose_output == true)
-		std::cout << "Giving IP and Port information to the chat program.\n";
-
-	// If empty == false
-	//		user must have desired their own custom ip and port. Let's take the
-	//		information and store it in the corresponding variables.
-	// If empty == true
-	//		user must not have desired their own custom
-	//		ports / IPs. Therefore, we leave it as is a.k.a. default value.
-	if (target_extrnl_ip_address.empty() == false)
-		target_external_ip = target_extrnl_ip_address;
-	if (target_port.empty() == false)
-		target_external_port = target_port;
-	if (my_ext_ip.empty() == false)
-		my_external_ip = my_ext_ip;
-	if (my_internal_ip.empty() == false)
-		my_local_ip = my_internal_ip;
-	if (my_internal_port.empty() == false)
-		my_local_port = my_internal_port;
-}
-
-void Connection::serverThread()
+void Connection::server()
 {	
 	// ServerHints is used by getaddrinfo()
 	// once ServerHints is given to getaddrinfo() it will fill out *ServerConnectionInfo
@@ -231,7 +199,7 @@ void Connection::serverThread()
 		if (errchk == SOCKET_ERROR)
 		{
 			Socket->getError();
-			std::cout << "serverThread() select Error.\n";
+			std::cout << "server() select Error.\n";
 			DBG_DISPLAY_ERROR_LOCATION();
 			Socket->closesocket(listening_socket);
 			std::cout << "Closing listening socket b/c of the error. Ending Server Thread.\n";
@@ -239,12 +207,12 @@ void Connection::serverThread()
 				Socket->freeaddrinfo(&ServerConnectionInfo);
 			return;
 		}
-		else if (global_winner == CLIENT_WON)
+		else if (connection_race_winner == CLIENT_WON)
 		{
 			// Close the socket because the client thread won the race.
 			Socket->closesocket(listening_socket);
 			if (verbose_output == true)
-				std::cout << "Closed listening socket, because the winner is: " << global_winner << ". Ending Server thread.\n";
+				std::cout << "Closed listening socket, because the winner is: " << connection_race_winner << ". Ending Server thread.\n";
 			if (ServerConnectionInfo != nullptr)
 				Socket->freeaddrinfo(&ServerConnectionInfo);
 			return;
@@ -268,7 +236,7 @@ void Connection::serverThread()
 			}
 
 			if (verbose_output == true)
-				std::cout << "accept() succeeded. Setting global_winner and global_socket\n";
+				std::cout << "accept() succeeded. Setting connection_race_winner and global_socket\n";
 
 			// Assigning global values to let the client thread know it should stop trying.
 			if (setWinnerMutex(SERVER_WON) != SERVER_WON)
@@ -294,7 +262,7 @@ void Connection::serverThread()
 }
 
 
-void Connection::clientThread()
+void Connection::client()
 {
 	int32_t errchk;
 
@@ -456,12 +424,12 @@ void Connection::clientThread()
 						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
 				}
-				else if (global_winner == SERVER_WON)
+				else if (connection_race_winner == SERVER_WON)
 				{
 					// Close the socket because the server thread won the race.
 					Socket->closesocket(client_socket);
 					if (verbose_output == true)
-						std::cout << "Closed connect socket, because the winner is: " << global_winner << ". Ending client thread.\n";
+						std::cout << "Closed connect socket, because the winner is: " << connection_race_winner << ". Ending client thread.\n";
 					if (ClientConnectionInfo != nullptr)
 						Socket->freeaddrinfo(&ClientConnectionInfo);
 					return;
@@ -533,18 +501,16 @@ void Connection::clientThread()
 }
 
 
-// Server and Client thread must use this method, if they are ever
-// running at the same time, to prevent a race condition.
 int32_t Connection::setWinnerMutex(int32_t the_winner)
 {
 	RaceMutex.lock();
 
 	// If nobody has won the race yet, then set the winner.
-	if (global_winner == NOBODY_WON)
+	if (connection_race_winner == NOBODY_WON)
 	{
-		global_winner = the_winner;
+		connection_race_winner = the_winner;
 	}
 
 	RaceMutex.unlock();
-	return global_winner;
+	return connection_race_winner;
 }

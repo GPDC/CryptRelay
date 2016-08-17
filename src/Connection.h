@@ -35,8 +35,8 @@ class Connection
 	// Typedef section
 public:
 	// Callback typedefs
-	typedef void callback_fn_set_exit_now(bool value);
-	typedef bool& callback_fn_get_exit_now();
+	typedef void callback_fn_set_exit_now(bool value); // for setting the bool variable if you want the program to exit.
+	typedef bool& callback_fn_get_exit_now(); // for viewing the bool variable to see if the program wants to exit.
 
 #ifdef __linux__
 	typedef int32_t SOCKET;
@@ -64,22 +64,29 @@ public:
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;
 
-	// Server and Client threads
+	// Server and Client. They will attempt to make a connection with the peer.
 	// Only 1 of these methods should be running per Connection class instance.
-	// Basically, 1 SOCKET per 1 method. Two Methods should not be using the same SOCKET.
-	void serverThread();
-	void clientThread();
-
-	// If you want to give this class IP and port information, call this function.
-	void setIPandPort(std::string target_extrnl_ip_address, std::string my_ext_ip, std::string my_internal_ip, std::string target_port = DEFAULT_PORT, std::string my_internal_port = DEFAULT_PORT);
+	// 1 SOCKET per 1 method. Two Methods should not be using the same SOCKET.
+	// If you want to start a server thread, make a Connection class instance
+	// and then create the thread with server()
+	// If you then want to start a client thread, make yet another Connection
+	// class instance, and then create the thread with client()
+	// The connection_race_winner variable is integral to these member functions.
+	void server();
+	void client();
 
 	// Variables necessary for determining who won the connection race
-	static int32_t global_winner;
+	// server() and client() can be both be running at the same time,
+	// (as long as they are being run in difference Connection class instances!)
+	// and whoever connects to the peer first will set the connection_race_winner variable
+	// here, and the loser will return from the function, closing whatever
+	// socket it was using.
+	static int32_t connection_race_winner;
 	static const int32_t SERVER_WON;
 	static const int32_t CLIENT_WON;
 	static const int32_t NOBODY_WON;
 
-	// IP and port information can be given to the Connection class through these variables.
+	// IP and port information for theConnection class.
 	std::string target_external_ip;
 	std::string target_external_port = DEFAULT_PORT;
 	std::string my_external_ip;
@@ -102,19 +109,18 @@ private:
 	// This is the default port for the Connection class.
 	static const std::string DEFAULT_PORT;
 
-	// Server and Client thread must use this function to prevent
-	// a race condition.
+	// Server and Client thread must use this method, if they are ever
+	// running at the same time, to prevent a race condition.
 	static int32_t setWinnerMutex(int32_t the_winner);
 
-	// mutex for use in this class' send()
-	static std::mutex SendMutex;
-	// mutex for use with server and client threads to prevent a race condition.
+	// mutex for use with server and client threads setting the
+	// connection_race_winner variable to prevent a race condition.
 	static std::mutex RaceMutex;
 
 
 private:
-	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
-	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
+	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool variable if you want the program to exit.
+	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool variable to see if the program wants to exit.
 
 public:
 

@@ -43,7 +43,10 @@ private:
 	std::string delete_this_specific_port_forward_port;
 	std::string delete_this_specific_port_forward_protocol;
 
+	// Cout some helpful instructions for using the program to the console
 	void displayHelpAndReadMe();
+
+	// Cout some helpful examples to the console
 	void displayExamples();
 
 	

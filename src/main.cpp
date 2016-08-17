@@ -453,8 +453,8 @@ int32_t main(int32_t argc, char *argv[])
 	// Being thread race to attempt a connection with the peer.
 	std::cout << "Attempting to connect to peer...\n";
 
-	std::thread ServerThread = std::thread(&Connection::serverThread, ServerConnect);
-	std::thread ClientThread = std::thread(&Connection::clientThread, ClientConnect);
+	std::thread ServerThread = std::thread(&Connection::server, ServerConnect);
+	std::thread ClientThread = std::thread(&Connection::client, ClientConnect);
 
 	// Wait for the Server and Client threads to finish.
 	if (ServerThread.joinable() == true)
@@ -463,14 +463,14 @@ int32_t main(int32_t argc, char *argv[])
 		ClientThread.join();
 	
 	// Server and Client thread must have finished and set the
-	// global_winner variable. Let's see which one won the race.
+	// connection_race_winner variable. Let's see which one won the race.
 	// From now on we use the winner's socket that they are connected on.
 	Connection * WinningConnectionClass = nullptr;
-	if (Connection::global_winner == Connection::CLIENT_WON)
+	if (Connection::connection_race_winner == Connection::CLIENT_WON)
 	{
 		WinningConnectionClass = ClientConnect;
 	}
-	else if (Connection::global_winner == Connection::SERVER_WON)
+	else if (Connection::connection_race_winner == Connection::SERVER_WON)
 	{
 		WinningConnectionClass = ServerConnect;
 	}
