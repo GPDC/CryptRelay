@@ -164,7 +164,7 @@ int32_t UPnP::findValidIGD()
 				&Urls,
 				&IGDData,
 				my_local_ip,
-				sizeof(my_local_ip)
+				MY_LOCAL_IP_LEN
 		);
 	if (errchk == 0)
 	{
@@ -266,7 +266,7 @@ void UPnP::showInformation()
 	}
 
 	// Get, then display external IP address
-	memset(my_external_ip, 0, sizeof(my_external_ip));
+	memset(my_external_ip, 0, MY_EXTERNAL_IP_LEN);
 	errchk = UPNP_GetExternalIPAddress(
 			Urls.controlURL,
 			IGDData.first.servicetype,
@@ -438,8 +438,8 @@ int32_t UPnP::autoAddPortForwardRule()
 			int32_t errchk = UPNP_AddPortMapping(
 					Urls.controlURL,
 					IGDData.first.servicetype,
-					upnp_my_external_port.c_str(),
-					upnp_my_internal_port.c_str(),
+					my_external_port.c_str(),
+					my_internal_port.c_str(),
 					my_local_ip,
 					description_of_port_forward_entry,
 					protocol,
@@ -462,8 +462,8 @@ int32_t UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int32_t i_internal_port = stoi(upnp_my_internal_port);
-					int32_t i_external_port = stoi(upnp_my_external_port);
+					int32_t i_internal_port = stoi(my_internal_port);
+					int32_t i_external_port = stoi(my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
 					if ((i_internal_port < USHRT_MAX && i_external_port < USHRT_MAX)
@@ -479,11 +479,11 @@ int32_t UPnP::autoAddPortForwardRule()
 					}
 
 					// Convert it back to string
-					upnp_my_internal_port = std::to_string(i_internal_port);
-					upnp_my_external_port = std::to_string(i_external_port);
+					my_internal_port = std::to_string(i_internal_port);
+					my_external_port = std::to_string(i_external_port);
 					if (verbose_output == true)
 					{
-						std::cout << "Now trying with: upnp_my_external_port == " << upnp_my_external_port << "\n";
+						std::cout << "Now trying with: my_external_port == " << my_external_port << "\n";
 					}
 					++try_again_count;
 					try_again = true;
@@ -493,7 +493,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					{
 						std::cout << "case 501: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -508,8 +508,8 @@ int32_t UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int32_t i_internal_port = stoi(upnp_my_internal_port);
-					int32_t i_external_port = stoi(upnp_my_external_port);
+					int32_t i_internal_port = stoi(my_internal_port);
+					int32_t i_external_port = stoi(my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
 					if ( (i_internal_port < USHRT_MAX && i_external_port < USHRT_MAX)
@@ -525,12 +525,12 @@ int32_t UPnP::autoAddPortForwardRule()
 					}
 
 					// Convert it back to string
-					upnp_my_internal_port = std::to_string(i_internal_port);
-					upnp_my_external_port = std::to_string(i_external_port);
+					my_internal_port = std::to_string(i_internal_port);
+					my_external_port = std::to_string(i_external_port);
 
 					if (verbose_output == true)
 					{
-						std::cout << "Now trying with: upnp_my_external_port == " << upnp_my_external_port << "\n";
+						std::cout << "Now trying with: my_external_port == " << my_external_port << "\n";
 					}
 					++try_again_count;
 					try_again = true;
@@ -540,7 +540,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					{
 						std::cout << "case 718: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -551,7 +551,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					if (verbose_output == true)
 						std::cout << "External and internal ports must match. Improvising...\n";
 
-					upnp_my_external_port = upnp_my_internal_port;
+					my_external_port = my_internal_port;
 
 					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
 					try_again = true;
@@ -578,7 +578,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				{
 					std::cout << "UPNP hard fail. try_again_count: " << try_again_count << ", bool try_again: " << try_again << "\n";
 					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-						upnp_my_external_port.c_str(), upnp_my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+						my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 					return 0;
 				}
 			}
@@ -615,7 +615,7 @@ int32_t UPnP::autoAddPortForwardRule()
 		int32_t errchk = UPNP_GetSpecificPortMappingEntry(
 			Urls.controlURL,
 			IGDData.first.servicetype,
-			/*in*/	upnp_my_external_port.c_str(),
+			/*in*/	my_external_port.c_str(),
 			/*in*/	protocol,
 			/*in*/	NULL/*remoteHost*/,
 			intClient,
@@ -634,7 +634,7 @@ int32_t UPnP::autoAddPortForwardRule()
 		{
 			std::cout << "# Displaying port forward entry that was just added...\n";
 			printf("External IP:Port %s:%s %s is redirected to internal IP:Port %s:%s (duration: %s seconds)\n\n",
-				my_external_ip, upnp_my_external_port.c_str(), protocol, intClient, intPort, duration);
+				my_external_ip, my_external_port.c_str(), protocol, intClient, intPort, duration);
 		}
 	}
 
@@ -680,7 +680,7 @@ void UPnP::autoDeletePortForwardRule()
 	int32_t errchk = UPNP_DeletePortMapping(
 			Urls.controlURL,
 			IGDData.first.servicetype,
-			upnp_my_external_port.c_str(),
+			my_external_port.c_str(),
 			protocol,
 			0				// Remote Host
 		);
@@ -691,7 +691,7 @@ void UPnP::autoDeletePortForwardRule()
 		else if (errchk == 714)
 		{
 			std::cout << "Error: " << errchk << ". The port forward rule specified for deletion does not exist.\n";
-			std::cout << "Specified external port: " << upnp_my_external_port << "and Protocol: " << protocol << "\n";
+			std::cout << "Specified external port: " << my_external_port << "and Protocol: " << protocol << "\n";
 		}
 		else
 			std::cout << "Error: " << errchk << ". UPNP_DeletePortMapping() failed.\n";

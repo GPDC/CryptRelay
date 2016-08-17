@@ -105,8 +105,8 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	// Give Port that was supplied by the user to the UPnP class
 	if (CLI->getMyHostPort().empty() == false)
 	{
-		UpnpInstance->upnp_my_internal_port = CLI->getMyHostPort();
-		UpnpInstance->upnp_my_external_port = CLI->getMyHostPort();
+		UpnpInstance->setMyInternalPort(CLI->getMyHostPort().c_str());
+		UpnpInstance->setMyExternalPort(CLI->getMyHostPort().c_str());
 	}
 }
 
@@ -170,17 +170,17 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	if (CLI->getMyExtIpAddress().empty() == false)
 		ServerConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 	else
-		ServerConnectInstance->setMyExternalIP(UpnpInstance->my_external_ip);
+		ServerConnectInstance->setMyExternalIP(UpnpInstance->getMyExternalIP());
 
 	if (CLI->getMyIpAddress().empty() == false)
 		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 	else
-		ServerConnectInstance->setMyLocalIP(UpnpInstance->my_local_ip);
+		ServerConnectInstance->setMyLocalIP(UpnpInstance->getMyLocalIP());
 
 	if (CLI->getMyHostPort().empty() == false)
 		ServerConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 	else
-		ServerConnectInstance->setMyLocalPort(UpnpInstance->upnp_my_internal_port);
+		ServerConnectInstance->setMyLocalPort(UpnpInstance->getMyInternalPort());
 
 
 	// Give IP and port info to the ClientConnect instance
@@ -193,17 +193,17 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	if (CLI->getMyExtIpAddress().empty() == false)
 		ClientConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
 	else
-		ClientConnectInstance->setMyExternalIP(UpnpInstance->my_external_ip);
+		ClientConnectInstance->setMyExternalIP(UpnpInstance->getMyExternalIP());
 
 	if (CLI->getMyIpAddress().empty() == false)
 		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 	else
-		ClientConnectInstance->setMyLocalIP(UpnpInstance->my_local_ip);
+		ClientConnectInstance->setMyLocalIP(UpnpInstance->getMyLocalIP());
 
 	if (CLI->getMyHostPort().empty() == false)
 		ClientConnectInstance->setMyLocalPort(CLI->getMyHostPort());
 	else
-		ClientConnectInstance->setMyLocalPort(UpnpInstance->upnp_my_internal_port);
+		ClientConnectInstance->setMyLocalPort(UpnpInstance->getMyInternalPort());
 }
 
 // Portforward the router using UPnP.
@@ -253,24 +253,24 @@ int32_t portForwardUsingUPnP()
 				std::cout << "Please specify the port on which you wish to listen for incomming connections by using -mP.\n";
 				return -1;
 			}
-			if (PortTest.isLocalPortInUse(Upnp->upnp_my_internal_port, Upnp->my_local_ip) == IN_USE)
+			if (PortTest.isLocalPortInUse(Upnp->getMyInternalPort(), Upnp->getMyLocalIP()) == IN_USE)
 			{
 				// Port is in use, lets try again with port++
-				std::cout << "Port: " << Upnp->upnp_my_internal_port << " is already in use.\n";
-				my_port_int = stoi(Upnp->upnp_my_internal_port);
+				std::cout << "Port: " << Upnp->getMyInternalPort() << " is already in use.\n";
+				my_port_int = stoi(Upnp->getMyInternalPort());
 				if (my_port_int < USHRT_MAX)
 					++my_port_int;
 				else
 					my_port_int = 30152; // Arbitrary number given b/c the port num was too big.
-				Upnp->upnp_my_internal_port = std::to_string(my_port_int);
-				Upnp->upnp_my_external_port = Upnp->upnp_my_internal_port;
-				std::cout << "Trying port: " << Upnp->upnp_my_internal_port << " instead.\n\n";
+				Upnp->setMyInternalPort(std::to_string(my_port_int).c_str());
+				Upnp->setMyExternalPort(Upnp->getMyInternalPort().c_str());
+				std::cout << "Trying port: " << Upnp->getMyInternalPort() << " instead.\n\n";
 			}
 			else
 			{
 				if (i != 0)// if i != 0, then it must have assigned a new port number.
 				{
-					std::cout << "Now using Port: " << Upnp->upnp_my_internal_port << " as my local port.\n";
+					std::cout << "Now using Port: " << Upnp->getMyInternalPort() << " as my local port.\n";
 					std::cout << "This is because the default port was already in use\n\n";
 				}
 				break;// Port is not in use.

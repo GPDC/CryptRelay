@@ -100,18 +100,10 @@ public:
 
 	// Add a port forward rule. User does not get to specify anything about the rule.
 	int32_t autoAddPortForwardRule();
-	
+
 	// Delete the port forward rule that was added by autoAddPortForwardRule().
 	void autoDeletePortForwardRule();
 
-	// These are in public because connection class will
-	// want to know what the user's IP and ports are.
-	char my_local_ip[64] = { 0 };		// findValidIGD() fills this out with your local ip addr
-	char my_external_ip[40] = { 0 };	// showInformation() fills this out
-	const std::string DEFAULT_PORT = "30248";
-	std::string upnp_my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	std::string upnp_my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
-	
 protected:
 private:
 
@@ -119,16 +111,24 @@ private:
 	UPnP(UPnP& UPnPInstance) = delete; // Delete copy operator
 	UPnP& operator=(UPnP& UPnPInstance) = delete; // Delete assignment operator
 
+	static const int32_t MY_LOCAL_IP_LEN = 64;
+	char my_local_ip[MY_LOCAL_IP_LEN] = { 0 };		// findValidIGD() fills this out with your local ip addr
+	static const int32_t MY_EXTERNAL_IP_LEN = 40;
+	char my_external_ip[MY_EXTERNAL_IP_LEN] = { 0 };	// showInformation() fills this out
+	const std::string DEFAULT_PORT = "30248";
+	std::string my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+
 	// findUPnPDevices() stores a list of a devices here as a linked list
 	// Must call freeUPNPDevlist(UpnpDevicesList) to free allocated memory
-	UPNPDev* UpnpDevicesList = nullptr;			
+	UPNPDev* UpnpDevicesList = nullptr;
 
 	// findValidIGD() stores the IGD's urls here. Example: a url to control the device.
 	// Must call FreeUPNPUrls(Urls) to free allocated memory
 	UPNPUrls Urls;
 
 	// findValidIGD() stores data here for the IGD.
-	IGDdatas IGDData;					
+	IGDdatas IGDData;
 
 	// This is here so autoDeletePortForwardRule() in the deconstructor can delete a port forward.
 	const char * protocol = "TCP";
@@ -164,6 +164,15 @@ private:
 #ifdef _WIN32
 	WSADATA wsaData;	// for WSAStartup();
 #endif//_WIN32
+
+public:
+	// Accessors
+	char * getMyLocalIP() { return my_local_ip; }
+	char * getMyExternalIP() { return my_external_ip; }
+	void setMyInternalPort(const char * ptr) { my_internal_port = ptr; }
+	void setMyExternalPort(const char * ptr) { my_external_port = ptr; }
+	std::string getMyInternalPort() { return my_internal_port; }
+	std::string getMyExternalPort() { return my_external_port; }
 };
 
 #endif//UPnP_h__
