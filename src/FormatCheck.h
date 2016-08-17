@@ -18,8 +18,8 @@ public:
 	FormatCheck();
 	virtual ~FormatCheck();
 
-	bool isIPV4FormatCorrect(char* target_ipaddress);
-	bool isPortFormatCorrect(char* port);
+	static bool isIPV4FormatCorrect(char* target_ipaddress);
+	static bool isPortFormatCorrect(char* port);
 
 protected:
 private:
@@ -28,16 +28,16 @@ private:
 	FormatCheck(FormatCheck& FormatCheckInstance) = delete; // Delete copy operator.
 	FormatCheck& operator=(FormatCheck& FormatCheckInstance) = delete; // Delete assignment operator.
 
-	const int32_t BAD_FORMAT = -100;
-	const int32_t MAX_PORT_LENGTH = 5;
-	const int32_t MAX_PORT_NUMBER = 65535;		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
+	static const int32_t BAD_FORMAT = -100;
+	static const int32_t MAX_PORT_LENGTH = 5;
+	static const int32_t MAX_PORT_NUMBER = 65535;		// Ports are 0-65535	(a total of 65536 ports) but port 0 is generally reserved or not used.
 
-	const int32_t INET_ADDR_STR_LEN = 15;		// max size of ipv4 address 15 / ipv6 is 45
+	static const int32_t INET_ADDR_STR_LEN = 15;		// max size of ipv4 address 15 / ipv6 is 45
 
 	// Make sure the IPv4 address octets stay between 0-255.
-	bool checkIPv4SubnetRange(std::string target_ipaddress, int32_t start, int32_t end);
+	static bool checkIPv4SubnetRange(std::string target_ipaddress, int32_t start, int32_t end);
 
 	// For finding the location of the next '.' in an IP address.
-	int32_t findNextIPv4Period(std::string target_ipaddress, int32_t start);
+	static int32_t findNextIPv4Period(std::string target_ipaddress, int32_t start);
 };
 #endif
