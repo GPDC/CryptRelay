@@ -51,6 +51,8 @@ public:
 	// }
 	virtual void freeaddrinfo(addrinfo** ppAddrInfo) = 0;
 
+	// Output to console the ip address and port of the peer that you are connect with.
+	virtual void coutPeerIPAndPort(SOCKET connection_with_peer) = 0;
 
 	// getError() 99% of cases you won't need to do anything with the return value.
 	//	the return value is just incase you want to do something specific with the
@@ -66,6 +68,17 @@ public:
 	// Only intended for use with Socket errors.
 	// Windows outputs a WSAERROR code, linux outputs errno code.
 	virtual void outputSocketErrorToConsole(int32_t error_code) = 0;
+
+	// Enable or disable the blocking socket option.
+	// By default, blocking is enabled.
+	virtual int32_t setBlockingSocketOpt(SOCKET fd_socket, const u_long* option) = 0;
+
+	// Accessors for use an arg for setBlockingSocketOpt()
+	virtual const unsigned long& getDisableBlocking() = 0;
+	virtual const unsigned long& getEnableBlocking() = 0;
+
+	// Get error information from the socket.
+	virtual int32_t getSockOptError(SOCKET fd_socket) = 0;
 };
 
 #endif//IXBerkeleySockets_h__

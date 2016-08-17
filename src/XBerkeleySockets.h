@@ -77,6 +77,7 @@ public:
 	//	WSAGetLastError() (windows), or errno (linux), code. Example would be to check to see if
 	//	recvfrom() errored because of a timeout, not because of a real fatal error.
 	int32_t getError(bool output_to_console = true);
+	static const bool DISABLE_CONSOLE_OUTPUT;
 
 
 	// Only intended for use with Socket errors.
@@ -100,12 +101,14 @@ private:
 	XBerkeleySockets(XBerkeleySockets& SocketClassInstance) = delete;			 // disable copy operator
 	XBerkeleySockets& operator=(XBerkeleySockets& SocketClassInstance) = delete; // disable assignment operator
 
-	// For use with getError().
-	static const bool DISABLE_CONSOLE_OUTPUT;
-
 public:
 	// Accessors
 	bool getDisableConsoleOutput() { return DISABLE_CONSOLE_OUTPUT; }
+
+	// Even though these constants are public, accessors were made so
+	// that ppl can access them through the interface.
+	const unsigned long& getDisableBlocking() { return DISABLE_BLOCKING; }
+	const unsigned long& getEnableBlocking() { return ENABLE_BLOCKING; }
 };
 
 #endif//XBerkeleySockets_h__

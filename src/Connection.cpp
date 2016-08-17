@@ -15,7 +15,7 @@
 
 #include "Connection.h"
 #include "GlobalTypeHeader.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #endif //__linux__
 
 #ifdef _WIN32
@@ -28,7 +28,7 @@
 
 #include "Connection.h"
 #include "GlobalTypeHeader.h"
-#include "XBerkeleySockets.h"
+#include "IXBerkeleySockets.h"
 #endif //_WIN32
 
 
@@ -61,7 +61,7 @@ const int32_t Connection::NOBODY_WON = -25;
 int32_t Connection::connection_race_winner = NOBODY_WON;
 
 
-Connection::Connection(XBerkeleySockets* SocketClassInstance,
+Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
 						callback_fn_get_exit_now * get_exit_now_ptr,
 						callback_fn_set_exit_now * set_exit_now_ptr,
 						bool turn_verbose_output_on)
@@ -85,7 +85,7 @@ Connection::Connection(XBerkeleySockets* SocketClassInstance,
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
-	Socket = SocketClassInstance;
+	Socket = IXBerkeleySocketsInstance;
 }
 Connection::~Connection()
 {
@@ -313,7 +313,7 @@ void Connection::client()
 	}
 
 	// Disable blocking on the socket
-	if (Socket->setBlockingSocketOpt(client_socket, &Socket->DISABLE_BLOCKING) == -1)
+	if (Socket->setBlockingSocketOpt(client_socket, &Socket->getDisableBlocking()) == -1)
 	{
 		std::cout << "Exiting client thread due to error.\n";
 		if (ClientConnectionInfo != nullptr)
@@ -486,7 +486,7 @@ void Connection::client()
 	// this class, assign fd_socket the connected socket.
 	fd_socket = client_socket;
 	// Re-enable blocking for the socket.
-	if (Socket->setBlockingSocketOpt(fd_socket, &Socket->ENABLE_BLOCKING) == -1)
+	if (Socket->setBlockingSocketOpt(fd_socket, &Socket->getEnableBlocking()) == -1)
 	{
 		Socket->getError();
 		std::cout << "Fatal error: failed to change the socket blocking option.\n";

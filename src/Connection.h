@@ -28,7 +28,7 @@
 
 
 // Forward declaration
-class XBerkeleySockets;
+class IXBerkeleySockets;
 
 class Connection
 {
@@ -54,7 +54,7 @@ private:
 
 public:
 	Connection(
-		XBerkeleySockets* SocketClassInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
+		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley Socket functions.
 		callback_fn_get_exit_now * get_exit_now_ptr,
 		callback_fn_set_exit_now * set_exit_now_ptr,
 		bool turn_verbose_output_on = false
@@ -104,7 +104,7 @@ private:
 	std::string my_local_ip;
 	std::string my_local_port = DEFAULT_PORT;
 
-	XBerkeleySockets * Socket;
+	IXBerkeleySockets * Socket;
 
 	// If a connection has successfully been established, this socket will
 	// be the one that it is established on. If it isn't, it will be INVALID_SOCKET.
