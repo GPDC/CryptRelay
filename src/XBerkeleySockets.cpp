@@ -227,8 +227,8 @@ void XBerkeleySockets::coutPeerIPAndPort(SOCKET connection_with_peer)
 	else
 		std::cout << "\n\n\n\n\n\n# Connection established with: " << remote_host << ":" << remote_hosts_port << "\n";
 
-	delete(remote_host);
-	delete(remote_hosts_port);
+	delete[]remote_host;
+	delete[]remote_hosts_port;
 }
 
 
