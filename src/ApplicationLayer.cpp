@@ -591,45 +591,41 @@ int64_t ApplicationLayer::sendStrBuf(std::string& str_buf, int64_t message_lengt
 // *             Things related to Recv state machine               *
 // ******************************************************************
 
-// Returns 0, succes, and wants to recv() more bytes.
+// Returns 0, success, and wants to recv() more bytes.
 // Returns -1, error
 int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
 {
 	// the current cursor position inside the buffer.
 	position_in_recv_buf = 0;	
 
+	bool done = false;
+	bool error = false;
+
 	// RecvStateMachine
-	while (1)
+	while (done == false)
 	{
+		done = true;
+
 		switch (state)
 		{
 		case WRITE_FILE_FROM_PEER:
 		{
-			if (position_in_recv_buf >= received_bytes)
-			{
-				return 0; // go recv() again to get more bytes
-			}
-			if (position_in_message < message_size)
+			if ( (position_in_recv_buf < received_bytes) && (position_in_message < message_size) )
 			{
 				if (writeFileFromPeer(recv_buf, received_bytes) == -1)
 				{
-					state = ERROR_STATE;
+					error = true;
+					done = true;
 					break;
 				}
 			}
 
-			if (position_in_recv_buf >= received_bytes)
-			{
-				return 0; // go recv() again to get more bytes
-			}
-			else if (position_in_message == message_size)// must have a new message from the peer.
+			if (position_in_message == message_size)// must have a new message from the peer.
 			{
 				state = CHECK_FOR_FLAG;
-				break;
+				done = false;
 			}
 
-			// this shouldn't be reached
-			state = ERROR_STATE;
 			break;
 		}
 		case OUTPUT_CHAT_FROM_PEER:
@@ -640,58 +636,63 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			if (position_in_recv_buf >= received_bytes)
 			{
 				if (position_in_message == message_size)// must have a new message from the peer.
+				{
 					state = CHECK_FOR_FLAG;
+					done = false;
+				}
 
 				return 0; // go recv() again to get more bytes
 			}
 			else if (position_in_message == message_size)// must have a new message from the peer.
 			{
 				state = CHECK_FOR_FLAG;
+				done = false;
 				break;
 			}
 
 			// this shouldn't be reached
-			state = ERROR_STATE;
+			error = true;
+			done = true;
 			break;
 		}
 		case TAKE_FILE_NAME_FROM_PEER:
 		{
 			// Set the file name variable.
-			assignFileNameFromPeerCStr(recv_buf, received_bytes);
-
-			if (position_in_recv_buf >= received_bytes)
-				return 0;
-
-			// If the file name was too big, then say so, but don't error.
-			if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
+			if (assignFileNameFromPeerCStr(recv_buf, received_bytes) == FINISHED_ASSIGNING_FILE_NAME_FROM_PEER)
 			{
-				std::cout << "Receive File: WARNING: Peer's file name is too long. Exceeded " << INCOMING_FILE_NAME_FROM_PEER_SIZE << " characters.\n";
-				std::cout << "Receive File: File name will be incorrect on your computer.\n";
+				// If the file name was too big, then say so, but don't error.
+				if (position_in_message >= INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
+				{
+					std::cout << "Receive File: WARNING: Peer's file name is too long. Exceeded " << INCOMING_FILE_NAME_FROM_PEER_SIZE << " characters.\n";
+					std::cout << "Receive File: File name will be incorrect on your computer.\n";
+				}
+
+				// Null terminate it.
+				if (position_in_message <= INCOMING_FILE_NAME_FROM_PEER_SIZE)
+				{
+					incoming_file_name_from_peer_cstr[position_in_message] = '\0';
+				}
+
+				// Convert it to a std::string
+				std::string temporary_incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
+				incoming_file_name_from_peer = temporary_incoming_file_name_from_peer;
+				std::cout << "\n";
+				std::cout << "# Incoming file name: " << incoming_file_name_from_peer << "\n";
 			}
-
-			// Null terminate it.
-			if (position_in_message <= INCOMING_FILE_NAME_FROM_PEER_SIZE)
-			{
-				incoming_file_name_from_peer_cstr[position_in_message] = '\0';
-			}
-
-			// Convert it to a std::string
-			std::string temporary_incoming_file_name_from_peer(incoming_file_name_from_peer_cstr);
-			incoming_file_name_from_peer = temporary_incoming_file_name_from_peer;
-			std::cout << "\n";
-			std::cout << "# Incoming file name: " << incoming_file_name_from_peer << "\n";
-
 
 			// Must have a new message from the peer if this is true
 			if (position_in_message == message_size)
 			{
 				state = CHECK_FOR_FLAG;
-				break;
+				done = false;
+			}
+			else
+			{
+				// this shouldn't be reached
+				error = true;
+				done = true;
 			}
 
-			// this shouldn't be reached
-			state = ERROR_STATE;
-			break;
 			// Linux:
 			// Max file name length is 255 chars on most filesystems, and max path 4096 chars.
 			//
@@ -701,22 +702,30 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// This is not strictly true as the NTFS filesystem supports paths up to 32k characters.
 			// You can use the win32 api and "\\?\" prefix the path to use greater than 260 characters. 
 			// However using the long path "\\?\" is not a very good idea.
+
+			break;
 		}
 		case TAKE_FILE_SIZE_FROM_PEER:
 		{
 			// convert the file size in the buffer from network int64_t to
 			// host int64_t. It assigns the variable incoming_file_size_from_peer
 			// a value.
-			if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) != FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER)
-			{
-				return 0;// go recv() again
-			}
-			else
+			if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) == FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER)
 			{
 				std::cout << "# Size of Peer's file: " << incoming_file_size_from_peer << "\n";
-			}
 
-			state = OPEN_FILE_FOR_WRITE;
+				// Open the file for writing.
+				if (openFileForWrite() == -1)
+				{
+					error = true;
+					done = true;
+				}
+				else // success
+				{
+					state = CHECK_FOR_FLAG;
+					done = false;
+				}
+			}
 			break;
 		}
 		case FILE_TRANSFER_COMPLETE:
@@ -724,7 +733,10 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// Cout to console whether it completed successfully or unsuccessfully.
 			coutFileTransferSuccessOrFail();
 
-			state = CLOSE_FILE_FOR_WRITE;
+			closeFileForWrite();
+			state = CHECK_FOR_FLAG;
+			done = false;
+
 			break;
 		}
 		case CHECK_FOR_FLAG:
@@ -733,15 +745,12 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// aren't in a message at the moment.
 			position_in_message = 0;
 
-			if (position_in_recv_buf >= received_bytes)
-			{
-				return 0;
-			}
-			else
+			if (position_in_recv_buf < received_bytes)
 			{
 				message_flag = (unsigned char)recv_buf[position_in_recv_buf];
 				++position_in_recv_buf;// always have to ++ this in order to access the next element in the array.
 				state = CHECK_MESSAGE_SIZE_PART_ONE;
+				done = false;
 				break;
 			}
 			break;
@@ -749,16 +758,13 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		case CHECK_MESSAGE_SIZE_PART_ONE:
 		{
 			// Getting half of the u_short size of the message
-			if (position_in_recv_buf >= received_bytes)
-			{
-				return 0;
-			}
-			else
+			if (position_in_recv_buf < received_bytes)
 			{
 				message_size_part_one = (unsigned char)recv_buf[position_in_recv_buf];
 				message_size_part_one = message_size_part_one << 8;
 				++position_in_recv_buf;
 				state = CHECK_MESSAGE_SIZE_PART_TWO;
+				done = false;
 				break;
 			}
 			break;
@@ -766,11 +772,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 		case CHECK_MESSAGE_SIZE_PART_TWO:
 		{
 			// getting the second half of the u_short size of the message
-			if (position_in_recv_buf >= received_bytes)
-			{
-				return 0;
-			}
-			else
+			if (position_in_recv_buf < received_bytes)
 			{
 				message_size_part_two = (unsigned char)recv_buf[position_in_recv_buf];
 				message_size = message_size_part_one | message_size_part_two;
@@ -778,6 +780,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 
 				// Now that we have a flag and the size of the message,
 				// set the state based on the message flag
+				done = false;
 				if (message_flag == ApplicationLayer::MsgFlags::FILE_DATA)
 					state = WRITE_FILE_FROM_PEER;
 				else if (message_flag == ApplicationLayer::MsgFlags::FILE_NAME)
@@ -790,69 +793,39 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 					state = OUTPUT_CHAT_FROM_PEER;
 				else
 				{
-					state = ERROR_STATE;
-					break;
-				}
-
-				break;
-			}
-
-			break;
-		}
-		case OPEN_FILE_FOR_WRITE:
-		{
-			if (position_in_recv_buf >= received_bytes)
-				return 0;//recv again
-
-			// Open the file for writing.
-			if (openFileForWrite() == -1)
-			{
-				state = ERROR_STATE;
-				break;
-			}
-
-			// must have a new message from the peer if this is true
-			if (position_in_message == message_size)
-			{
-				state = CHECK_FOR_FLAG;
-			}
-			else // shouldn't be possible if working correctly
-			{
-				state = ERROR_STATE;
-			}
-
-			break;
-		}
-		case CLOSE_FILE_FOR_WRITE:
-		{
-			closeFileForWrite();
-			state = CHECK_FOR_FLAG;
-			break;
-		}
-		case ERROR_STATE:
-		{
-			std::cout << "Exiting with error, state machine for recv().\n";
-
-			if (WriteFile != nullptr)
-			{
-				if (fclose(WriteFile) != 0)		// 0 == successful close
-				{
-					perror("Error closing file for writing in binary mode.");
-					std::cout << "Error occured in RecvStateMachine, case ERROR_STATE:\n";
+					done = true;
+					error = true;
 				}
 			}
-
-			return -1;
+			break;
 		}
 		default:// currently nothing should cause this to execute.
 		{
 			std::cout << "State machine for recv() got to default. Exiting.\n";
-			return -1;
+			error = true;
+			done = true;
 		}
 		}//end switch
 	}
 
-	return 0;
+	if (error == true)
+	{
+		std::cout << "Exiting with error, state machine for recv().\n";
+
+		done = true;
+
+		if (WriteFile != nullptr)
+		{
+			if (fclose(WriteFile) != 0)		// 0 == successful close
+			{
+				perror("Error closing file for writing in binary mode.");
+				std::cout << "Error occured in RecvStateMachine, case ERROR_STATE:\n";
+			}
+		}
+		return -1;
+	}
+
+	return 0; // recv() more data
 }
 
 // For use with RecvBufStateMachine only.
@@ -874,6 +847,14 @@ int32_t ApplicationLayer::assignFileSizeFromPeer(char * recv_buf, int64_t recv_b
 			return RECV_AGAIN;
 		}
 
+		// If, for some reason, the peer has sent us a message that is, say, only 4
+		// bytes long, even though it should be sizeof(int64_t) bytes long, then
+		// it will be caught here.
+		if (position_in_message == message_size)
+		{
+			return FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER;
+		}
+
 		// Converting it to host byte order.
 		incoming_file_size_from_peer |= (
 			(int64_t)(unsigned char)recv_buf[position_in_recv_buf])
@@ -883,6 +864,10 @@ int32_t ApplicationLayer::assignFileSizeFromPeer(char * recv_buf, int64_t recv_b
 		++position_in_message;
 		++file_size_fragment;
 	}
+
+	// Just incase the peer sent us, for some unknown reason, extra bytes,
+	// then we will ignore them.
+	position_in_message = message_size;
 
 	file_size_fragment = 0;
 
@@ -918,7 +903,7 @@ void ApplicationLayer::coutChatMsgFromPeer(char * recv_buf, int64_t received_byt
 	std::cout << "\n";
 }
 
-void ApplicationLayer::assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes)
+int32_t ApplicationLayer::assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes)
 {
 	for (;
 		(position_in_recv_buf < received_bytes)
@@ -928,6 +913,15 @@ void ApplicationLayer::assignFileNameFromPeerCStr(char * recv_buf, int64_t recei
 	{
 		incoming_file_name_from_peer_cstr[position_in_message] = recv_buf[position_in_recv_buf];
 	}
+
+	// If it turns out that the file name was too long, then ignore the rest of the bytes in the message.
+	if (position_in_message == INCOMING_FILE_NAME_FROM_PEER_SIZE - RESERVED_NULL_CHAR_FOR_FILE_NAME)
+		position_in_message = message_size;
+
+	if (position_in_message == message_size)
+		return FINISHED_ASSIGNING_FILE_NAME_FROM_PEER;
+	else
+		return RECV_AGAIN;
 }
 
 int32_t ApplicationLayer::openFileForWrite()

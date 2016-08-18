@@ -257,8 +257,6 @@ private:
 
 		OPEN_FILE_FOR_WRITE,
 		CLOSE_FILE_FOR_WRITE,
-
-		ERROR_STATE,
 	};
 
 	// Variables necessary for decideActionBasedOnFlag().
@@ -298,7 +296,7 @@ private:
 
 	// For use with decideActionBasedOnFlag()
 	// Assigns the incoming_file_name_from_peer_cstr.
-	void assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes);
+	int32_t assignFileNameFromPeerCStr(char * recv_buf, int64_t received_bytes);
 
 	// For use with decideActionBasedOnFlag()
 	void coutFileTransferSuccessOrFail();
@@ -321,6 +319,7 @@ private:
 	int64_t incoming_file_size_from_peer = 0;
 	const int32_t RECV_AGAIN = 0;
 	const int32_t FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER = 1;
+	const int32_t FINISHED_ASSIGNING_FILE_NAME_FROM_PEER = 1;
 
 	// For use with decideActionBasedOnFlag()
 	void coutChatMsgFromPeer(char * recv_buf, int64_t received_bytes);

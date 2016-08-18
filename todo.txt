@@ -41,6 +41,8 @@
 -To add to that, something should be made where the user can turn off output to console, but still get
  a summary of all items transferred at the end, and their individual success / fail status.
 
+- Add startup option to delete all port forwards of a certain description. (maybe add this to miniupnp library, and pull request it?)
+
 
 
 # Todo for v1_1_1
