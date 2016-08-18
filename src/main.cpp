@@ -313,7 +313,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				// Upon creation of a FileTransfer instance, it will
 				// create a threaded sendFile() in the constructor.
 				bool send_file = true;
-				delete(FileXfer); // destroy an old one if there is one.
+				delete FileXfer; // destroy an old one if there is one.
 				FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 				return 0;
 			}
@@ -332,7 +332,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 	else // no FileTransfer class instance, let's create one.
 	{
 		bool send_file = true;
-		delete(FileXfer);
+		delete FileXfer;
 		FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 		return 0;
 	}
@@ -388,8 +388,18 @@ bool& getExitNow()
 
 int32_t main(int32_t argc, char *argv[])
 {
-	ClientConnect = new Connection(&BerkeleySockets, &getExitNow, &setExitNow, CLI.getVerboseOutput());
-	ServerConnect = new Connection(&BerkeleySockets, &getExitNow, &setExitNow, CLI.getVerboseOutput());
+	ClientConnect = new Connection(
+		&BerkeleySockets,
+		&getExitNow,
+		&setExitNow,
+		CLI.getVerboseOutput()
+	);
+	ServerConnect = new Connection(
+		&BerkeleySockets,
+		&getExitNow,
+		&setExitNow,
+		CLI.getVerboseOutput()
+	);
 
 	int32_t errchk = 0;
 
@@ -521,11 +531,11 @@ int32_t main(int32_t argc, char *argv[])
 			FileXfer->send_file_thread.join();
 	}
 
-	delete(FileXfer);
-	delete(AppLayer);
-	delete(ServerConnect);
-	delete(ClientConnect);
-	delete(Upnp);
+	delete FileXfer;
+	delete AppLayer;
+	delete ServerConnect;
+	delete ClientConnect;
+	delete Upnp;
 
 	return EXIT_SUCCESS;
 //===================================== End Chat Program =====================================
