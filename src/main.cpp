@@ -76,12 +76,12 @@ UserInput * UserInput_o = nullptr;
 
 
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
-void cliGivesIPAndPortToChatProgram(
+void cliGivesIPAndPortToConnection(
 		const CommandLineInput* CLI,
 		Connection* ServerConnectInstance,
 		Connection* ClientConnectInstance
 	);
-void upnpGivesIPAndPortToChatProgram(
+void upnpGivesIPAndPortToConnection(
 		const CommandLineInput* CLI,
 		const UPnP* UpnpInstance,
 		Connection* ServerConnectInstance,
@@ -110,7 +110,10 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 // /* from */ CommandLineInput* CLI
 // /* to */ Connection* ServerConnectInstance
 // /* to */ Connection* ServerConnectInstance
-void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerConnectInstance, Connection* ClientConnectInstance)
+void cliGivesIPAndPortToConnection(
+	CommandLineInput* CLI,
+	Connection* ServerConnectInstance,
+	Connection* ClientConnectInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -157,7 +160,8 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerCon
 // /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
 // /* to */ Connection* ServerConnectInstance
 // /* to */ Connection* ServerConnectInstance
-void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI,
+void upnpGivesIPAndPortToConnection(
+	CommandLineInput* CLI,
 	UPnP* UpnpInstance,
 	Connection* ServerConnectInstance,
 	Connection* ClientConnectInstance)
@@ -325,7 +329,7 @@ int32_t portForwardUsingUPnP()
 	{
 		// Give IP and port info gathered from the command line and from
 		// the UPnP class to the ServerConnect and ServerConnect instance
-		upnpGivesIPAndPortToChatProgram(&CLI, Upnp, ServerConnect, ClientConnect);
+		upnpGivesIPAndPortToConnection(&CLI, Upnp, ServerConnect, ClientConnect);
 		return 0; // successful port forward
 	}
 	else
@@ -506,7 +510,7 @@ int32_t main(int32_t argc, char *argv[])
 		}
 
 		// Give IP and port info to the ClientConnect and ServerConnect instance
-		cliGivesIPAndPortToChatProgram(&CLI, ServerConnect, ClientConnect);
+		cliGivesIPAndPortToConnection(&CLI, ServerConnect, ClientConnect);
 	}
 
 	if (CLI.getUseUpnpToConnectToPeer() == true)
