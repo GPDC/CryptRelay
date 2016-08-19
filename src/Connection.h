@@ -135,6 +135,7 @@ public:
 	void setMyExternalIP(std::string ip) { my_external_ip = ip; }
 	void setMyLocalIP(std::string ip) { my_local_ip = ip; }
 	void setMyLocalPort(std::string port) { my_local_port = port; }
+	std::string getMyLocalPort() { return my_local_port; }
 };
 
 #endif//Connection_h__

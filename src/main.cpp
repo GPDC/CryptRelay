@@ -206,6 +206,70 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 		ClientConnectInstance->setMyLocalPort(UpnpInstance->getMyInternalPort());
 }
 
+// +1 the port each time isLocalPortInUse() returns
+// true, and then try checking again.
+// If the port is not in use, it is assigned as the port
+// that the Connection will use.
+// Returns "" (aka, empty string) if the port wasn't changed, or if error.
+// Returns a new port number if it was changed.
+std::string changeLocalPortIfInUse(std::string change_this_port, std::string local_ip)
+{
+	PortKnock PortTest(&BerkeleySockets, CLI.getVerboseOutput());
+	const int32_t IN_USE = 1;
+	const int32_t AVAILABLE = 0;
+	const int32_t ATTEMPT_COUNT = 20;
+	int32_t port_status = -1;
+	std::string my_port_str = change_this_port;
+
+	// Only checking ATTEMPT_COUNT times to see if the port is in use.
+	// Only assigning a new port number ATTEMPT_COUNT times.
+	for (int32_t i = 0; i < ATTEMPT_COUNT; ++i)
+	{
+		if (i == ATTEMPT_COUNT - 1)
+		{
+			std::cout << "Error: After " << i << " attempts, no available port could be found for the purpose of listening.\n";
+			std::cout << "Please specify the port on which you wish to listen for incoming connections manually.\n";
+			my_port_str = "";
+			break;
+		}
+		port_status = PortTest.isLocalPortInUse(my_port_str, local_ip);
+		if ( port_status == IN_USE)
+		{
+			// Port is in use, lets try again with port++
+			std::cout << "Port: " << my_port_str << " is already in use.\n";
+			int32_t my_port_int = stoi(my_port_str);
+
+			// +1 the port
+			if (my_port_int < USHRT_MAX)
+				++my_port_int;
+			else
+				my_port_int = 30152; // Arbitrary number given b/c the port num was too big.
+
+			my_port_str = std::to_string(my_port_int);
+			std::cout << "Trying port: " << my_port_str << " instead.\n\n";
+		}
+		else if (port_status == AVAILABLE)
+		{
+			// if i != 0, then it must have assigned a new port number.
+			if (i != 0)
+			{
+
+				std::cout << "Now using Port: " << my_port_str << " as my local port.\n";
+				std::cout << "This is because the default port was already in use\n\n";
+			}
+			break;// Port is not in use.
+		}
+		else
+		{
+			// Failed to get the status of the port.
+			my_port_str = "";
+			break;
+		}
+	}
+
+	return my_port_str;
+}
+
 // Portforward the router using UPnP.
 // return 0, success
 // return -1, error
@@ -231,50 +295,16 @@ int32_t portForwardUsingUPnP()
 
 	// Checking to see if the user inputted a local port number.
 	// If he didn't, then he probably doesn't care, and just
-	// wants whatever port can be given to him; therefore
-	// we will +1 the port each time isLocalPortInUse() returns
-	// true, and then try checking again.
-	// If the port is not in use, it is assigned as the port
-	// that the Connection will use.
+	// wants whatever port can be given to him.
 	if (CLI.getMyHostPort().empty() == true)
 	{
-		PortKnock PortTest(&BerkeleySockets, CLI.getVerboseOutput());
-		const int32_t IN_USE = 1;
-		int32_t my_port_int = 0;
-		const int32_t ATTEMPT_COUNT = 20;
-
-		// Only checking ATTEMPT_COUNT times to see if the port is in use.
-		// Only assigning a new port number ATTEMPT_COUNT times.
-		for (int32_t i = 0; i < ATTEMPT_COUNT; ++i)
+		std::string changed_port;
+		// If the local port is in use by something else, ++ the local port and try again.
+		changed_port = changeLocalPortIfInUse(Upnp->getMyInternalPort(), Upnp->getMyLocalIP());
+		if (changed_port != "")
 		{
-			if (i == ATTEMPT_COUNT - 1)
-			{
-				std::cout << "Error: After " << i << " attempts, no available port could be found for the purpose of listening.\n";
-				std::cout << "Please specify the port on which you wish to listen for incomming connections by using -mP.\n";
-				return -1;
-			}
-			if (PortTest.isLocalPortInUse(Upnp->getMyInternalPort(), Upnp->getMyLocalIP()) == IN_USE)
-			{
-				// Port is in use, lets try again with port++
-				std::cout << "Port: " << Upnp->getMyInternalPort() << " is already in use.\n";
-				my_port_int = stoi(Upnp->getMyInternalPort());
-				if (my_port_int < USHRT_MAX)
-					++my_port_int;
-				else
-					my_port_int = 30152; // Arbitrary number given b/c the port num was too big.
-				Upnp->setMyInternalPort(std::to_string(my_port_int).c_str());
-				Upnp->setMyExternalPort(Upnp->getMyInternalPort().c_str());
-				std::cout << "Trying port: " << Upnp->getMyInternalPort() << " instead.\n\n";
-			}
-			else
-			{
-				if (i != 0)// if i != 0, then it must have assigned a new port number.
-				{
-					std::cout << "Now using Port: " << Upnp->getMyInternalPort() << " as my local port.\n";
-					std::cout << "This is because the default port was already in use\n\n";
-				}
-				break;// Port is not in use.
-			}
+			Upnp->setMyInternalPort(changed_port.c_str());
+			Upnp->setMyExternalPort(changed_port.c_str());
 		}
 	}
 
@@ -447,6 +477,21 @@ int32_t main(int32_t argc, char *argv[])
 		{
 			std::cout << "ERROR: User didn't specify his local IP address.\n";
 			return EXIT_FAILURE;
+		}
+
+		// Checking to see if the user inputted a local port number.
+		// If he didn't, then he probably doesn't care, and just
+		// wants whatever port can be given to him.
+		if (CLI.getMyHostPort().empty() == true)
+		{
+			std::string local_port;
+			// If the local port is in use by something else, ++ the local port and try again.
+			local_port = changeLocalPortIfInUse(ServerConnect->getMyLocalPort(), CLI.getMyIpAddress());
+			if (local_port != "")
+			{
+				ServerConnect->setMyLocalPort(local_port);
+				ClientConnect->setMyLocalPort(local_port);
+			}
 		}
 
 		// Give IP and port info to the ClientConnect and ServerConnect instance
