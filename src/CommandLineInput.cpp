@@ -178,7 +178,7 @@ int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 					return -1;
 				else
 				{
-					my_host_port = argv[i + 1];
+					my_local_port = argv[i + 1];
 					++i;
 				}
 			}

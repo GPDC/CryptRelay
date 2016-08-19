@@ -35,7 +35,7 @@ private:
 	std::string target_ip_address;
 	std::string target_port;
 	std::string my_ip_address;
-	std::string my_host_port;
+	std::string my_local_port;
 	std::string my_ext_ip_address;
 
 	// Specific to -d
@@ -60,7 +60,7 @@ public:
 	const std::string& getTargetIpAddress() {	return target_ip_address; }
 	const std::string& getTargetPort() { return target_port; }
 	const std::string& getMyIpAddress() {	return my_ip_address; }
-	const std::string& getMyHostPort() { return my_host_port; }
+	const std::string& getMyLocalPort() { return my_local_port; }
 	const std::string& getMyExtIpAddress() { return my_ext_ip_address; }
 	// Specific to -d
 	const bool& getDeleteThisSpecificPortForward() { return delete_this_specific_port_forward; }

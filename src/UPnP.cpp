@@ -431,7 +431,7 @@ int32_t UPnP::autoAddPortForwardRule()
 	// Saving the state of the current port so that it can be compared
 	// later to see if they needed to be changed.
 	std::string old_external_port = my_external_port;
-	std::string old_internal_port = my_internal_port;
+	std::string old_internal_port = my_local_port;
 
 	// If the port ends up being changed because of an error,
 	// then this will be set with the reason for the change.
@@ -448,7 +448,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					Urls.controlURL,
 					IGDData.first.servicetype,
 					my_external_port.c_str(),
-					my_internal_port.c_str(),
+					my_local_port.c_str(),
 					my_local_ip,
 					description_of_port_forward_entry,
 					protocol,
@@ -473,7 +473,7 @@ int32_t UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int32_t i_internal_port = stoi(my_internal_port);
+					int32_t i_internal_port = stoi(my_local_port);
 					int32_t i_external_port = stoi(my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
@@ -490,7 +490,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					}
 
 					// Convert it back to string
-					my_internal_port = std::to_string(i_internal_port);
+					my_local_port = std::to_string(i_internal_port);
 					my_external_port = std::to_string(i_external_port);
 					if (verbose_output == true)
 					{
@@ -504,7 +504,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					{
 						std::cout << "case 501: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+							my_external_port.c_str(), my_local_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -521,7 +521,7 @@ int32_t UPnP::autoAddPortForwardRule()
 						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
-					int32_t i_internal_port = stoi(my_internal_port);
+					int32_t i_internal_port = stoi(my_local_port);
 					int32_t i_external_port = stoi(my_external_port);
 
 					// Making sure we don't ++ over the maximum size of a unsigned short
@@ -538,7 +538,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					}
 
 					// Convert it back to string
-					my_internal_port = std::to_string(i_internal_port);
+					my_local_port = std::to_string(i_internal_port);
 					my_external_port = std::to_string(i_external_port);
 
 					if (verbose_output == true)
@@ -553,7 +553,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					{
 						std::cout << "case 718: ";
 						printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-							my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+							my_external_port.c_str(), my_local_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 						try_again = false;
 					}
 
@@ -566,7 +566,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					if (verbose_output == true)
 						std::cout << "External and internal ports must match. Improvising...\n";
 
-					my_external_port = my_internal_port;
+					my_external_port = my_local_port;
 
 					++try_again_count;	// Just making extra sure it doesn't get stuck in a loop doing this.
 					try_again = true;
@@ -593,7 +593,7 @@ int32_t UPnP::autoAddPortForwardRule()
 				{
 					std::cout << "UPNP hard fail. try_again_count: " << try_again_count << ", bool try_again: " << try_again << "\n";
 					printf("addPortForwardRule(ext: %s, intern: %s, local_ip: %s) failed with code %d (%s)\n",
-						my_external_port.c_str(), my_internal_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
+						my_external_port.c_str(), my_local_port.c_str(), my_local_ip, errchk, strupnperror(errchk));
 					return 0;
 				}
 			}
@@ -611,9 +611,9 @@ int32_t UPnP::autoAddPortForwardRule()
 				{
 					std::cout << "Now using external port: " << my_external_port << " because: "<< reason_for_changing_port << "\n";
 				}
-				if (old_internal_port != my_internal_port)
+				if (old_internal_port != my_local_port)
 				{
-					std::cout << "Now using internal port: " << my_internal_port << " because: " << reason_for_changing_port << "\n";
+					std::cout << "Now using internal port: " << my_local_port << " because: " << reason_for_changing_port << "\n";
 				}
 			}
 

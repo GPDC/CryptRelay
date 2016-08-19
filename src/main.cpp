@@ -103,10 +103,10 @@ void upnpGivesIPAndPortToChatProgram(
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 {
 	// Give Port that was supplied by the user to the UPnP class
-	if (CLI->getMyHostPort().empty() == false)
+	if (CLI->getMyLocalPort().empty() == false)
 	{
-		UpnpInstance->setMyInternalPort(CLI->getMyHostPort().c_str());
-		UpnpInstance->setMyExternalPort(CLI->getMyHostPort().c_str());
+		UpnpInstance->setMyLocalPort(CLI->getMyLocalPort().c_str());
+		UpnpInstance->setMyExternalPort(CLI->getMyLocalPort().c_str());
 	}
 }
 
@@ -129,8 +129,8 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerCon
 	if (CLI->getMyIpAddress().empty() == false)
 		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
-	if (CLI->getMyHostPort().empty() == false)
-		ServerConnectInstance->setMyLocalPort(CLI->getMyHostPort());
+	if (CLI->getMyLocalPort().empty() == false)
+		ServerConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 
 
 	// Give IP and port info to the ClientConnect instance
@@ -146,8 +146,8 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerCon
 	if (CLI->getMyIpAddress().empty() == false)
 		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
-	if (CLI->getMyHostPort().empty() == false)
-		ClientConnectInstance->setMyLocalPort(CLI->getMyHostPort());
+	if (CLI->getMyLocalPort().empty() == false)
+		ClientConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 }
 
 // The user's IP and port input will always be used over the IP and port that the UPnP
@@ -177,10 +177,10 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	else
 		ServerConnectInstance->setMyLocalIP(UpnpInstance->getMyLocalIP());
 
-	if (CLI->getMyHostPort().empty() == false)
-		ServerConnectInstance->setMyLocalPort(CLI->getMyHostPort());
+	if (CLI->getMyLocalPort().empty() == false)
+		ServerConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 	else
-		ServerConnectInstance->setMyLocalPort(UpnpInstance->getMyInternalPort());
+		ServerConnectInstance->setMyLocalPort(UpnpInstance->getMyLocalPort());
 
 
 	// Give IP and port info to the ClientConnect instance
@@ -200,18 +200,18 @@ void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, 
 	else
 		ClientConnectInstance->setMyLocalIP(UpnpInstance->getMyLocalIP());
 
-	if (CLI->getMyHostPort().empty() == false)
-		ClientConnectInstance->setMyLocalPort(CLI->getMyHostPort());
+	if (CLI->getMyLocalPort().empty() == false)
+		ClientConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 	else
-		ClientConnectInstance->setMyLocalPort(UpnpInstance->getMyInternalPort());
+		ClientConnectInstance->setMyLocalPort(UpnpInstance->getMyLocalPort());
 }
 
 // +1 the port each time isLocalPortInUse() returns
 // true, and then try checking again.
 // If the port is not in use, it is assigned as the port
 // that the Connection will use.
-// Returns "" (aka, empty string) if the port wasn't changed, or if error.
-// Returns a new port number if it was changed.
+// Returns "" (aka, empty string) if there was an error (which consquently means the port didn't change)
+// Returns the port number, whether it is a new port number or the same old one.
 std::string changeLocalPortIfInUse(std::string change_this_port, std::string local_ip)
 {
 	PortKnock PortTest(&BerkeleySockets, CLI.getVerboseOutput());
@@ -257,7 +257,10 @@ std::string changeLocalPortIfInUse(std::string change_this_port, std::string loc
 				std::cout << "Now using Port: " << my_port_str << " as my local port.\n";
 				std::cout << "This is because the default port was already in use\n\n";
 			}
-			break;// Port is not in use.
+
+			// else port never changed, however it IS available.
+
+			break;
 		}
 		else
 		{
@@ -296,15 +299,15 @@ int32_t portForwardUsingUPnP()
 	// Checking to see if the user inputted a local port number.
 	// If he didn't, then he probably doesn't care, and just
 	// wants whatever port can be given to him.
-	if (CLI.getMyHostPort().empty() == true)
+	if (CLI.getMyLocalPort().empty() == true)
 	{
-		std::string changed_port;
+		std::string new_local_port;
 		// If the local port is in use by something else, ++ the local port and try again.
-		changed_port = changeLocalPortIfInUse(Upnp->getMyInternalPort(), Upnp->getMyLocalIP());
-		if (changed_port != "")
+		new_local_port = changeLocalPortIfInUse(Upnp->getMyLocalPort(), Upnp->getMyLocalIP());
+		if (new_local_port != "")
 		{
-			Upnp->setMyInternalPort(changed_port.c_str());
-			Upnp->setMyExternalPort(changed_port.c_str());
+			Upnp->setMyLocalPort(new_local_port.c_str());
+			Upnp->setMyExternalPort(new_local_port.c_str());
 		}
 	}
 
@@ -482,15 +485,15 @@ int32_t main(int32_t argc, char *argv[])
 		// Checking to see if the user inputted a local port number.
 		// If he didn't, then he probably doesn't care, and just
 		// wants whatever port can be given to him.
-		if (CLI.getMyHostPort().empty() == true)
+		if (CLI.getMyLocalPort().empty() == true)
 		{
-			std::string local_port;
+			std::string new_local_port;
 			// If the local port is in use by something else, ++ the local port and try again.
-			local_port = changeLocalPortIfInUse(ServerConnect->getMyLocalPort(), CLI.getMyIpAddress());
-			if (local_port != "")
+			new_local_port = changeLocalPortIfInUse(ServerConnect->getMyLocalPort(), CLI.getMyIpAddress());
+			if (new_local_port != "")
 			{
-				ServerConnect->setMyLocalPort(local_port);
-				ClientConnect->setMyLocalPort(local_port);
+				ServerConnect->setMyLocalPort(new_local_port);
+				ClientConnect->setMyLocalPort(new_local_port);
 			}
 		}
 

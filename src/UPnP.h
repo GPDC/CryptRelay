@@ -116,7 +116,7 @@ private:
 	static const int32_t MY_EXTERNAL_IP_LEN = 40;
 	char my_external_ip[MY_EXTERNAL_IP_LEN] = { 0 };	// showInformation() fills this out
 	const std::string DEFAULT_PORT = "30248";
-	std::string my_internal_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
+	std::string my_local_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 	std::string my_external_port = DEFAULT_PORT;// in the deconstructor, deletePortForwardRule() uses this to delete a port forward.
 
 	// findUPnPDevices() stores a list of a devices here as a linked list
@@ -169,9 +169,9 @@ public:
 	// Accessors
 	char * getMyLocalIP() { return my_local_ip; }
 	char * getMyExternalIP() { return my_external_ip; }
-	void setMyInternalPort(const char * ptr) { my_internal_port = ptr; }
+	void setMyLocalPort(const char * ptr) { my_local_port = ptr; }
 	void setMyExternalPort(const char * ptr) { my_external_port = ptr; }
-	std::string getMyInternalPort() { return my_internal_port; }
+	std::string getMyLocalPort() { return my_local_port; }
 	std::string getMyExternalPort() { return my_external_port; }
 };
 
