@@ -79,7 +79,7 @@ void cliGivesIPAndPortToConnection(
 		Connection* ServerConnectInstance,
 		Connection* ClientConnectInstance
 	);
-void upnpGivesIPAndPortToConnection(
+void upnpAndCliGivesIpAndPortToConnection(
 		const CommandLineInput* CLI,
 		const UPnP* UpnpInstance,
 		Connection* ServerConnectInstance,
@@ -103,7 +103,7 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	}
 }
 
-
+// For use when UPnP is not involved.
 // Gives IP and Port information to the Chat Program.
 // /* from */ CommandLineInput* CLI
 // /* to */ Connection* ServerConnectInstance
@@ -124,9 +124,6 @@ void cliGivesIPAndPortToConnection(
 	if (CLI->getTargetPort().empty() == false)
 		ServerConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
-	if (CLI->getMyExtIpAddress().empty() == false)
-		ServerConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
-
 	if (CLI->getMyIpAddress().empty() == false)
 		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
@@ -141,9 +138,6 @@ void cliGivesIPAndPortToConnection(
 	if (CLI->getTargetPort().empty() == false)
 		ClientConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
-	if (CLI->getMyExtIpAddress().empty() == false)
-		ClientConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
-
 	if (CLI->getMyIpAddress().empty() == false)
 		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 
@@ -151,6 +145,9 @@ void cliGivesIPAndPortToConnection(
 		ClientConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 }
 
+// UPnP and CLI give port and IP info to the Connection class. However, if the port / ip info
+// inside the CLI are empty (user never input any information), then the IP / port info
+// will be taken from the UPnP class instead.
 // The user's IP and port input (from the CLI) will always be used over the IP and port that the UPnP
 // class tried to give.
 // Gives IP and Port information /*from*/ the CLI and UPnP classes, /*to*/ the Connection classes.
@@ -158,7 +155,7 @@ void cliGivesIPAndPortToConnection(
 // /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
 // /* to */ Connection* ServerConnectInstance
 // /* to */ Connection* ServerConnectInstance
-void upnpGivesIPAndPortToConnection(
+void upnpAndCliGivesIpAndPortToConnection(
 	CommandLineInput* CLI,
 	UPnP* UpnpInstance,
 	Connection* ServerConnectInstance,
@@ -177,11 +174,6 @@ void upnpGivesIPAndPortToConnection(
 	if (CLI->getTargetPort().empty() == false)
 		ServerConnectInstance->setTargetExternalPort(CLI->getTargetPort());
 
-	if (CLI->getMyExtIpAddress().empty() == false)
-		ServerConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
-	else
-		ServerConnectInstance->setMyExternalIP(UpnpInstance->getMyExternalIP());
-
 	if (CLI->getMyIpAddress().empty() == false)
 		ServerConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
 	else
@@ -199,11 +191,6 @@ void upnpGivesIPAndPortToConnection(
 
 	if (CLI->getTargetPort().empty() == false)
 		ClientConnectInstance->setTargetExternalPort(CLI->getTargetPort());
-
-	if (CLI->getMyExtIpAddress().empty() == false)
-		ClientConnectInstance->setMyExternalIP(CLI->getMyExtIpAddress());
-	else
-		ClientConnectInstance->setMyExternalIP(UpnpInstance->getMyExternalIP());
 
 	if (CLI->getMyIpAddress().empty() == false)
 		ClientConnectInstance->setMyLocalIP(CLI->getMyIpAddress());
@@ -327,7 +314,7 @@ int32_t portForwardUsingUPnP()
 	{
 		// Give IP and port info gathered from the command line and from
 		// the UPnP class to the ServerConnect and ServerConnect instance
-		upnpGivesIPAndPortToConnection(&CLI, Upnp, ServerConnect, ClientConnect);
+		upnpAndCliGivesIpAndPortToConnection(&CLI, Upnp, ServerConnect, ClientConnect);
 		return 0; // successful port forward
 	}
 	else

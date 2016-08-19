@@ -86,7 +86,6 @@ private:
 	// IP and port information for theConnection class.
 	std::string target_external_ip;
 	std::string target_external_port = DEFAULT_PORT;
-	std::string my_external_ip;
 	std::string my_local_ip;
 	std::string my_local_port = DEFAULT_PORT;
 
@@ -124,7 +123,6 @@ public:
 
 	void setTargetExternalIP(std::string ip) { target_external_ip = ip; }
 	void setTargetExternalPort(std::string port) { target_external_port = port; }
-	void setMyExternalIP(std::string ip) { my_external_ip = ip; }
 	void setMyLocalIP(std::string ip) { my_local_ip = ip; }
 	void setMyLocalPort(std::string port) { my_local_port = port; }
 	std::string getMyLocalPort() { return my_local_port; }

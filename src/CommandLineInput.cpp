@@ -182,17 +182,6 @@ int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 					++i;
 				}
 			}
-			else if (i < arg_size - 1 && arg[i] == "-mE")
-			{
-				err_chk_bool = IPAdressFormatCheck.isIPV4FormatCorrect(argv[i + 1]);
-				if (err_chk_bool == false)
-					return -1;
-				else
-				{
-					my_ext_ip_address = argv[i + 1];
-					++i;
-				}
-			}
 			else if (arg[i] == "--examples")
 			{
 				displayExamples();
