@@ -22,7 +22,10 @@ class ApplicationLayer;
 
 class FileTransfer
 {
+public:
 	// Typedef section
+	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
+
 private:
 #ifdef _WIN32
 	typedef struct _stat64 xplatform_struct_stat;
@@ -31,8 +34,15 @@ private:
 	typedef struct stat xplatform_struct_stat;
 #endif//__linux__
 
+
+
 public:
-	FileTransfer(ApplicationLayer* AppLayer, std::string file_name_and_path, bool send_file_bool, bool turn_verbose_output_on = false);
+	FileTransfer(ApplicationLayer* AppLayer,
+		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
+		std::string file_name_and_path,
+		bool send_file_bool,
+		bool turn_verbose_output_on = false
+	);
 	virtual ~FileTransfer();
 
 	// Turn on and off verbose output for this class.
@@ -54,6 +64,9 @@ private:
 	// Prevent anyone from copying this class.
 	FileTransfer(FileTransfer& FileTransferInstance) = delete;			   // disable copy operator
 	FileTransfer& operator=(FileTransfer& FileTransferInstance) = delete;  // disable assignment operator
+
+	// If you want to exit the program, set this to true.
+	bool exit_now = false;
 
 	static const int32_t MAX_FILENAME_LENGTH;
 
@@ -80,6 +93,20 @@ private:
 	// Ex: c:\users\me\storage\my_file.txt
 	// will return: my_file.txt
 	static std::string retrieveFileNameFromPath(std::string file_name_and_path);
+
+
+private:
+
+	// Callbacks
+	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
+
+
+public:
+
+	// Accessors
+
+	// If you want this class to proceed to exit, set this to true.
+	void setExitNow(bool exit_the_program) { exit_now = exit_the_program; }
 };
 
 #endif//FileTransfer_h__

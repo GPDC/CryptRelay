@@ -73,10 +73,18 @@ std::mutex ApplicationLayer::SendMutex;
 ApplicationLayer::ApplicationLayer(
 	IXBerkeleySockets* IXBerkeleySocketsInstance,
 	SOCKET socket_z,
-	callback_fn_set_exit_now * set_exit_now_ptr,
-	callback_fn_get_exit_now * get_exit_now_ptr,
+	callback_fn_exit_program * exit_program_ptr,
 	bool turn_verbose_output_on)
 {
+	// Checking for nullptrs on callbacks
+	if (IXBerkeleySocketsInstance == nullptr
+		|| exit_program_ptr == nullptr)
+	{
+		// This could be replaced with a throw
+		std::cout << "ERROR: nullptr. ApplicationLayer class constructor.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
@@ -88,17 +96,7 @@ ApplicationLayer::ApplicationLayer(
 	fd_socket = socket_z;
 
 	// Setting the callbacks
-	callbackSetExitNow = set_exit_now_ptr;
-	callbackGetExitNow = get_exit_now_ptr;
-
-	// Checking for nullptrs on callbacks
-	if (callbackSetExitNow == nullptr
-		|| callbackGetExitNow == nullptr)
-	{
-		// This could be replaced with a throw
-		std::cout << "ERROR: callback == nullptr. ApplicationLayer class.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
-	}
+	callbackExitProgram = exit_program_ptr;
 
 	// Specific to the ProcessRecvBuf state machine
 	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
@@ -447,13 +445,27 @@ void ApplicationLayer::loopedReceiveMessages()
 		}
 		else if (bytes == CONNECTION_GRACEFULLY_CLOSED)
 		{
+			if (is_file_done_being_written == false)
+			{
+				// Close the file that was being written inside the decideActionBasedOnFlag() state machine.
+				if (WriteFile != nullptr)
+				{
+					if (fclose(WriteFile) != 0)
+					{
+						DBG_DISPLAY_ERROR_LOCATION();
+						perror("Error closing file for writing in binary mode.");
+					}
+				}
+				std::cout << "File transfer was interrupted. File name: " << incoming_file_name_from_peer << "\n";
+			}
+
 			std::cout << "Connection with peer has been gracefully closed.\n";
 			break;
 		}
 	}
 
-	// Checking if the user or the program wants to exit.
-	callbackSetExitNow(true);
+	// Tell the rest of the program that it should proceed to exit.
+	callbackExitProgram();
 
 	std::cout << "\n";
 	std::cout << "# Press 'Enter' to exit CryptRelay.\n";

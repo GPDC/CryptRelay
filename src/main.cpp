@@ -72,34 +72,29 @@ CommandLineInput CLI;
 XBerkeleySockets BerkeleySockets;
 Connection * ServerConnect = nullptr;
 Connection * ClientConnect = nullptr;
+UserInput * UserInput_o = nullptr;
 
 
-// Give Port information, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
-
-// Gives IP and Port information to the Chat Program.
-// /* from */ CommandLineInput* CLI
-// /* to */ Connection* ServerConnectInstance
-// /* to */ Connection* ServerConnectInstance
 void cliGivesIPAndPortToChatProgram(
 		const CommandLineInput* CLI,
 		Connection* ServerConnectInstance,
 		Connection* ClientConnectInstance
 	);
-
-// Gives IP and Port information to the Chat Program.
-// /* from */ CommandLineInput* CLI
-// /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
-// /* to */ Connection* ServerConnectInstance
-// /* to */ Connection* ServerConnectInstance
 void upnpGivesIPAndPortToChatProgram(
 		const CommandLineInput* CLI,
 		const UPnP* UpnpInstance,
 		Connection* ServerConnectInstance,
 		Connection* ClientConnectInstance
 	);
+std::string changeLocalPortIfInUse(std::string change_this_port, std::string local_ip);
+int32_t portForwardUsingUPnP();
+int32_t startThreadedFileXfer(const std::string& file_name_and_path);
+int64_t sendChatMessage(std::string& user_input);
+int32_t endConnection();
+void exitProgram();
 
-// Give user supplied port to the UPnP class
+// Give Ports, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 {
 	// Give Port that was supplied by the user to the UPnP class
@@ -110,6 +105,11 @@ void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
 	}
 }
 
+
+// Gives IP and Port information to the Chat Program.
+// /* from */ CommandLineInput* CLI
+// /* to */ Connection* ServerConnectInstance
+// /* to */ Connection* ServerConnectInstance
 void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerConnectInstance, Connection* ClientConnectInstance)
 {
 	// If the user inputted values at the command line interface
@@ -150,9 +150,17 @@ void cliGivesIPAndPortToChatProgram(CommandLineInput* CLI, Connection* ServerCon
 		ClientConnectInstance->setMyLocalPort(CLI->getMyLocalPort());
 }
 
-// The user's IP and port input will always be used over the IP and port that the UPnP
+// The user's IP and port input (from the CLI) will always be used over the IP and port that the UPnP
 // class tried to give.
-void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI, UPnP* UpnpInstance, Connection* ServerConnectInstance, Connection* ClientConnectInstance)
+// Gives IP and Port information /*from*/ the CLI and UPnP classes, /*to*/ the Connection classes.
+// /* from */ CommandLineInput* CLI
+// /* from */ UPnP* UpnpInstance	//only if the user didn't input anything in the CLI
+// /* to */ Connection* ServerConnectInstance
+// /* to */ Connection* ServerConnectInstance
+void upnpGivesIPAndPortToChatProgram(CommandLineInput* CLI,
+	UPnP* UpnpInstance,
+	Connection* ServerConnectInstance,
+	Connection* ClientConnectInstance)
 {
 	// If the user inputted values at the command line interface
 	// designated for IP and / or port, we will take those values
@@ -347,7 +355,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				// create a threaded sendFile() in the constructor.
 				bool send_file = true;
 				delete FileXfer; // destroy an old one if there is one.
-				FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
+				FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
 				return 0;
 			}
 			else // A thread must not exist. This shouldn't be possible to get here.
@@ -366,7 +374,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 	{
 		bool send_file = true;
 		delete FileXfer;
-		FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
+		FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
 		return 0;
 	}
 
@@ -405,16 +413,18 @@ int32_t endConnection()
 		return -1;
 }
 
-// Callback to set the exit_now variable.
-void setExitNow(bool value)
+// Callback to exit the entire program gracefully
+void exitProgram()
 {
-	exit_now = value;
-}
+	// Setting all of the exit_now variables to true so that
+	// each class will know that it should exit, and perform whatever
+	// it needs to in order to exit gracefully.
 
-// Callback to view the exit_now variable.
-bool& getExitNow()
-{
-	return exit_now;
+	if (FileXfer != nullptr) { FileXfer->setExitNow(true); }
+	if (AppLayer != nullptr) { AppLayer->setExitNow(true); }
+	if (ServerConnect != nullptr) { ServerConnect->setExitNow(true); }
+	if (ClientConnect != nullptr) { ClientConnect->setExitNow(true); }
+	if (UserInput_o != nullptr) { UserInput_o->setExitNow(true); }
 }
 
 
@@ -423,14 +433,12 @@ int32_t main(int32_t argc, char *argv[])
 {
 	ClientConnect = new Connection(
 		&BerkeleySockets,
-		&getExitNow,
-		&setExitNow,
+		&exitProgram,
 		CLI.getVerboseOutput()
 	);
 	ServerConnect = new Connection(
 		&BerkeleySockets,
-		&getExitNow,
-		&setExitNow,
+		&exitProgram,
 		CLI.getVerboseOutput()
 	);
 
@@ -443,7 +451,7 @@ int32_t main(int32_t argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
-	std::cout << "Welcome to CryptRelay Alpha release 0.8.0\n";
+	std::cout << "Welcome to CryptRelay 0.8.0\n";
 
 
 	if (CLI.getShowInfoUpnp() == true)
@@ -544,25 +552,23 @@ int32_t main(int32_t argc, char *argv[])
 	AppLayer = new ApplicationLayer(
 		&BerkeleySockets,
 		WinningConnectionClass->getFdSocket(),
-		&setExitNow,
-		&getExitNow,
+		&exitProgram,
 		CLI.getVerboseOutput()
 	);
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer
 	// using these callbacks in order to have data arrive (correctly) at the peer.
-	UserInput UserInput_o(
+	UserInput_o = new UserInput(
 		&startThreadedFileXfer,
 		&sendChatMessage,
 		&endConnection,
-		&setExitNow,
-		&getExitNow,
+		&exitProgram,
 		CLI.getVerboseOutput()
 	);
 
 	// Start getting the user's input.
-	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, &UserInput_o);
+	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, UserInput_o);
 
 	// Start receiving data from peer.
 	std::thread recv_messages_thread = std::thread(&ApplicationLayer::loopedReceiveMessages, AppLayer);

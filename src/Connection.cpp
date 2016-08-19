@@ -62,31 +62,29 @@ int32_t Connection::connection_race_winner = NOBODY_WON;
 
 
 Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
-						callback_fn_get_exit_now * get_exit_now_ptr,
-						callback_fn_set_exit_now * set_exit_now_ptr,
+						callback_fn_exit_program * exit_program_ptr,
 						bool turn_verbose_output_on)
 {
+	// Checking all callbacks for nullptr
+	if (IXBerkeleySocketsInstance == nullptr
+		|| exit_program_ptr == nullptr)
+	{
+		// This could be replaced with a throw
+		std::cout << "ERROR: nullptr passed as an arg. Connection class constructor.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+
 	// Enable socket use on windows.
 	WSAStartup();
 
-	// Set the callbacks
-	callbackGetExitNow = get_exit_now_ptr;
-	callbackSetExitNow = set_exit_now_ptr;
+	// Setting the callbacks
+	callbackExitProgram = exit_program_ptr;
 
-	// Checking all callbacks for nullptr
-	if (callbackGetExitNow == nullptr
-		|| callbackSetExitNow == nullptr
-		|| IXBerkeleySocketsInstance == nullptr)
-	{
-		// This could be replaced with a throw
-		std::cout << "ERROR: nullptr passed as an arg. Connection class.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
-	}
+	BerkeleySockets = IXBerkeleySocketsInstance;
 
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
-	BerkeleySockets = IXBerkeleySocketsInstance;
 	fd_socket = INVALID_SOCKET;
 }
 Connection::~Connection()
@@ -356,7 +354,7 @@ void Connection::client()
 		errno = 0;
 		int32_t conn_return_val = connect(client_socket, ClientConnectionInfo->ai_addr, (int)ClientConnectionInfo->ai_addrlen);
 		// Checking if the user or the program wants to exit.
-		if (callbackGetExitNow() == true)
+		if (exit_now == true)
 		{
 			BerkeleySockets->closesocket(client_socket);
 			if (ClientConnectionInfo != nullptr)
@@ -394,14 +392,6 @@ void Connection::client()
 				// returns 0 if the time limit has expired and it still hasn't seen any ready sockets handles.
 				errno = 0;
 				errchk = select((int)client_socket + 1, NULL, &WriteSet, NULL, &TimeValue);
-				// Checking if the user or the program wants to exit.
-				if (callbackGetExitNow() == true)
-				{
-					BerkeleySockets->closesocket(client_socket);
-					if (ClientConnectionInfo != nullptr)
-						BerkeleySockets->freeaddrinfo(&ClientConnectionInfo);
-					return;
-				}
 				if (errchk == SOCKET_ERROR)
 				{
 					BerkeleySockets->getError();

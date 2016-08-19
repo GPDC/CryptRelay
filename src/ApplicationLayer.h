@@ -35,22 +35,22 @@ class ApplicationLayer
 {
 	// Typedef section
 public:
-	// Typedefs for callbacks
-	typedef void callback_fn_set_exit_now(bool value); // for setting the bool variable if you want the program to exit.
-	typedef bool& callback_fn_get_exit_now(); // for viewing the bool variable to see if the program wants to exit.
+	// Typedefs
+	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
 
-
+private:
 #ifdef __linux__
 	typedef int32_t SOCKET;
 #endif//__linux__
+
+
 
 public:
 	
 	ApplicationLayer(
 		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
 		SOCKET socket, // A socket with an active connection.
-		callback_fn_set_exit_now * set_exit_now_ptr,
-		callback_fn_get_exit_now * get_exit_now_ptr,
+		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		bool turn_verbose_output_on = false // turn on and off verbose output for this class.
 	);
 	~ApplicationLayer();
@@ -161,6 +161,9 @@ private:
 	
 	IXBerkeleySockets * BerkeleySockets;
 
+	// If you want to exit the program, set this to true.
+	bool exit_now = false;
+
 	// ApplicationLayer expects this socket to have an active connection with the peer.
 	SOCKET fd_socket;
 
@@ -217,8 +220,20 @@ private:
 
 
 private:
-	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool variable if you want the program to exit.
-	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool variable to see if the program wants to exit.
+
+	// Callbacks
+	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
+
+
+public:
+
+	// Accessors
+
+	// If you want this class to proceed to exit, set this to true.
+	void setExitNow(bool exit_the_program) { exit_now = exit_the_program; }
+
+
+
 
 
 

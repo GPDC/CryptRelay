@@ -24,19 +24,15 @@ public:
 	// end the connection with the peer
 	typedef int32_t callback_fn_end_connection();
 
-	// set variable that tells program that UserInput wants to exit the program.
-	typedef void callback_fn_set_exit_now(bool value);
-
-	// view the variable that tells program that UserInput wants to exit the program.
-	typedef bool& callback_fn_get_exit_now();
+	// If you want to exit the program, call this.
+	typedef void callback_fn_exit_program();
 
 public:
 	UserInput(
 		callback_fn_start_file_transfer * file_xfer_ptr,
 		callback_fn_send_chat * chat_ptr,
 		callback_fn_end_connection * end_conn_ptr,
-		callback_fn_set_exit_now * set_exit_now_ptr,
-		callback_fn_get_exit_now * get_exit_now_ptr,
+		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		bool turn_verbose_output_on = false
 	);
 	~UserInput();
@@ -88,6 +84,9 @@ private:
 	UserInput(UserInput& UserInputInstance) = delete; // disable copy operator
 	UserInput& operator=(UserInput& UserInputInstance) = delete; // disable assignment operator
 
+	// If you want to exit the program, set this to true.
+	bool exit_now = false;
+
 	// Makes sure we are able to supply the FileTransfer class with reasonably correct input.
 	int32_t prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input);
 
@@ -95,9 +94,15 @@ private:
 	callback_fn_start_file_transfer * callbackStartThreadedFileXfer = nullptr; // Start the filetransfer.
 	callback_fn_send_chat * callbackSendChatMsg = nullptr; // Send a chat message to the peer.
 	callback_fn_end_connection * callbackEndConnection = nullptr; // close() and shutdown() the connected socket.
+	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
 
-	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool exit_now variable.
-	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool exit_now variable.
+
+public:
+
+	// Accessors
+
+	// If you want this class to proceed to exit, set this to true.
+	void setExitNow(bool exit_the_program) { exit_now = exit_the_program; }
 };
 
 #endif//UserInput_h__

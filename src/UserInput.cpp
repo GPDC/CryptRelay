@@ -19,10 +19,20 @@ UserInput::UserInput(
 	callback_fn_start_file_transfer * start_threaded_file_xfer_ptr,
 	callback_fn_send_chat * send_chat_ptr,
 	callback_fn_end_connection * end_conn_ptr,
-	callback_fn_set_exit_now * set_exit_now_ptr,
-	callback_fn_get_exit_now * get_exit_now_ptr,
+	callback_fn_exit_program * exit_program_ptr,
 	bool turn_verbose_output_on)
 {
+	// Make sure the callbacks haven't been given any nullptrs
+	if (start_threaded_file_xfer_ptr == nullptr
+		|| send_chat_ptr == nullptr
+		|| end_conn_ptr == nullptr
+		|| exit_program_ptr == nullptr)
+	{
+		// This could be replaced with a throw
+		std::cout << "ERROR: nullptr. UserInput class constructor.\n";
+		DBG_DISPLAY_ERROR_LOCATION();
+	}
+
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
@@ -30,20 +40,7 @@ UserInput::UserInput(
 	callbackStartThreadedFileXfer = start_threaded_file_xfer_ptr;
 	callbackSendChatMsg = send_chat_ptr;
 	callbackEndConnection = end_conn_ptr;
-	callbackSetExitNow = set_exit_now_ptr;
-	callbackGetExitNow = get_exit_now_ptr;
-
-	// Make sure the callbacks haven't been given any nullptrs
-	if (callbackStartThreadedFileXfer == nullptr
-		|| callbackSendChatMsg == nullptr
-		|| callbackEndConnection == nullptr
-		|| callbackSetExitNow == nullptr
-		|| callbackGetExitNow == nullptr)
-	{
-		// This could be replaced with a throw
-		std::cout << "ERROR: callback == nullptr. UserInput class.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
-	}
+	callbackExitProgram = exit_program_ptr;
 }
 UserInput::~UserInput()
 {
@@ -78,7 +75,7 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 		case CHECK_IF_USER_WANTS_TO_EXIT:
 		{
 			// Checking if the user or the program wants to exit.
-			if (callbackGetExitNow() == true)
+			if (exit_now == true)
 			{
 				state = EXIT_GRACEFULLY;
 			}
@@ -148,8 +145,8 @@ int32_t UserInput::decideActionBasedOnUserInput(std::string user_input)
 			// Proceeding to exit program. shutdown() and close() the socket.
 			callbackEndConnection();
 
-			// Tell the rest of the program that it wants to exit.
-			callbackSetExitNow(true);
+			// Tell the rest of the program that it should proceed to exit.
+			callbackExitProgram();
 
 			state = BEGINNING_STATE;
 			return GRACEFUL_EXIT;

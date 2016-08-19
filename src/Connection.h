@@ -29,28 +29,17 @@ class Connection
 	// Typedef section
 public:
 	// Callback typedefs
-	typedef void callback_fn_set_exit_now(bool value); // for setting the bool variable if you want the program to exit.
-	typedef bool& callback_fn_get_exit_now(); // for viewing the bool variable to see if the program wants to exit.
+	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
 
 #ifdef __linux__
 	typedef int32_t SOCKET;
 #endif//__linux__
 
-private:
-//#ifdef _WIN32
-//	typedef struct _stat64 xplatform_struct_stat;
-//#endif//WIN32
-//#ifdef __linux__
-//	typedef struct stat xplatform_struct_stat;
-//#endif//__linux__
-
-
 
 public:
 	Connection(
 		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
-		callback_fn_get_exit_now * get_exit_now_ptr,
-		callback_fn_set_exit_now * set_exit_now_ptr,
+		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		bool turn_verbose_output_on = false
 	);
 	virtual ~Connection();
@@ -88,6 +77,9 @@ private:
 	Connection(Connection& ConnectionInstance) = delete;			 // disable copy operator
 	Connection& operator=(Connection& ConnectionInstance) = delete;  // disable assignment operator
 
+	// If you want to exit the program, set this to true.
+	bool exit_now = false;
+
 	// This is the default port for the Connection class.
 	static const std::string DEFAULT_PORT;
 
@@ -122,8 +114,8 @@ private:
 
 
 private:
-	callback_fn_set_exit_now * callbackSetExitNow = nullptr; // for setting the bool variable if you want the program to exit.
-	callback_fn_get_exit_now * callbackGetExitNow = nullptr; // for viewing the bool variable to see if the program wants to exit.
+	// Callbacks
+	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
 
 public:
 
@@ -136,6 +128,9 @@ public:
 	void setMyLocalIP(std::string ip) { my_local_ip = ip; }
 	void setMyLocalPort(std::string port) { my_local_port = port; }
 	std::string getMyLocalPort() { return my_local_port; }
+
+	// If you want this class to proceed to exit, set this to true.
+	void setExitNow(bool exit_the_program) { exit_now = exit_the_program; }
 };
 
 #endif//Connection_h__

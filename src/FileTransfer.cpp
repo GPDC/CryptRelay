@@ -31,8 +31,19 @@
 
 const int32_t FileTransfer::MAX_FILENAME_LENGTH = 255;
 
-FileTransfer::FileTransfer(ApplicationLayer* AppLayerInstance, std::string file_name_and_path, bool send_the_file, bool turn_verbose_output_on)
+FileTransfer::FileTransfer(
+	ApplicationLayer* AppLayerInstance,
+	callback_fn_exit_program * exit_program_ptr, 
+	std::string file_name_and_path,
+	bool send_the_file,
+	bool turn_verbose_output_on)
 {
+	if (AppLayerInstance == nullptr
+		|| exit_program_ptr == nullptr)
+	{
+		// can throw here.
+		std::cout << "nullptr in constructor of FileTransfer class.\n";
+	}
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 
@@ -159,6 +170,15 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	std::cout << "# Sending file: " << file_name << "\n";
 	do
 	{
+		if (exit_now == true)
+		{
+			// Close the open file
+			fclose(ReadFile);
+
+			std::cout << "File transfer interrupted by user.\n";
+			return -1;
+		}
+
 		// The first 3 chars of the buffer are reserved for:
 		// [0] Flag to tell the peer what kind of packet this is (file, chat)
 		// [1] both [1] and [2] combined are considered a u_short.
@@ -322,6 +342,16 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	std::cout << "Starting Copy file...\n";
 	do
 	{
+		if (exit_now == true)
+		{
+			// Close the open files
+			fclose(ReadFile);
+			fclose(WriteFile);
+
+			std::cout << "File copy interrupted by user.\n";
+			return true;
+		}
+
 		bytes_read = fread(buffer, 1, buffer_size, ReadFile);
 		if (bytes_read)
 			bytes_written = fwrite(buffer, 1, (size_t)bytes_read, WriteFile);
