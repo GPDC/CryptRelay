@@ -62,8 +62,6 @@
 #include "UPnP.h"
 #endif//_WIN32
 
-// If the user wants to exit the program, exit_now == true;
-bool exit_now = false;
 
 UPnP* Upnp = nullptr;
 FileTransfer* FileXfer = nullptr;
