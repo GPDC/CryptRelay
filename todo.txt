@@ -90,7 +90,39 @@
 # Odd / noteable behavior:
 
 -There was 1 time where person A's client thread errored, but reported success. It exited the client thread.
- However, the peer (person B) was now connected, acting as the server, to person A, who is acting as the client.
+ However, the peer (person B) was now connected, acting as the server, to person A, who was acting as the client.
+
+- Being forcibly connected to the router. To reproduce:
+On your computer, start a crypt relay with a connection to a non existance ip address ex:
+cryptrelay.exe -t 192.168.1.133 (let's call this 'A')
+Now, in another command prompt window, start another cryptrelay.exe as:
+cryptrelay.exe -t 192.168.1.1 (let's call this 'B')
+
+Also works just the same with upnp disabled.
+
+Both of these will report having a connection with the router, 192.168.1.1. That is rediculous.
+In fact, A will be acting as the server during the connection with the router, and B as the client.
+??? as if the router initiated the connection. But B initiated the connection with the router.
+Why would the router randomly initiate a connection back?
+However, I know that isn't necessarily true, A will not connect to anything unless i start up B.
+And despite B trying to connect to the router, 192.168.1.1, it ends up somehow making a connection
+THROUGH the router, to A. Which means A is not connected to B. The router is connected to A. B is
+connected to the router.
+However, it is not like the router is acting as a proxy and forwarding all the information from B to
+A, because no information from B arrives at A. However, if i tell A to exit(), which will shutdown()
+and close() the connection, then suddenly B realises that the connection has been shutdown(), even
+though it is supposedly connected to the router -- not A.
+	It is not possible to reproduce this behavior if i have A trying to listen
+on a different port and connect to a different port than the ones B is trying to use.
+Of course, you can only listen on 1 port at a time, so its not possible to share that port.
+If i set B's target port to that of A's listening port, it still doesn't reproduce.
+If i don't mess with any port settings, but start A up first, then B, they reproduce the effect.
+If i start up B first, B will connect with the router, but then immediately recv() error, WSAError: 10054
+which means connection forcibly closed by remote host.
+Starting up B with port 80 doesn't change anything.
+
+
+
 
 # Note-worthy side effects of actions:
 -ctrl-c doesn't call deconstructors. Therefore it won't automatically delete the port forward that was automatically added at the beginning.

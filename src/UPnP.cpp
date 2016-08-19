@@ -428,6 +428,15 @@ int32_t UPnP::autoAddPortForwardRule()
 	// Some NATs only allow a lease time of "0".
 	const char * lease_duration = "57600";	// 57600 == 16 hrs
 
+	// Saving the state of the current port so that it can be compared
+	// later to see if they needed to be changed.
+	std::string old_external_port = my_external_port;
+	std::string old_internal_port = my_internal_port;
+
+	// If the port ends up being changed because of an error,
+	// then this will be set with the reason for the change.
+	std::string reason_for_changing_port;
+
 	std::cout << "Automatically adding port forward rule... ";
 	// Add the port forwarding rule
 	do
@@ -456,10 +465,12 @@ int32_t UPnP::autoAddPortForwardRule()
 				// Ergo we try again assuming that its just because the port is in use by another client on the LAN.
 				case 501:
 				{
+					reason_for_changing_port = "specific error unknown. Port forward entry probably already exists.";
+
 					// This case will be tried a maximum of try_again_count_limit times.
 					// The port will add +1 to itself every time it encounters this case.
 					if (verbose_output == true)
-						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
+						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
 					int32_t i_internal_port = stoi(my_internal_port);
@@ -502,10 +513,12 @@ int32_t UPnP::autoAddPortForwardRule()
 				// 718 == Port forward entry conflicts with one that is in use by another client on the LAN.
 				case 718:
 				{
+					reason_for_changing_port = "port forward entry conflicts with an already existing one.";
+
 					// This case will be tried a maximum of try_again_count_limit times.
 					// The port will add +1 to itself every time it encounters this case.
 					if (verbose_output == true)
-						std::cout << "Port forward entry probably conflicts with one that is in use by another client on the LAN. Improvising...\n";
+						std::cout << "Port forward entry conflicts with one that is in use by another client on the LAN. Improvising...\n";
 
 					// Making it an integer for easy manipulation
 					int32_t i_internal_port = stoi(my_internal_port);
@@ -548,6 +561,8 @@ int32_t UPnP::autoAddPortForwardRule()
 				}
 				case 724:	// External and internal ports must match
 				{
+					reason_for_changing_port = "external and internal ports must match.";
+
 					if (verbose_output == true)
 						std::cout << "External and internal ports must match. Improvising...\n";
 
@@ -588,6 +603,18 @@ int32_t UPnP::autoAddPortForwardRule()
 				port_forward_automatically_added = true;
 				try_again = false;
 				std::cout << "Success\n";
+
+				// Comparing the ports that we were originally told to use to the ones
+				// that (might) have been changed to see if there has been a change.
+				// Telling the user what port he is using if there was a change.
+				if (old_external_port != my_external_port)
+				{
+					std::cout << "Now using external port: " << my_external_port << " because: "<< reason_for_changing_port << "\n";
+				}
+				if (old_internal_port != my_internal_port)
+				{
+					std::cout << "Now using internal port: " << my_internal_port << " because: " << reason_for_changing_port << "\n";
+				}
 			}
 
 
