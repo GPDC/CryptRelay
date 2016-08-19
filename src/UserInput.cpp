@@ -28,9 +28,7 @@ UserInput::UserInput(
 		|| end_conn_ptr == nullptr
 		|| exit_program_ptr == nullptr)
 	{
-		// This could be replaced with a throw
-		std::cout << "ERROR: nullptr. UserInput class constructor.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
+		throw "Exception thrown: nullptr in UserInput constructor";
 	}
 
 	if (turn_verbose_output_on == true)

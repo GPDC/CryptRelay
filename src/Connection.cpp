@@ -69,9 +69,7 @@ Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
 	if (IXBerkeleySocketsInstance == nullptr
 		|| exit_program_ptr == nullptr)
 	{
-		// This could be replaced with a throw
-		std::cout << "ERROR: nullptr passed as an arg. Connection class constructor.\n";
-		DBG_DISPLAY_ERROR_LOCATION();
+		throw "Exception thrown: nullptr in Connection constructor";
 	}
 
 	// Enable socket use on windows.

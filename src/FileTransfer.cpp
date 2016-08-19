@@ -41,9 +41,9 @@ FileTransfer::FileTransfer(
 	if (AppLayerInstance == nullptr
 		|| exit_program_ptr == nullptr)
 	{
-		// can throw here.
-		std::cout << "nullptr in constructor of FileTransfer class.\n";
+		throw "Exception thrown: nullptr in FileTransfer constructor";
 	}
+
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
 

@@ -275,7 +275,15 @@ std::string changeLocalPortIfInUse(std::string change_this_port, std::string loc
 // return -1, error
 int32_t portForwardUsingUPnP()
 {
-	Upnp = new UPnP(CLI.getVerboseOutput());
+	try
+	{
+		Upnp = new UPnP(CLI.getVerboseOutput());
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return EXIT_FAILURE;
+	}
 
 	// Give the user's inputted port to the UPnP Class
 	// so that it will port forward what he wanted.
@@ -344,7 +352,15 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				// create a threaded sendFile() in the constructor.
 				bool send_file = true;
 				delete FileXfer; // destroy an old one if there is one.
-				FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+				try
+				{
+					FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+				}
+				catch (const char * nullptr_exception)
+				{
+					std::cout << nullptr_exception;
+					return EXIT_FAILURE;
+				}
 				return 0;
 			}
 			else // A thread must not exist. This shouldn't be possible to get here.
@@ -363,7 +379,15 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 	{
 		bool send_file = true;
 		delete FileXfer;
-		FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+		try
+		{
+			FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+		}
+		catch (const char * nullptr_exception)
+		{
+			std::cout << nullptr_exception;
+			return EXIT_FAILURE;
+		}
 		return 0;
 	}
 
@@ -420,16 +444,33 @@ void exitProgram()
 
 int32_t main(int32_t argc, char *argv[])
 {
-	ClientConnect = new Connection(
-		&BerkeleySockets,
-		&exitProgram,
-		CLI.getVerboseOutput()
-	);
-	ServerConnect = new Connection(
-		&BerkeleySockets,
-		&exitProgram,
-		CLI.getVerboseOutput()
-	);
+	try
+	{
+		ClientConnect = new Connection(
+			&BerkeleySockets,
+			&exitProgram,
+			CLI.getVerboseOutput()
+		);
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return EXIT_FAILURE;
+	}
+
+	try
+	{
+		ServerConnect = new Connection(
+			&BerkeleySockets,
+			&exitProgram,
+			CLI.getVerboseOutput()
+		);
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return EXIT_FAILURE;
+	}
 
 	int32_t errchk = 0;
 
@@ -440,13 +481,22 @@ int32_t main(int32_t argc, char *argv[])
 
 
 	//===================================== Starting Chat Program =====================================
-	std::cout << "Welcome to CryptRelay 0.8.0\n";
+	std::cout << "Welcome to CryptRelay 0.8.2\n";
 
 
 	if (CLI.getShowInfoUpnp() == true)
 	{
 		// Show some information related to the router
-		Upnp = new UPnP(CLI.getVerboseOutput());
+		try
+		{
+			Upnp = new UPnP(CLI.getVerboseOutput());
+		}
+		catch (const char * nullptr_exception)
+		{
+			std::cout << nullptr_exception;
+			return EXIT_FAILURE;
+		}
+
 		Upnp->standaloneShowInformation();
 		delete Upnp;
 		return EXIT_SUCCESS;
@@ -454,7 +504,16 @@ int32_t main(int32_t argc, char *argv[])
 	else if (CLI.getRetrieveListOfPortForwards() == true)
 	{
 		// Show the ports that are currently forwarded on the router
-		Upnp = new UPnP(CLI.getVerboseOutput());
+		try
+		{
+			Upnp = new UPnP(CLI.getVerboseOutput());
+		}
+		catch (const char * nullptr_exception)
+		{
+			std::cout << nullptr_exception;
+			return EXIT_FAILURE;
+		}
+
 		Upnp->standaloneDisplayListOfPortForwards();
 		delete Upnp;
 		return EXIT_SUCCESS;
@@ -462,7 +521,16 @@ int32_t main(int32_t argc, char *argv[])
 	else if (CLI.getDeleteThisSpecificPortForward() == true)
 	{
 		// Delete the specified port forward rule on the router.
-		Upnp = new UPnP(CLI.getVerboseOutput());
+		try
+		{
+			Upnp = new UPnP(CLI.getVerboseOutput());
+		}
+		catch (const char * nullptr_exception)
+		{
+			std::cout << nullptr_exception;
+			return EXIT_FAILURE;
+		}
+
 		Upnp->standaloneDeleteThisSpecificPortForward(
 				CLI.getDeleteThisSpecificPortForwardPort().c_str(),
 				CLI.getDeleteThisSpecificPortForwardProtocol().c_str()
@@ -538,23 +606,39 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Start up the ApplicationLayer, giving it the SOCKET
 	// from the Connection class that won the race.
-	AppLayer = new ApplicationLayer(
-		&BerkeleySockets,
-		WinningConnectionClass->getFdSocket(),
-		&exitProgram,
-		CLI.getVerboseOutput()
-	);
+	try
+	{
+		AppLayer = new ApplicationLayer(
+			&BerkeleySockets,
+			WinningConnectionClass->getFdSocket(),
+			&exitProgram,
+			CLI.getVerboseOutput()
+		);
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return EXIT_FAILURE;
+	}
 
 	// UserInput instance must be created after the ApplicationLayer instance,
 	// because it needs to be able to send things through the ApplicationLayer
 	// using these callbacks in order to have data arrive (correctly) at the peer.
-	UserInput_o = new UserInput(
-		&startThreadedFileXfer,
-		&sendChatMessage,
-		&endConnection,
-		&exitProgram,
-		CLI.getVerboseOutput()
-	);
+	try
+	{
+		UserInput_o = new UserInput(
+			&startThreadedFileXfer,
+			&sendChatMessage,
+			&endConnection,
+			&exitProgram,
+			CLI.getVerboseOutput()
+		);
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return EXIT_FAILURE;
+	}
 
 	// Start getting the user's input.
 	std::thread user_input_thread = std::thread(&UserInput::loopedGetUserInput, UserInput_o);
