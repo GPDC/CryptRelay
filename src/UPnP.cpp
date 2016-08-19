@@ -133,7 +133,7 @@ void UPnP::findUPnPDevices()
 	const int32_t TTL_DURATION = 2;
 	const int32_t DISABLE_IPV6 = 0;
 	//const int32_t ENABLE_IPV6 = 1;
-	const int32_t WAIT_TIME = 2000; // max time in milliseconds to wait for a response from device
+	const int32_t WAIT_TIME = 300; // max time in milliseconds to wait for a response from device
 	UpnpDevicesList = upnpDiscover(WAIT_TIME, nullptr, nullptr, UPNP_LOCAL_PORT_ANY, DISABLE_IPV6, TTL_DURATION, &miniupnp_error);
 
 	if (UpnpDevicesList)
@@ -452,7 +452,7 @@ int32_t UPnP::autoAddPortForwardRule()
 					my_local_ip,
 					description_of_port_forward_entry,
 					protocol,
-					0,					// Remote host, still not sure what this is really for / doing.
+					0,					// Remote host. 0 == no remote host.
 					lease_duration
 				);
 			if (errchk != UPNPCOMMAND_SUCCESS)
