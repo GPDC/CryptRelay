@@ -36,6 +36,7 @@
 #include "UserInput.h"
 #include "ApplicationLayer.h"
 #include "FileTransfer.h"
+#include "StringManip.h"
 
 #include "UPnP.h"
 #endif//__linux__
