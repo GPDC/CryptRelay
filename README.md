@@ -1,4 +1,5 @@
-# *Current Status: v0.8 - No encryption.
+# *Current Status: v0.8.2 - No encryption.
+
 Implemented:
 - File transfer
 - Chat
