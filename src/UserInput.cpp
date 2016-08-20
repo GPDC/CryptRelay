@@ -16,6 +16,7 @@
 #endif//_WIN32
 
 UserInput::UserInput(
+	StringManip * StringManipInstance,
 	callback_fn_start_file_transfer * start_threaded_file_xfer_ptr,
 	callback_fn_send_chat * send_chat_ptr,
 	callback_fn_end_connection * end_conn_ptr,
@@ -23,13 +24,16 @@ UserInput::UserInput(
 	bool turn_verbose_output_on)
 {
 	// Make sure the callbacks haven't been given any nullptrs
-	if (start_threaded_file_xfer_ptr == nullptr
+	if (StringManipInstance == nullptr
+		|| start_threaded_file_xfer_ptr == nullptr
 		|| send_chat_ptr == nullptr
 		|| end_conn_ptr == nullptr
 		|| exit_program_ptr == nullptr)
 	{
 		throw "Exception thrown: nullptr in UserInput constructor";
 	}
+
+	StrManip = StringManipInstance;
 
 	if (turn_verbose_output_on == true)
 		verbose_output = true;
@@ -191,9 +195,8 @@ bool UserInput::doesUserWantToSendAFile(std::string& user_msg_from_terminal)
 int32_t UserInput::prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input)
 {
 	// Split the string into multiple strings for every space.
-	StringManip StrManip(verbose_output);
 	std::vector <std::string> split_strings_vector;
-	if (StrManip.split(user_input, ' ', split_strings_vector) == -1)
+	if (StrManip->split(user_input, ' ', split_strings_vector) == -1)
 	{
 		std::cout << "Unexpected error: split(). File transfer never started due to error.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
@@ -232,7 +235,7 @@ int32_t UserInput::prepareUserInputForFileXfer(std::string user_input, std::stri
 			prepared_user_input = split_strings_vector[1];
 
 			// Fix the user's input to add an escape character to every '\'
-			StrManip.duplicateCharacter(prepared_user_input, '\\');
+			StrManip->duplicateCharacter(prepared_user_input, '\\');
 		}
 	}
 	

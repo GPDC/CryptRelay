@@ -10,6 +10,8 @@
 #include <string>
 #endif//_WIN32
 
+// Forward declaration
+class StringManip;
 
 class UserInput
 {
@@ -29,6 +31,7 @@ public:
 
 public:
 	UserInput(
+		StringManip * StringManipInstance,
 		callback_fn_start_file_transfer * file_xfer_ptr,
 		callback_fn_send_chat * chat_ptr,
 		callback_fn_end_connection * end_conn_ptr,
@@ -86,6 +89,8 @@ private:
 
 	// If you want to exit the program, set this to true.
 	bool exit_now = false;
+
+	StringManip * StrManip;
 
 	// Makes sure we are able to supply the FileTransfer class with reasonably correct input.
 	int32_t prepareUserInputForFileXfer(std::string user_input, std::string& prepared_user_input);

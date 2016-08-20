@@ -1,15 +1,14 @@
 // main.cpp
 
 // Program name: CryptRelay
-// Version: 0.8.1
+// Version: 0.8.2
 // Rough outline for future versions:
 // 0.9 == encryption
 // 1.0 == polished release
 
 // Formatting guide: Located at the bottom of main.cpp
 
-#ifdef __linux__			//to compile on linux, must set linker library standard library pthreads
-							// build-> linker-> libraries->
+#ifdef __linux__
 #include <iostream>
 #include <string>
 #include <vector>
@@ -58,6 +57,7 @@
 #include "UserInput.h"
 #include "ApplicationLayer.h"
 #include "FileTransfer.h"
+#include "StringManip.h"
 
 #include "UPnP.h"
 #endif//_WIN32
@@ -71,6 +71,7 @@ XBerkeleySockets BerkeleySockets;
 Connection * ServerConnect = nullptr;
 Connection * ClientConnect = nullptr;
 UserInput * UserInput_o = nullptr;
+StringManip * StrManip = nullptr;
 
 
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance);
@@ -91,6 +92,8 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path);
 int64_t sendChatMessage(std::string& user_input);
 int32_t endConnection();
 void exitProgram();
+int32_t createObjects();
+
 
 // Give Ports, supplied by the user, to the UPnP Class.
 void cliGivesPortToUPnP(CommandLineInput* CLI, UPnP* UpnpInstance)
@@ -441,8 +444,8 @@ void exitProgram()
 }
 
 
-
-int32_t main(int32_t argc, char *argv[])
+// Creates several class instances that should be created at the start of the program.
+int32_t createObjects()
 {
 	try
 	{
@@ -455,7 +458,7 @@ int32_t main(int32_t argc, char *argv[])
 	catch (const char * nullptr_exception)
 	{
 		std::cout << nullptr_exception;
-		return EXIT_FAILURE;
+		return -1;
 	}
 
 	try
@@ -469,8 +472,28 @@ int32_t main(int32_t argc, char *argv[])
 	catch (const char * nullptr_exception)
 	{
 		std::cout << nullptr_exception;
-		return EXIT_FAILURE;
+		return -1;
 	}
+
+	try
+	{
+		StrManip = new StringManip(CLI.getVerboseOutput());
+	}
+	catch (const char * nullptr_exception)
+	{
+		std::cout << nullptr_exception;
+		return -1;
+	}
+
+	return 0;
+}
+
+
+int32_t main(int32_t argc, char *argv[])
+{
+	// Create several class instances.
+	if (createObjects() == -1)
+		return EXIT_FAILURE;
 
 	int32_t errchk = 0;
 
@@ -573,7 +596,7 @@ int32_t main(int32_t argc, char *argv[])
 			return EXIT_FAILURE;
 	}
 
-	// Being thread race to attempt a connection with the peer.
+	// Begin thread race to attempt a connection with the peer.
 	std::cout << "Attempting to connect to peer...\n";
 
 	std::thread ServerThread = std::thread(&Connection::server, ServerConnect);
@@ -626,7 +649,7 @@ int32_t main(int32_t argc, char *argv[])
 	// using these callbacks in order to have data arrive (correctly) at the peer.
 	try
 	{
-		UserInput_o = new UserInput(
+		UserInput_o = new UserInput(StrManip,
 			&startThreadedFileXfer,
 			&sendChatMessage,
 			&endConnection,
@@ -663,6 +686,8 @@ int32_t main(int32_t argc, char *argv[])
 	delete ServerConnect;
 	delete ClientConnect;
 	delete Upnp;
+	delete UserInput_o;
+	delete StrManip;
 
 	return EXIT_SUCCESS;
 //===================================== End Chat Program =====================================
