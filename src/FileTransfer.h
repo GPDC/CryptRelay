@@ -22,9 +22,7 @@ class ApplicationLayer;
 
 class FileTransfer
 {
-public:
 	// Typedef section
-	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
 
 private:
 #ifdef _WIN32
@@ -38,7 +36,6 @@ private:
 
 public:
 	FileTransfer(ApplicationLayer* AppLayer,
-		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		std::string file_name_and_path,
 		bool send_file_bool,
 		bool turn_verbose_output_on = false
@@ -98,7 +95,7 @@ private:
 private:
 
 	// Callbacks
-	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
+
 
 
 public:

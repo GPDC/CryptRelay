@@ -33,13 +33,11 @@ const int32_t FileTransfer::MAX_FILENAME_LENGTH = 255;
 
 FileTransfer::FileTransfer(
 	ApplicationLayer* AppLayerInstance,
-	callback_fn_exit_program * exit_program_ptr, 
 	std::string file_name_and_path,
 	bool send_the_file,
 	bool turn_verbose_output_on)
 {
-	if (AppLayerInstance == nullptr
-		|| exit_program_ptr == nullptr)
+	if (AppLayerInstance == nullptr)
 	{
 		throw "Exception thrown: nullptr in FileTransfer constructor";
 	}

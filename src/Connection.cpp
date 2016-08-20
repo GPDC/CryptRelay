@@ -61,22 +61,16 @@ const int32_t Connection::NOBODY_WON = -25;
 int32_t Connection::connection_race_winner = NOBODY_WON;
 
 
-Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance,
-						callback_fn_exit_program * exit_program_ptr,
-						bool turn_verbose_output_on)
+Connection::Connection(IXBerkeleySockets* IXBerkeleySocketsInstance, bool turn_verbose_output_on)
 {
 	// Checking all callbacks for nullptr
-	if (IXBerkeleySocketsInstance == nullptr
-		|| exit_program_ptr == nullptr)
+	if (IXBerkeleySocketsInstance == nullptr)
 	{
 		throw "Exception thrown: nullptr in Connection constructor";
 	}
 
 	// Enable socket use on windows.
 	WSAStartup();
-
-	// Setting the callbacks
-	callbackExitProgram = exit_program_ptr;
 
 	BerkeleySockets = IXBerkeleySocketsInstance;
 

@@ -27,10 +27,8 @@ class IXBerkeleySockets;
 class Connection
 {
 	// Typedef section
-public:
-	// Callback typedefs
-	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
 
+private:
 #ifdef __linux__
 	typedef int32_t SOCKET;
 #endif//__linux__
@@ -39,7 +37,6 @@ public:
 public:
 	Connection(
 		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
-		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		bool turn_verbose_output_on = false
 	);
 	virtual ~Connection();
@@ -114,7 +111,7 @@ private:
 
 private:
 	// Callbacks
-	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
+
 
 public:
 

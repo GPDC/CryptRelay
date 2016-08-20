@@ -357,7 +357,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				delete FileXfer; // destroy an old one if there is one.
 				try
 				{
-					FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+					FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 				}
 				catch (const char * nullptr_exception)
 				{
@@ -384,7 +384,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 		delete FileXfer;
 		try
 		{
-			FileXfer = new FileTransfer(AppLayer, &exitProgram, file_name_and_path, send_file, CLI.getVerboseOutput());
+			FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
 		}
 		catch (const char * nullptr_exception)
 		{
@@ -451,7 +451,6 @@ int32_t createObjects()
 	{
 		ClientConnect = new Connection(
 			&BerkeleySockets,
-			&exitProgram,
 			CLI.getVerboseOutput()
 		);
 	}
@@ -465,7 +464,6 @@ int32_t createObjects()
 	{
 		ServerConnect = new Connection(
 			&BerkeleySockets,
-			&exitProgram,
 			CLI.getVerboseOutput()
 		);
 	}
