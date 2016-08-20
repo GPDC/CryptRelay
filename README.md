@@ -28,3 +28,6 @@ For example, for help building the miniupnp library with Microsoft Visual Studio
 # Building on Linux
 In order to compile/build CryptRelay on linux, have a look at the README_eclipse.md. (no makefile just yet!)
 
+// This will clone CryptRelay and all submodules.
+git clone --recursive git://github.com/GPDC/CryptRelay.git
+
