@@ -250,8 +250,8 @@ void UPnP::showInformation()
 		std::cout << "GetLinkLayerMaxBitRates failed.\n";
 	else
 	{
-		const int32_t ONE_KILOBIT = 1'000;
-		const int32_t ONE_MEGABIT = 1'000'000;
+		const int32_t ONE_KILOBIT = 1000;
+		const int32_t ONE_MEGABIT = 1000000;
 
 		// Display max bitrate down
 		printf("MaxBitRateDown  : %u bps", bitrate_down);
