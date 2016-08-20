@@ -239,7 +239,7 @@ void UPnP::showInformation()
 	displayTimeStarted(uptime);
 
 
-	// Get, then display Max bit rates
+	// Get max bit rates
 	errchk = UPNP_GetLinkLayerMaxBitRates(
 			Urls.controlURL_CIF,
 			IGDData.CIF.servicetype,
@@ -250,18 +250,39 @@ void UPnP::showInformation()
 		std::cout << "GetLinkLayerMaxBitRates failed.\n";
 	else
 	{
+		const int32_t ONE_KILOBIT = 1'000;
+		const int32_t ONE_MEGABIT = 1'000'000;
+
+		// Display max bitrate down
 		printf("MaxBitRateDown  : %u bps", bitrate_down);
-		if (bitrate_down >= 1000000)
-			printf(" (%u.%u Mbps)", bitrate_down / 1000000, (bitrate_down / 100000) % 10);
-		else if (bitrate_down >= 1000)
-			printf(" (%u Kbps)", bitrate_down / 1000);
+
+		if (bitrate_down >= ONE_MEGABIT)
+		{
+			// Display as Mbps
+			printf(" (%u Mbps)", bitrate_down / ONE_MEGABIT); 
+		}
+		else if (bitrate_down >= ONE_KILOBIT)
+		{
+			// Display as Kbps
+			printf(" (%u Kbps)", bitrate_down / ONE_KILOBIT);
+		}
+
 		std::cout << "\n";
 
+		// Display max bitrate up
 		printf("MaxBitRateUp    : %u bps", bitrate_up);
-		if (bitrate_up >= 1000000)
-			printf(" (%u.%u Mbps)", bitrate_up / 1000000, (bitrate_up / 100000) % 10);
-		else if (bitrate_up >= 1000)
-			printf(" (%u Kbps)", bitrate_up / 1000);
+
+		if (bitrate_up >= ONE_MEGABIT)
+		{
+			// Display as Mbps
+			printf(" (%u Mbps)", bitrate_up / ONE_MEGABIT);
+		}
+		else if (bitrate_up >= ONE_KILOBIT)
+		{
+			// Display as Kbps
+			printf(" (%u Kbps)", bitrate_up / ONE_KILOBIT);
+		}
+
 		std::cout << "\n";
 	}
 
