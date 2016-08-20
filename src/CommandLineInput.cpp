@@ -117,10 +117,10 @@ int32_t CommandLineInput::setVariablesFromArgv(int32_t argc, char* argv[])
 		return -1;
 	}
 	// Check all argv inputs to see what the user wants to do
-	bool err_chk_bool = 0;
-	if (argc >= 2 && arg_size >= 2)
+	if (arg_size >= 2)
 	{
-		for (int32_t i = 1; i < argc; ++i)
+		bool err_chk_bool = 0;
+		for (int32_t i = 1; i < arg_size; ++i)
 		{
 			if (arg[i] == "-h"
 				|| arg[i] == "-H"
