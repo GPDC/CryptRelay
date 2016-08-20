@@ -73,12 +73,12 @@ std::mutex ApplicationLayer::SendMutex;
 ApplicationLayer::ApplicationLayer(
 	IXBerkeleySockets* IXBerkeleySocketsInstance,
 	SOCKET socket_z,
-	callback_fn_exit_program * exit_program_ptr,
+	callback_fn_function_terminating * function_terminating_ptr,
 	bool turn_verbose_output_on)
 {
 	// Checking for nullptrs on callbacks
 	if (IXBerkeleySocketsInstance == nullptr
-		|| exit_program_ptr == nullptr)
+		|| function_terminating_ptr == nullptr)
 	{
 		throw "Exception thrown: nullptr in ApplicationLayer constructor";
 	}
@@ -94,7 +94,7 @@ ApplicationLayer::ApplicationLayer(
 	fd_socket = socket_z;
 
 	// Setting the callbacks
-	callbackExitProgram = exit_program_ptr;
+	callbackTerminateLoopedReceiveMessages = function_terminating_ptr;
 
 	// Specific to the ProcessRecvBuf state machine
 	memset(incoming_file_name_from_peer_cstr, 0, INCOMING_FILE_NAME_FROM_PEER_SIZE);
@@ -462,8 +462,8 @@ void ApplicationLayer::loopedReceiveMessages()
 		}
 	}
 
-	// Tell the rest of the program that it should proceed to exit.
-	callbackExitProgram();
+	// Say that this function is exiting.
+	callbackTerminateLoopedReceiveMessages();
 
 	std::cout << "\n";
 	std::cout << "# Press 'Enter' to exit CryptRelay.\n";

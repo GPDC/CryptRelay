@@ -36,7 +36,7 @@ class ApplicationLayer
 	// Typedef section
 public:
 	// Typedefs
-	typedef void callback_fn_exit_program(); // If you want to exit the program, call this.
+	typedef void callback_fn_function_terminating(); // If you want to exit the program, call this.
 
 private:
 #ifdef __linux__
@@ -50,7 +50,7 @@ public:
 	ApplicationLayer(
 		IXBerkeleySockets* IXBerkeleySocketsInstance, // Simply a cross platform implementation of certain Berkeley BerkeleySockets functions.
 		SOCKET socket, // A socket with an active connection.
-		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
+		callback_fn_function_terminating * function_terminating_ptr, // Say that this function is exiting.
 		bool turn_verbose_output_on = false // turn on and off verbose output for this class.
 	);
 	~ApplicationLayer();
@@ -222,7 +222,7 @@ private:
 private:
 
 	// Callbacks
-	callback_fn_exit_program * callbackExitProgram = nullptr; // If you want to exit the program, call this.
+	callback_fn_function_terminating * callbackTerminateLoopedReceiveMessages = nullptr; // Say that this function is exiting.
 
 
 public:
