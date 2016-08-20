@@ -171,8 +171,8 @@ public:
 	char * getMyExternalIP() { return my_external_ip; }
 	void setMyLocalPort(const char * ptr) { my_local_port = ptr; }
 	void setMyExternalPort(const char * ptr) { my_external_port = ptr; }
-	std::string getMyLocalPort() { return my_local_port; }
-	std::string getMyExternalPort() { return my_external_port; }
+	std::string& getMyLocalPort() { return my_local_port; }
+	std::string& getMyExternalPort() { return my_external_port; }
 };
 
 #endif//UPnP_h__
