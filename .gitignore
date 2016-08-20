@@ -25,6 +25,7 @@ build_dependency_msvs.txt
 
 **/miniupnpc-1.9*/
 **/cryptopp*/
+**/googletest/
 
 **/*.TMP
 
