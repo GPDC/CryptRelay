@@ -40,10 +40,12 @@ Step 9: Project-> Properties-> Linker-> Input-> Additional Dependencies
  $(ProjectDir)..\googletest\msvc\gtest\Debug\gtestd.lib
  $(ProjectDir)..\googletest\msvc\gtest\Debug\gtest_maind.lib
 
-Step 10: do Step 8 and 9, but this time with your configuration set to Release
+Step 10: Project-> Properties-> VC++ Directories-> Include Directories.
+
+Step 11: do Step 8 and 9, but this time with your configuration set to Release
  Don't forget to add file paths that point to the release library, instead of debug.
 
-Step 11: In your project, add the include in your file:
+Step 12: In your project, add the include in your file:
  #include <gtest/gtest.h>
 
 # Now time to create an example test case:
