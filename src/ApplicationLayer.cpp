@@ -7,6 +7,7 @@
 #include <thread>
 #include <limits.h>
 #include <string.h>
+#include <assert.h>
 
 #include "ApplicationLayer.h"
 #include "IXBerkeleySockets.h"
@@ -18,6 +19,7 @@
 #include <WS2tcpip.h>
 #include <thread>
 #include <limits.h>
+#include <assert.h>
 
 #include "ApplicationLayer.h"
 #include "IXBerkeleySockets.h"
@@ -385,19 +387,19 @@ void ApplicationLayer::loopedReceiveMessages()
 		std::cout << "Recv loop started...\n";
 
 	// Buffer for receiving data from peer
-	static const int64_t recv_buf_len = 512;
-	char recv_buf[recv_buf_len];
+	const int64_t RECV_BUF_LEN = 512;
+	char recv_buf[RECV_BUF_LEN];
 
 	const int32_t CONNECTION_GRACEFULLY_CLOSED = 0; // when recv() returns 0, it means gracefully closed.
 	int32_t bytes = 0;
 	while (1)
 	{
-		bytes = recv(fd_socket, (char *)recv_buf, recv_buf_len, 0);
+		bytes = recv(fd_socket, (char *)recv_buf, RECV_BUF_LEN, 0);
 		if (bytes > 0)
 		{
 			// State machine that processes recv_buf and decides what to do
 			// based on the information in the buffer.
-			if (decideActionBasedOnFlag(recv_buf, recv_buf_len, bytes) == -1)
+			if (decideActionBasedOnFlag(recv_buf, RECV_BUF_LEN, bytes) == -1)
 				break;
 		}
 		else if (bytes == SOCKET_ERROR)
@@ -603,7 +605,7 @@ int64_t ApplicationLayer::sendStrBuf(std::string& str_buf, int64_t message_lengt
 
 // Returns 0, success, and wants to recv() more bytes.
 // Returns -1, error
-int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_buf_len, int64_t received_bytes)
+int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, const int64_t RECV_BUF_LEN, int64_t received_bytes)
 {
 	// the current cursor position inside the buffer.
 	position_in_recv_buf = 0;	
@@ -720,7 +722,7 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			// convert the file size in the buffer from network int64_t to
 			// host int64_t. It assigns the variable incoming_file_size_from_peer
 			// a value.
-			if (assignFileSizeFromPeer(recv_buf, recv_buf_len, received_bytes) == FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER)
+			if (assignFileSizeFromPeer(recv_buf, RECV_BUF_LEN, received_bytes) == FINISHED_ASSIGNING_FILE_SIZE_FROM_PEER)
 			{
 				std::cout << "# Size of Peer's file: " << incoming_file_size_from_peer << "\n";
 
@@ -732,10 +734,11 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 				}
 				else if (openFileForWrite() == -1)// Open the file for writing.
 				{
+					// error opening file
 					error = true;
 					done = true;
 				}
-				else // success
+				else // successfully opened file
 				{
 					state = CHECK_FOR_FLAG;
 					done = false;
@@ -1019,6 +1022,7 @@ int32_t ApplicationLayer::writeFileFromPeer(char * recv_buf, int64_t received_by
 		return -1; // set error state please
 	}
 
+	// Casting amount_to_write to a size_t is only safe because the recv_buf is smaller than the max size of a size_t.
 	bytes_written = fwrite(recv_buf + position_in_recv_buf, 1, (size_t)(amount_to_write), WriteFile);
 	if (!bytes_written)
 	{
