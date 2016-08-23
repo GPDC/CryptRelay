@@ -122,7 +122,7 @@ public:
 	void setTargetExternalPort(std::string port) { target_external_port = port; }
 	void setMyLocalIP(std::string ip) { my_local_ip = ip; }
 	void setMyLocalPort(std::string port) { my_local_port = port; }
-	std::string& getMyLocalPort() { return my_local_port; }
+	const std::string& getMyLocalPort() { return my_local_port; }
 
 	// If you want this class to proceed to exit, set this to true.
 	void setExitNow(bool exit_the_program) { exit_now = exit_the_program; }
