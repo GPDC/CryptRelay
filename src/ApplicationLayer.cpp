@@ -724,8 +724,13 @@ int32_t ApplicationLayer::decideActionBasedOnFlag(char * recv_buf, int64_t recv_
 			{
 				std::cout << "# Size of Peer's file: " << incoming_file_size_from_peer << "\n";
 
-				// Open the file for writing.
-				if (openFileForWrite() == -1)
+				// If the peer gave us a negative file size, error.
+				if (incoming_file_size_from_peer < 0)
+				{
+					error = true;
+					done = true;
+				}
+				else if (openFileForWrite() == -1)// Open the file for writing.
 				{
 					error = true;
 					done = true;
