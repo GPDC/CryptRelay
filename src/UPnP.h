@@ -60,7 +60,7 @@
 class UPnP
 {
 public:
-	UPnP(bool turn_verbose_output_on = false);
+	explicit UPnP(bool turn_verbose_output_on = false);
 	virtual ~UPnP();
 
 	// Turn on and off verbose output for this class.

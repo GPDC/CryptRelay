@@ -38,7 +38,7 @@ public:
 		callback_fn_exit_program * exit_program_ptr, // A function that will exit the program, preferably gracefully.
 		bool turn_verbose_output_on = false
 	);
-	~UserInput();
+	virtual ~UserInput();
 
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;

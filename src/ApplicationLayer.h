@@ -53,7 +53,7 @@ public:
 		callback_fn_function_terminating * function_terminating_ptr, // Say that this function is exiting.
 		bool turn_verbose_output_on = false // turn on and off verbose output for this class.
 	);
-	~ApplicationLayer();
+	virtual ~ApplicationLayer();
 
 	// Turn on and off verbose output for this class.
 	bool verbose_output = false;

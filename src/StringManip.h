@@ -17,7 +17,7 @@
 class StringManip
 {
 public:
-	StringManip(bool turn_verbose_output_on = false);
+	explicit StringManip(bool turn_verbose_output_on = false);
 	virtual ~StringManip();
 
 	// Turn on and off verbose output for this class.
