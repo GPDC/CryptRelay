@@ -72,9 +72,8 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	if (ReadFile == nullptr)
 	{
 		delete[]buf;
-		std::cout << "Error: File transfer aborted. Couldn't open file.\n";
 		DBG_DISPLAY_ERROR_LOCATION();
-		perror("Error opening file for reading binary sendFile");
+		perror("Error opening file for reading binary sendFile. File transfer aborted");
 		is_send_file_thread_in_use = false;
 		return -1;
 	}
@@ -469,62 +468,59 @@ bool FileTransfer::displayFileSize(const char* file_name_and_location, xplatform
 	return false;
 }
 
-std::string FileTransfer::retrieveFileNameFromPath(std::string file_name_and_path)
+std::string FileTransfer::retrieveFileNameFromPath(std::string path)
 {
-	std::string error_empty_string;
-	// Remove the last \ or / in the name if there is one, so that the name
-	// of the file can be separated from the path of the file.
-	if (file_name_and_path.back() == '\\' || file_name_and_path.back() == '/')
+	size_t path_length = path.length();
+	const int32_t ARBITRARY_LENGTH_LIMIT = 1024 * 1024; // 1 MB
+	
+	// Error if we were given an empty string, or a rediculously long string
+	if (path_length == 0 || path_length > ARBITRARY_LENGTH_LIMIT)
 	{
-		std::cout << "ERROR: Found a '\\' or a '/' at the end of the file name.\n";
-		std::cout << "Name and location of file that caused the error: " << file_name_and_path << "\n";
-		return error_empty_string; //exit please
+		std::string empty_file_name;
+		return empty_file_name;
 	}
 
-	const int32_t NO_SLASHES_DETECTED = -1;
-	int64_t last_seen_slash_location = NO_SLASHES_DETECTED;
-	int64_t name_and_location_of_file_length = file_name_and_path.length();
+	int32_t i = (int32_t)(path_length - 1);
+	const int32_t NOT_FOUND = 0;
+	int32_t start_of_file_name = NOT_FOUND;
+	int32_t end_of_file_name = (int32_t)(path_length - 1);
 
-	if (name_and_location_of_file_length < INT_MAX - 1)
+
+	// If there is a slash at the end of the file.
+	if (path[i] == '\\' || path[i] == '/')
 	{
-		// iterate backwords looking for a slash
-		for (int64_t i = name_and_location_of_file_length; i > 0; --i)
+		end_of_file_name = i - 1;
+		--i;
+	}
+
+	// The first slash it comes across will indicate where the start of the file name is.
+	for ( ; i >= 0; --i)
+	{
+		if (path[i] == '\\' || path[i] == '/')
 		{
-			if (file_name_and_path[(uint32_t)i] == '\\' || file_name_and_path[(uint32_t)i] == '/')
+			// As long as there isn't two slashes in a row
+			if (path[i + 1] != '\\' && path[i + 1] != '/')
 			{
-				last_seen_slash_location = i;
-				break;
+				start_of_file_name = i + 1;
 			}
-		}
-
-		if (last_seen_slash_location == NO_SLASHES_DETECTED)
-		{
-			std::cout << "File name and location is invalid. There was not a single \'\\\' or \'/\' found.\n";
-			return error_empty_string;
-		}
-		else if (last_seen_slash_location < name_and_location_of_file_length)
-		{
-			// Copy the file name from file_name_and_path to file_name.
-			std::string file_name(
-				file_name_and_path,
-				(size_t)last_seen_slash_location + 1,
-				(size_t)((last_seen_slash_location + 1) - name_and_location_of_file_length)
-			);
-			return file_name;
-		}
-		else
-		{
-			std::cout << "File name is invalid. Found \'/\' or \'\\\' at the end of the file name.\n";
-			return error_empty_string; // exit please
+			break;
 		}
 	}
-	else
+
+	// if we never found a slash (that isn't at the end of the file),
+	// that means we weren't given a path at all. error.
+	if (start_of_file_name == NOT_FOUND)
 	{
-		std::cout << "Error: name_and_location_of_file_length is >= INT_MAX -1\n";
-		return error_empty_string;
+		std::string empty_file_name;
+		return empty_file_name;
 	}
 
-	// Shouldn't get here, but if it does, it is an error.
-	std::cout << "Impossible location, retrieveFileNameFromPath()\n";
-	return error_empty_string;
+	// Copy the file name from path to file_name.
+	std::string file_name(
+		path,
+		start_of_file_name, // copy starting from this location
+		end_of_file_name - start_of_file_name + 1 // copy this many characters
+	);
+
+	return file_name;
 }
