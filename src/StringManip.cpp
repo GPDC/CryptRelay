@@ -66,8 +66,8 @@ int32_t StringManip::split(const std::string& string, char delimiter, std::vecto
 std::string StringManip::duplicateCharacter(std::string& string, char duplicate_character)
 {
 	size_t string_length = string.length();
-	uint32_t i;
-	for (i = 0; i < string_length && i < UINT_MAX; ++i)
+	size_t i;
+	for (i = 0; i < string_length && i < SIZE_MAX; ++i)
 	{
 		if (string[i] == duplicate_character)
 		{
@@ -76,9 +76,20 @@ std::string StringManip::duplicateCharacter(std::string& string, char duplicate_
 			// arg3 insert this char
 			string.insert(i, 1, duplicate_character);
 			++i;
+
+			// because we added a character to the string
+			if (string_length < SIZE_MAX)
+			{
+				++string_length;
+			}
+			else
+			{
+				break;
+			}
 		}
 	}
-	if (i == UINT_MAX)
+
+	if (i == SIZE_MAX)
 		std::cout << "WARNING: string length in duplicateCharacter() reached UINT_MAX\n";
 
 	DBG_TXT("string.insert yielded: " << string);
