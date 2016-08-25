@@ -34,7 +34,7 @@ public:
 	// Finds the specified character (aka the delimiter), and
 	// duplicates it by inserting another one next to it.
 	// Returns a std::string that contains the changes.
-	std::string duplicateCharacter(std::string& string, char delimiter);
+	void duplicateCharacter(std::string& string, char delimiter);
 protected:
 private:
 

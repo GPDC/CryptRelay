@@ -63,7 +63,7 @@ int32_t StringManip::split(const std::string& string, char delimiter, std::vecto
 }
 
 
-std::string StringManip::duplicateCharacter(std::string& string, char duplicate_character)
+void StringManip::duplicateCharacter(std::string& string, char duplicate_character)
 {
 	size_t string_length = string.length();
 	size_t i;
@@ -93,5 +93,4 @@ std::string StringManip::duplicateCharacter(std::string& string, char duplicate_
 		std::cout << "WARNING: string length in duplicateCharacter() reached UINT_MAX\n";
 
 	DBG_TXT("string.insert yielded: " << string);
-	return string;
 }
