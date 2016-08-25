@@ -64,11 +64,11 @@
 #endif//_WIN32
 
 
-UPnP* Upnp = nullptr;
-FileTransfer* FileXfer = nullptr;
-ApplicationLayer* AppLayer = nullptr;
-CommandLineInput CLI;
-XBerkeleySockets BerkeleySockets;
+UPnP * Upnp = nullptr;
+FileTransfer * FileXfer = nullptr;
+ApplicationLayer * AppLayer = nullptr;
+CommandLineInput * CLI = nullptr;
+XBerkeleySockets * BerkeleySockets = nullptr;
 Connection * ServerConnect = nullptr;
 Connection * ClientConnect = nullptr;
 UserInput * UserInput_o = nullptr;
@@ -215,7 +215,7 @@ void upnpAndCliGivesIpAndPortToConnection(
 // Returns the port number, whether it is a new port number or the same old one.
 std::string changeLocalPortIfInUse(std::string change_this_port, std::string local_ip)
 {
-	PortKnock PortTest(&BerkeleySockets, CLI.getVerboseOutput());
+	PortKnock PortTest(BerkeleySockets, CLI->getVerboseOutput());
 	const int32_t IN_USE = 1;
 	const int32_t AVAILABLE = 0;
 	const int32_t ATTEMPT_COUNT = 20;
@@ -281,7 +281,7 @@ int32_t portForwardUsingUPnP()
 {
 	try
 	{
-		Upnp = new UPnP(CLI.getVerboseOutput());
+		Upnp = new UPnP(CLI->getVerboseOutput());
 	}
 	catch (const char * nullptr_exception)
 	{
@@ -291,7 +291,7 @@ int32_t portForwardUsingUPnP()
 
 	// Give the user's inputted port to the UPnP Class
 	// so that it will port forward what he wanted.
-	cliGivesPortToUPnP(&CLI, Upnp);
+	cliGivesPortToUPnP(CLI, Upnp);
 
 	// in order to check if port is open (atleast in this upnp related function)
 	// these must be done first:
@@ -308,7 +308,7 @@ int32_t portForwardUsingUPnP()
 	// Checking to see if the user inputted a local port number.
 	// If he didn't, then he probably doesn't care, and just
 	// wants whatever port can be given to him.
-	if (CLI.getMyLocalPort().empty() == true)
+	if (CLI->getMyLocalPort().empty() == true)
 	{
 		std::string new_local_port;
 		// If the local port is in use by something else, ++ the local port and try again.
@@ -326,7 +326,7 @@ int32_t portForwardUsingUPnP()
 	{
 		// Give IP and port info gathered from the command line and from
 		// the UPnP class to the ServerConnect and ServerConnect instance
-		upnpAndCliGivesIpAndPortToConnection(&CLI, Upnp, ServerConnect, ClientConnect);
+		upnpAndCliGivesIpAndPortToConnection(CLI, Upnp, ServerConnect, ClientConnect);
 		return 0; // successful port forward
 	}
 	else
@@ -358,7 +358,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 				delete FileXfer; // destroy an old one if there is one.
 				try
 				{
-					FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
+					FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI->getVerboseOutput());
 				}
 				catch (const char * nullptr_exception)
 				{
@@ -385,7 +385,7 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 		delete FileXfer;
 		try
 		{
-			FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI.getVerboseOutput());
+			FileXfer = new FileTransfer(AppLayer, file_name_and_path, send_file, CLI->getVerboseOutput());
 		}
 		catch (const char * nullptr_exception)
 		{
@@ -448,15 +448,19 @@ void exitProgram()
 // Creates several class instances that should be created at the start of the program.
 int32_t createObjects()
 {
+	CLI = new CommandLineInput;
+	BerkeleySockets = new XBerkeleySockets;
+
 	try
 	{
 		ClientConnect = new Connection(
-			&BerkeleySockets,
-			CLI.getVerboseOutput()
+			BerkeleySockets,
+			CLI->getVerboseOutput()
 		);
 	}
 	catch (const char * nullptr_exception)
 	{
+		// Must have passed a nullptr to the constructor
 		std::cout << nullptr_exception;
 		return -1;
 	}
@@ -464,8 +468,8 @@ int32_t createObjects()
 	try
 	{
 		ServerConnect = new Connection(
-			&BerkeleySockets,
-			CLI.getVerboseOutput()
+			BerkeleySockets,
+			CLI->getVerboseOutput()
 		);
 	}
 	catch (const char * nullptr_exception)
@@ -476,7 +480,7 @@ int32_t createObjects()
 
 	try
 	{
-		StrManip = new StringManip(CLI.getVerboseOutput());
+		StrManip = new StringManip(CLI->getVerboseOutput());
 	}
 	catch (const char * nullptr_exception)
 	{
@@ -498,7 +502,7 @@ int32_t main(int32_t argc, char *argv[])
 
 	// Check what the user wants to do via command line input
 	// Information inputted by the user on startup is stored in CLI
-	if ( (errchk = CLI.setVariablesFromArgv(argc, argv)) == -1)	
+	if ( (errchk = CLI->setVariablesFromArgv(argc, argv)) == -1)	
 		return EXIT_FAILURE;
 
 
@@ -506,12 +510,12 @@ int32_t main(int32_t argc, char *argv[])
 	std::cout << "Welcome to CryptRelay 0.8.2\n";
 
 
-	if (CLI.getShowInfoUpnp() == true)
+	if (CLI->getShowInfoUpnp() == true)
 	{
 		// Show some information related to the router
 		try
 		{
-			Upnp = new UPnP(CLI.getVerboseOutput());
+			Upnp = new UPnP(CLI->getVerboseOutput());
 		}
 		catch (const char * nullptr_exception)
 		{
@@ -523,12 +527,12 @@ int32_t main(int32_t argc, char *argv[])
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.getRetrieveListOfPortForwards() == true)
+	else if (CLI->getRetrieveListOfPortForwards() == true)
 	{
 		// Show the ports that are currently forwarded on the router
 		try
 		{
-			Upnp = new UPnP(CLI.getVerboseOutput());
+			Upnp = new UPnP(CLI->getVerboseOutput());
 		}
 		catch (const char * nullptr_exception)
 		{
@@ -540,12 +544,12 @@ int32_t main(int32_t argc, char *argv[])
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.getDeleteThisSpecificPortForward() == true)
+	else if (CLI->getDeleteThisSpecificPortForward() == true)
 	{
 		// Delete the specified port forward rule on the router.
 		try
 		{
-			Upnp = new UPnP(CLI.getVerboseOutput());
+			Upnp = new UPnP(CLI->getVerboseOutput());
 		}
 		catch (const char * nullptr_exception)
 		{
@@ -554,16 +558,16 @@ int32_t main(int32_t argc, char *argv[])
 		}
 
 		Upnp->standaloneDeleteThisSpecificPortForward(
-				CLI.getDeleteThisSpecificPortForwardPort().c_str(),
-				CLI.getDeleteThisSpecificPortForwardProtocol().c_str()
+				CLI->getDeleteThisSpecificPortForwardPort().c_str(),
+				CLI->getDeleteThisSpecificPortForwardProtocol().c_str()
 			);
 		delete Upnp;
 		return EXIT_SUCCESS;
 	}
-	else if (CLI.getUseLanOnly() == true)
+	else if (CLI->getUseLanOnly() == true)
 	{
 		// The user MUST supply a local ip address when using the lan only option.
-		if (CLI.getMyIpAddress().empty() == true)
+		if (CLI->getMyIpAddress().empty() == true)
 		{
 			std::cout << "ERROR: User didn't specify his local IP address.\n";
 			return EXIT_FAILURE;
@@ -572,11 +576,11 @@ int32_t main(int32_t argc, char *argv[])
 		// Checking to see if the user inputted a local port number.
 		// If he didn't, then he probably doesn't care, and just
 		// wants whatever port can be given to him.
-		if (CLI.getMyLocalPort().empty() == true)
+		if (CLI->getMyLocalPort().empty() == true)
 		{
 			std::string new_local_port;
 			// If the local port is in use by something else, ++ the local port and try again.
-			new_local_port = changeLocalPortIfInUse(ServerConnect->getMyLocalPort(), CLI.getMyIpAddress());
+			new_local_port = changeLocalPortIfInUse(ServerConnect->getMyLocalPort(), CLI->getMyIpAddress());
 			if (new_local_port != "")
 			{
 				ServerConnect->setMyLocalPort(new_local_port);
@@ -585,10 +589,10 @@ int32_t main(int32_t argc, char *argv[])
 		}
 
 		// Give IP and port info to the ClientConnect and ServerConnect instance
-		cliGivesIPAndPortToConnection(&CLI, ServerConnect, ClientConnect);
+		cliGivesIPAndPortToConnection(CLI, ServerConnect, ClientConnect);
 	}
 
-	if (CLI.getUseUpnpToConnectToPeer() == true)
+	if (CLI->getUseUpnpToConnectToPeer() == true)
 	{
 		// Forward ports on the router.
 		if (portForwardUsingUPnP() == -1)
@@ -631,10 +635,10 @@ int32_t main(int32_t argc, char *argv[])
 	try
 	{
 		AppLayer = new ApplicationLayer(
-			&BerkeleySockets,
+			BerkeleySockets,
 			WinningConnectionClass->getFdSocket(),
 			&exitProgram,
-			CLI.getVerboseOutput()
+			CLI->getVerboseOutput()
 		);
 	}
 	catch (const char * nullptr_exception)
@@ -653,7 +657,7 @@ int32_t main(int32_t argc, char *argv[])
 			&sendChatMessage,
 			&endConnection,
 			&exitProgram,
-			CLI.getVerboseOutput()
+			CLI->getVerboseOutput()
 		);
 	}
 	catch (const char * nullptr_exception)

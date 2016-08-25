@@ -89,6 +89,7 @@ private:
 	// If given a direct path to a file, it will return the file name.
 	// Ex: c:\users\me\storage\my_file.txt
 	// will return: my_file.txt
+	// returns empty string on error.
 	static std::string retrieveFileNameFromPath(std::string file_name_and_path);
 
 
