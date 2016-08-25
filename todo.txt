@@ -77,6 +77,11 @@
  Should check list of all current port forwards and then basically grep out the ones that have
  description_of_port_forward_entry in it and take the external port and protocol attached to  that description and give it to UPNP_DeletePortMapping().
 
+-say, if a bunch of files were transferred at once (if that is made so it is allowed), then keep a log
+of all files that could not be transferred. And/or transfer all the files (maybe the problem was a file
+name conflict), but change the name of the file to something like: FileNameConflict_1, and provide
+an easy way to deal with all those files that got renamed.
+
 
 
 # Critical Errors:
