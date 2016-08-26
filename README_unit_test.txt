@@ -106,9 +106,9 @@ Step 9: Project-> Properties-> Linker-> Input-> Additional Dependencies
 
 
 
-# Now for actually writing some unit tests for the project
+# Now for actually writing a sample unit test
 
-Step 1: include header files
+Step 1: Include header files
 
  #include "gtest/gtest.h"
  #include "gmock/gmock.h"
@@ -151,7 +151,34 @@ is also 0.
 Now that was a super simple example, and this didn't test anything in our project 'CryptRelay', but there was something that should definately be avoided in that example. Notice how, in the TEST() we created, we made a Backpack class instance. This is bad for a number of reasons, like and such bla
 this guide to be continued.................
 
-Step 4: now let's test something from the program, CryptRelay.
+
+
+# Now let's test something from the program, CryptRelay.
+
+Step 1: Include header files
+
+ #include "PortKnock.h"
+ #include "XBerkeleySockets.h"
+
+
+
+Step 2: Create a TEST
+
+TEST(PortKnockTest, PortIsNotInUse)
+{
+ 	// Making a class instance every time is not ideal, and should be avoided.
+	XBerkeleySockets XBerkeleySocketsInstance;
+	PortKnock PK(&XBerkeleySocketsInstance);
+
+	EXPECT_EQ(0, PK.isLocalPortInUse("30000", "192.168.1.115"));
+}
+
+This test is expecting a return value of 0 from the function PK.isLocalPortInUse();
+Change the port and IP to whatever applies to you.
+
+
+
+Step 3:
 
 
 
