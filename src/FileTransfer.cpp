@@ -123,7 +123,7 @@ int32_t FileTransfer::sendFile(std::string file_name_and_path)
 	else // success
 	{
 		// Output to terminal the size of the file in Bytes, KB, MB, GB.
-		displayFileSize(file_name_and_path.c_str(), &FileStats);
+		displayFileSize(&FileStats);
 		size_of_file = FileStats.st_size;
 	}
 
@@ -312,7 +312,7 @@ bool FileTransfer::copyFile(const char * file_name_and_location_for_reading, con
 	else // success
 	{
 		// Output to terminal the size of the file in Bytes, KB, MB, GB.
-		displayFileSize(file_name_and_location_for_reading, &FileStats);
+		displayFileSize(&FileStats);
 		size_of_file_to_be_copied = FileStats.st_size;
 	}
 
@@ -448,7 +448,7 @@ int32_t FileTransfer::retrieveFileStats(const char * file_name_and_path, xplatfo
 	}
 }
 
-bool FileTransfer::displayFileSize(const char* file_name_and_location, xplatform_struct_stat * FileStatBuf)
+bool FileTransfer::displayFileSize(xplatform_struct_stat * FileStatBuf)
 {
 	if (FileStatBuf == nullptr)
 	{

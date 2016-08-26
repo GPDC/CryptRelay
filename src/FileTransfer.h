@@ -84,7 +84,8 @@ private:
 	static int32_t retrieveFileStats(const char * file_name_and_path, xplatform_struct_stat* FileStats);
 
 	// Displays to console the size of the file.
-	static bool displayFileSize(const char* file_name_and_path, xplatform_struct_stat * FileStatBuf);
+	// Must call retrieveFileStats() first in order to get the size of the file.
+	static bool displayFileSize(xplatform_struct_stat * FileStatBuf);
 
 	// If given a direct path to a file, it will return the file name.
 	// Ex: c:\users\me\storage\my_file.txt

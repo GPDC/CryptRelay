@@ -260,6 +260,7 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 			std::cout << "fcntl() failed getting flag.\n";
 			getError();
 			DBG_DISPLAY_ERROR_LOCATION();
+			return -1;
 		}
 		if (current_flag == O_NONBLOCK)
 		{
@@ -293,8 +294,9 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 			std::cout << "fcntl() failed getting flag.\n";
 			getError();
 			DBG_DISPLAY_ERROR_LOCATION();
+			return -1;
 		}
-		if (current_flag == O_NONBLOCK)
+		else if (current_flag == O_NONBLOCK)
 		{
 			DBG_TXT("Warning: Tried to set enable blocking flag on a socket that is already blocking.");
 			return 0;
@@ -314,8 +316,6 @@ int32_t XBerkeleySockets::setBlockingSocketOpt(SOCKET socket, const u_long* opti
 		}
 	}
 #endif//__linux__
-
-	return 0;
 }
 
 

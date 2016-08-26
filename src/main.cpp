@@ -394,8 +394,6 @@ int32_t startThreadedFileXfer(const std::string& file_name_and_path)
 		}
 		return 0;
 	}
-
-	return 0;
 }
 
 // Returns -1, error
