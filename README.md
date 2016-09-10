@@ -5,7 +5,7 @@ Implemented:
 - Chat
 
 Not implemented:
-- Encryption.
+- Encryption: Temporarily postponed until I finish learning some cool things which have a higher priority. After that I will implement it.
 
 If you want to send an encrypted file, you must encrypt it first with an encryption program before sending it through CryptRelay. If you want to send an encrypted message, encrypt it first before sending the message, or encrypt a file with your message inside and send that.
 

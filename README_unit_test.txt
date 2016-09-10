@@ -178,7 +178,53 @@ Change the port and IP to whatever applies to you.
 
 
 
-Step 3:
+Step 3: Create a TEST_F  aka Test Fixture
+
+Because we are going to take the TEST in step 2 and make it a fixture instead, that means
+that we have to delete the TEST(PortKnockTest, PortIsNotInUse).
+Why? Because you can not mix TEST_Fs and TESTs under the same category. The category is
+PortKnockTest. Something something i forgot the technical reason.
+
+To create a fixture, just:
+
+Derive a class from ::testing::Test . Start its body with protected: or public: as we'll
+ want to access fixture members from sub-classes.
+Inside the class, declare any objects you plan to use.
+If necessary, write a default constructor to prepare the objects for each test.
+If necessary, write a destructor function to release any resources you allocated
+If needed, define subroutines for your tests to share.
+
+If you do all that, it will look like:
+
+class PortKnockTest : public testing::Test
+{
+public:
+	XBerkeleySockets * XBerkeleySocketsInstance = nullptr;
+	PortKnock * PK = nullptr;
+	PortKnockTest()
+	{
+		XBerkeleySocketsInstance = new XBerkeleySockets;
+		PK = new PortKnock(XBerkeleySocketsInstance);
+	}
+	virtual ~PortKnockTest()
+	{
+		delete XBerkeleySocketsInstance;
+		delete PK;
+	}
+};
+
+TEST_F(PortKnockTest, PortIsNotInUse)
+{
+	EXPECT_EQ(0, PK->isLocalPortInUse("30000", "192.168.1.115"));
+}
+
+
+
+Notice how the first argument of TEST_F() is the same name as the test fixture class.
+This is intentional, and is required to be this way. This is b/c the first argument
+is now being used as the name of the test_case_name, AND is also being used as an
+argument that takes a class so that it can use it(???). Previously, with a simple
+TEST(), the first argument was just the test_case_name.
 
 
 
